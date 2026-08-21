@@ -10,6 +10,6 @@
 <div class="news-detail">
     <h1>{$news.title}</h1>
     <div class="nd-meta">发布于 {$news.create_time|date='Y-m-d H:i'}</div>
-    <div class="nd-content">{$news.content|nl2br}</div>
+    <div class="nd-content">{$news.content_html|raw}</div>
 </div>
 {/block}

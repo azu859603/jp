@@ -24,6 +24,13 @@ class News extends Base
             return redirect('/');
         }
 
+        // 含 HTML 标签的内容原样渲染，纯文本内容按原有方式转义并保留换行
+        if (preg_match('/<\w+[^>]*>/', $news['content'])) {
+            $news['content_html'] = $news['content'];
+        } else {
+            $news['content_html'] = nl2br(htmlspecialchars($news['content']));
+        }
+
         View::assign([
             'news'       => $news,
             'page_title' => $news['title'],
