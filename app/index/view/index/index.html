@@ -25,9 +25,9 @@
 <!-- 拍卖头条 -->
 <div class="home-head">
     <div class="hh1">
-        <span class="t">拍卖</span>
-        <span class="sub">头条</span>
-        <span style="flex:1;font-size:12px;color:#898989;margin-left:8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{$site_name} · 每日精选</span>
+        <span class="t">关于我们</span>
+<!--        <span class="sub">我们</span>-->
+<!--        <span style="flex:1;font-size:12px;color:#898989;margin-left:8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{$site_name} · 每日精选</span>-->
         <!-- <a class="rec" href="/?sort=end">成交记录 ></a> -->
     </div>
     <!-- <div class="hh2">
@@ -45,7 +45,7 @@
     {foreach $headlines as $h}
     <a href="/news/detail?id={$h.id}" style="display:flex;align-items:center;padding:6px 0;border-bottom:1px solid #f7f7f7;font-size:13px;color:#333;">
         <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{$h.title}</span>
-        <span style="color:#898989;font-size:12px;flex-shrink:0;">{$h.create_time|date='m-d H:i'}</span>
+<!--        <span style="color:#898989;font-size:12px;flex-shrink:0;">{$h.create_time|date='m-d H:i'}</span>-->
     </a>
     {/foreach}
 </div>

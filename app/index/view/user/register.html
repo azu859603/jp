@@ -1,57 +1,126 @@
 {extend name="layout" /}
 {block name="header"}{/block}
 {block name="content"}
+<div class="login-hero">
+    <div class="login-card">
+        <h2 class="lc-title">建立账户</h2>
+        <div class="lc-group">
+            <label class="lc-label" for="mobile">手机号码</label>
+            <input class="lc-input" type="tel" id="mobile" maxlength="11" placeholder="" value="">
+        </div>
+        <div class="lc-group">
+            <label class="lc-label" for="invite">邀请码（选填）</label>
+            <input class="lc-input" type="text" id="invite" placeholder="" value="">
+        </div>
+        <div class="lc-group">
+            <label class="lc-label" for="password">设置密码（至少6位）</label>
+            <div class="lc-pwd-wrap">
+                <input class="lc-input" type="password" id="password" placeholder="">
+                <span class="lc-eye" onclick="togglePwd('password')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>
+                </span>
+            </div>
+        </div>
+        <div class="lc-group">
+            <label class="lc-label" for="password2">确认密码</label>
+            <div class="lc-pwd-wrap">
+                <input class="lc-input" type="password" id="password2" placeholder="">
+                <span class="lc-eye" onclick="togglePwd('password2')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>
+                </span>
+            </div>
+        </div>
+        <button class="lc-btn" onclick="doRegister()">注册</button>
+        <div class="lc-sub">已有账户？<a href="/user/login">前往登录</a></div>
+        <div class="lc-agree">
+            注册即代表同意<a href="/user/agreement?type=protocol">《用户协议》</a>和<a href="/user/agreement?type=privacy">《隐私政策》</a>
+        </div>
+    </div>
+</div>
 <style>
-    .page {
-        padding-top: 0px;
-    }
+.page{padding-top:0!important;padding-bottom:0!important;}
+.login-hero{
+    min-height:100vh;
+    background:url('/static/images/login-bg.jpg?v-3') no-repeat;
+    background-size:auto 100%;
+    padding:30% 16px 60px;
+    box-sizing:border-box;
+}
+.login-card{
+    background:#fff;
+    padding:32px;
+    box-sizing:border-box;
+}
+.lc-title{
+    font-size:28px;
+    font-weight:700;
+    color:#1e2123;
+    line-height:1.5;
+    margin:0 0 20px;
+}
+.lc-group{margin-bottom:16px;}
+.lc-label{
+    display:block;
+    font-size:16px;
+    color:#525252;
+    margin-bottom:8px;
+}
+.lc-input{
+    display:block;
+    width:100%;
+    height:38px;
+    padding:6px 12px;
+    box-sizing:border-box;
+    border:1px solid #525252;
+    border-radius:4px;
+    font-size:16px;
+    color:#1e2123;
+    background:#fff;
+    outline:none;
+    -webkit-appearance:none;
+}
+.lc-input:focus{border-color:#bf9d5a;}
+.lc-pwd-wrap{position:relative;}
+.lc-pwd-wrap .lc-input{padding-right:40px;}
+.lc-eye{
+    position:absolute;
+    right:10px;
+    top:50%;
+    transform:translateY(-50%);
+    width:22px;
+    height:22px;
+    color:#8a8a8a;
+    cursor:pointer;
+}
+.lc-eye svg{width:100%;height:100%;}
+.lc-btn{
+    display:block;
+    width:100%;
+    height:38px;
+    margin-top:24px;
+    background:#bf9d5a;
+    border:1px solid #bf9d5a;
+    border-radius:4px;
+    color:#fff;
+    font-size:14px;
+    letter-spacing:2px;
+    cursor:pointer;
+}
+.lc-btn:active{opacity:.85;}
+.lc-sub{
+    margin-top:16px;
+    font-size:15px;
+    color:#525252;
+}
+.lc-sub a{color:#bf9d5a;text-decoration:underline;}
+.lc-agree{
+    margin-top:18px;
+    font-size:12px;
+    color:#9a9a9a;
+    line-height:1.6;
+}
+.lc-agree a{color:#bf9d5a;}
 </style>
-<div class="login-top">
-    <span class="cloud cloud1"></span>
-    <span class="cloud cloud2"></span>
-    <span class="cloud cloud3"></span>
-    <div class="tree l">
-        <div class="leaf"></div>
-        <div class="trunk"></div>
-    </div>
-    <div class="tree r">
-        <div class="leaf"></div>
-        <div class="trunk"></div>
-    </div>
-    <div class="person">
-        <div class="p-head"></div>
-        <div class="p-body"></div>
-        <div class="p-phone"></div>
-        <div class="p-leg"></div>
-        <div class="p-leg r"></div>
-    </div>
-</div>
-<div class="login-form">
-    <h2>注册</h2>
-    <div class="login-item">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="7" y="2.5" width="10" height="19" rx="2.5"/><line x1="10.5" y1="18.5" x2="13.5" y2="18.5"/></svg>
-        <input type="tel" id="mobile" maxlength="11" placeholder="请输入手机号码">
-    </div>
-    <div class="login-item">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2.5 4.5 5.5v6c0 4.6 3.2 8.4 7.5 10 4.3-1.6 7.5-5.4 7.5-10v-6L12 2.5z"/><polyline points="8.8 12 11 14.2 15.5 9.5"/></svg>
-        <input type="text" id="invite" placeholder="邀请码（选填）">
-    </div>
-    <div class="login-item">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4.5" y="10.5" width="15" height="10" rx="2"/><path d="M8 10.5V7a4 4 0 0 1 8 0v3.5"/></svg>
-        <input type="password" id="password" placeholder="设置密码（至少6位）">
-    </div>
-    <div class="login-item">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4.5" y="10.5" width="15" height="10" rx="2"/><path d="M8 10.5V7a4 4 0 0 1 8 0v3.5"/></svg>
-        <input type="password" id="password2" placeholder="确认密码">
-    </div>
-    <button class="login-btn" onclick="doRegister()">立即注册</button>
-    <div class="login-sub">
-        已有账号？<a href="/user/login">去登录</a>
-    </div>
-    <div class="login-agree">
-        注册即代表同意<a href="/user/agreement?type=protocol">《用户协议》</a>和<a href="/user/agreement?type=privacy">《隐私政策》</a>
-    </div>
-</div>
 {/block}
 {block name="tabbar"}
 
@@ -74,6 +143,10 @@ function doRegister() {
             toast(res.msg);
         }
     });
+}
+function togglePwd(id) {
+    var input = document.getElementById(id);
+    input.type = input.type === 'password' ? 'text' : 'password';
 }
 document.addEventListener('keydown', function(e){ if(e.keyCode==13) doRegister(); });
 </script>
