@@ -1,0 +1,141 @@
+{extend name="layout" /}
+
+{block name="title"}系统概览{/block}
+{block name="crumb"}首页 / <b>系统概览</b>{/block}
+
+{block name="content"}
+<!-- 统计卡片 -->
+<div class="stat-grid">
+    <div class="stat-card">
+        <div class="stat-icon bg-orange">👥</div>
+        <div class="stat-info"><div class="num">{$stats.user_count}</div><div class="label">会员总数</div></div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon bg-purple">🏪</div>
+        <div class="stat-info"><div class="num">{$stats.seller_count}</div><div class="label">卖家数量</div></div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon bg-blue">📦</div>
+        <div class="stat-info"><div class="num">{$stats.goods_count}</div><div class="label">商品总数</div></div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon bg-green">🔨</div>
+        <div class="stat-info"><div class="num">{$stats.auctioning}</div><div class="label">竞拍中</div></div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon bg-red">🧾</div>
+        <div class="stat-info"><div class="num">{$stats.order_count}</div><div class="label">订单总数</div></div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon bg-cyan">💰</div>
+        <div class="stat-info"><div class="num">￥{$stats.total_amount}</div><div class="label">成交总额</div></div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon bg-orange">📈</div>
+        <div class="stat-info"><div class="num">￥{$stats.total_commission}</div><div class="label">平台佣金</div></div>
+    </div>
+</div>
+
+<!-- 待办事项 -->
+<div class="card">
+    <div class="card-title">待办事项</div>
+    <table class="table">
+        <tr>
+            <td>商品待审核 <b class="price">{$stats.pending_check}</b> 个</td>
+            <td><a class="btn btn-sm" href="/admin1314/goods/check">去处理</a></td>
+        </tr>
+        <tr>
+            <td>卖家开通待审核 <b class="price">{$stats.pending_seller}</b> 个</td>
+            <td><a class="btn btn-sm" href="/admin1314/member/seller">去处理</a></td>
+        </tr>
+        <tr>
+            <td>待打款订单 <b class="price">{$stats.unpaid_order}</b> 个</td>
+            <td><a class="btn btn-sm" href="/admin1314/order/index?pay_status=0">去处理</a></td>
+        </tr>
+        <tr>
+            <td>提现申请待审核 <b class="price">{$stats.pending_withdraw}</b> 笔</td>
+            <td><a class="btn btn-sm" href="/admin1314/withdraw/index?status=0">去处理</a></td>
+        </tr>
+    </table>
+</div>
+
+<!-- 近7天成交 -->
+<div class="card">
+    <div class="card-title">近7天成交走势</div>
+    <div style="display:flex;align-items:flex-end;gap:18px;height:180px;padding:10px 6px 0;">
+        {volist name="trend" id="t"}
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;height:100%;justify-content:flex-end;">
+            <div style="font-size:12px;color:#ff7a00;font-weight:bold;margin-bottom:4px;">{$t.amount}</div>
+            <div style="width:100%;max-width:46px;background:linear-gradient(180deg,#ffb066,#ff7a00);border-radius:6px 6px 0 0;height:{$t.height}px;min-height:4px;" title="成交{$t.count}单"></div>
+            <div style="font-size:12px;color:#94a3b8;margin-top:6px;">{$t.date}</div>
+        </div>
+        {/volist}
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-title">最近订单</div>
+    <div class="table-wrap">
+        <table class="table">
+            <thead>
+            <tr><th>订单号</th><th>商品</th><th>买家</th><th>成交价</th><th>佣金</th><th>状态</th><th>时间</th></tr>
+            </thead>
+            <tbody>
+            {empty name="recentOrders"}
+            <tr><td colspan="7" class="empty">暂无订单数据</td></tr>
+            {else /}
+            {volist name="recentOrders" id="o"}
+            <tr>
+                <td>{$o.order_no}</td>
+                <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{$o.goods_title}</td>
+                <td>{$o.buyer_id}</td>
+                <td class="price">￥{$o.price}</td>
+                <td>￥{$o.commission}</td>
+                <td>
+                    {if $o.order_status == 0}<span class="tag tag-orange">待付款</span>
+                    {elseif $o.order_status == 1 /}<span class="tag tag-blue">待发货</span>
+                    {elseif $o.order_status == 2 /}<span class="tag tag-purple">待收货</span>
+                    {elseif $o.order_status == 3 /}<span class="tag tag-green">已完成</span>
+                    {else /}<span class="tag tag-gray">已取消</span>
+                    {/if}
+                </td>
+                <td>{$o.create_time|date='Y-m-d H:i'}</td>
+            </tr>
+            {/volist}
+            {/empty}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-title">最新出价</div>
+    <div class="table-wrap">
+        <table class="table">
+            <thead>
+            <tr><th>商品</th><th>出价人</th><th>出价</th><th>状态</th><th>时间</th></tr>
+            </thead>
+            <tbody>
+            {empty name="recentBids"}
+            <tr><td colspan="5" class="empty">暂无出价记录</td></tr>
+            {else /}
+            {volist name="recentBids" id="b"}
+            <tr>
+                <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{$b.goods_title}</td>
+                <td>{$b.nickname ?: $b.mobile}</td>
+                <td class="price">￥{$b.price}</td>
+                <td>
+                    {if $b.is_winner == 1}<span class="tag tag-green">得标</span>
+                    {elseif $b.status == 2 /}<span class="tag tag-gray">已退回</span>
+                    {else /}<span class="tag tag-blue">竞拍中</span>
+                    {/if}
+                </td>
+                <td>{$b.create_time|date='Y-m-d H:i'}</td>
+            </tr>
+            {/volist}
+            {/empty}
+            </tbody>
+        </table>
+    </div>
+</div>
+{/block}

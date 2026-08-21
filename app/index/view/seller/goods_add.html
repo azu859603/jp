@@ -1,0 +1,195 @@
+{extend name="layout" /}
+{block name="content"}
+<div class="form-card">
+    <div class="form-row">
+        <span class="fl">拍品名称</span>
+        <div class="fr"><input type="text" id="title" placeholder="请输入拍品名称"></div>
+    </div>
+    <div class="form-row">
+        <span class="fl">所属分类</span>
+        <div class="fr">
+            <select id="category_id">
+                <option value="">请选择分类</option>
+                {foreach $categories as $c}
+                <option value="{$c.id}">{$c.name}</option>
+                {/foreach}
+            </select>
+        </div>
+    </div>
+    <div class="form-row">
+        <span class="fl">起拍价格</span>
+        <div class="fr"><input type="number" id="start_price" placeholder="请输入起拍价"></div>
+    </div>
+    <div class="form-row">
+        <span class="fl">加价幅度</span>
+        <div class="fr"><input type="number" id="raise_price" placeholder="最低加价额度" value="100"></div>
+    </div>
+    <div class="form-row">
+        <span class="fl">保证金</span>
+        <div class="fr"><input type="number" id="deposit" placeholder="买家出价保证金（选填）"></div>
+    </div>
+    <div class="form-row">
+        <span class="fl">截拍时间</span>
+        <div class="fr"><input type="datetime-local" id="end_time"></div>
+    </div>
+    <div class="form-row">
+        <span class="fl">快捷选择</span>
+        <div class="fr" style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;">
+            <a class="end-quick" href="javascript:;" onclick="quickEnd(1)">1天</a>
+            <a class="end-quick" href="javascript:;" onclick="quickEnd(3)">3天</a>
+            <a class="end-quick" href="javascript:;" onclick="quickEnd(10)">10天</a>
+            <a class="end-quick" href="javascript:;" onclick="quickEnd(30)">1月</a>
+        </div>
+    </div>
+    <div class="form-row area">
+        <span class="fl">描述简介</span>
+        <div class="fr"><textarea id="content" placeholder="请描述拍品详情" rows="4"></textarea></div>
+    </div>
+</div>
+
+<div class="form-card">
+    <div class="form-tip" style="padding:10px 14px;">可选设置</div>
+    <div class="form-row">
+        <span class="fl">是否精选</span>
+        <div class="fr">
+            <label style="display:flex;align-items:center;gap:6px;"><input type="radio" name="is_featured" value="0" checked> 否</label>
+            <label style="display:flex;align-items:center;gap:6px;margin-left:16px;"><input type="radio" name="is_featured" value="1"> 是</label>
+        </div>
+    </div>
+    <div class="form-row">
+        <span class="fl">是否包邮</span>
+        <div class="fr">
+            <label style="display:flex;align-items:center;gap:6px;"><input type="radio" name="is_free_shipping" value="0" checked> 否</label>
+            <label style="display:flex;align-items:center;gap:6px;margin-left:16px;"><input type="radio" name="is_free_shipping" value="1"> 是</label>
+        </div>
+    </div>
+</div>
+
+<div class="form-card">
+    <div class="form-tip" style="padding:10px 14px;">上传图片 <span style="color:#E4393C;">（至少4张，不同角度拍摄）</span></div>
+    <div class="upload-grid" id="uploadGrid">
+        <div class="upload-add" id="uploadBtn" onclick="uploadImage()">
+            <span>+</span>
+            <span class="t">上传</span>
+        </div>
+    </div>
+    <div class="form-tip">请提供至少4张不同角度的商品照片，便于鉴定师准确鉴定拍品</div>
+</div>
+
+<div class="form-tip" style="padding:0 16px;">
+    <label style="display:flex;align-items:center;gap:6px;">
+        <input type="checkbox" id="agree"> 我已阅读并同意<a href="javascript:void(0)" class="agree-link" onclick="openAgreement()">《发布协议》</a>
+    </label>
+</div>
+
+<style>
+.end-quick{display:inline-block;padding:4px 14px;border:1px solid #F5C6C7;border-radius:14px;font-size:12px;color:#E4393C;background:#FFF5F5;text-decoration:none;transition:all .15s ease;}
+.end-quick:active{border-color:#E4393C;background:#E4393C;color:#fff;transform:scale(.92);}
+</style>
+<div class="form-submit">
+    <button class="btn btn-red" onclick="doPublish()">提交鉴定</button>
+</div>
+
+<!-- 发布协议弹窗 -->
+<div class="mask" id="agreeMask" onclick="closeAgreement()"></div>
+<div class="sheet" id="agreeSheet">
+    <div class="s-title">发布协议 <span class="s-close" onclick="closeAgreement()">×</span></div>
+    <div class="agree-body">
+        {if !empty($publish_protocol)}
+        {$publish_protocol|raw}
+        {else}
+        <div class="agree-empty">内容暂未发布，请稍后再查看</div>
+        {/if}
+    </div>
+    <div style="padding:0 20px;"><button class="btn btn-red" style="width:100%;" onclick="closeAgreement()">我知道了</button></div>
+</div>
+{/block}
+{block name="script"}
+<script>
+var uploadedImages = [];
+
+// 快捷选择截拍时间：当前时间 + 所选时长
+function quickEnd(days) {
+    var d = new Date();
+    d.setTime(d.getTime() + days * 24 * 3600 * 1000);
+    function pad(n){ return n < 10 ? '0' + n : n; }
+    var v = d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + 'T' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+    document.getElementById('end_time').value = v;
+    toast('截拍时间已设为' + (days >= 30 ? '1个月' : days + '天') + '后');
+}
+
+// 发布协议弹窗
+function openAgreement() {
+    document.getElementById('agreeMask').classList.add('show');
+    document.getElementById('agreeSheet').classList.add('show');
+}
+function closeAgreement() {
+    document.getElementById('agreeMask').classList.remove('show');
+    document.getElementById('agreeSheet').classList.remove('show');
+}
+
+function uploadImage() {
+    var input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = function(e) {
+        var file = e.target.files[0];
+        if (!file) return;
+        var formData = new FormData();
+        formData.append('file', file);
+        fetch('/upload/image', {
+            method: 'POST',
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            body: formData
+        }).then(function(r){ return r.json(); }).then(function(res){
+            if (res.code === 1) {
+                uploadedImages.push(res.url);
+                var div = document.createElement('div');
+                div.className = 'upload-item';
+                div.innerHTML = '<img src="'+res.url+'"><span class="del" onclick="this.parentElement.remove()">×</span>';
+                document.getElementById('uploadGrid').insertBefore(div, document.getElementById('uploadBtn'));
+            } else {
+                toast(res.msg || '上传失败');
+            }
+        }).catch(function(){ toast('上传失败'); });
+    };
+    input.click();
+}
+
+function doPublish() {
+    var title = document.getElementById('title').value.trim();
+    var categoryId = document.getElementById('category_id').value;
+    var startPrice = document.getElementById('start_price').value.trim();
+    var raisePrice = document.getElementById('raise_price').value.trim();
+    var endTime = document.getElementById('end_time').value;
+    var agree = document.getElementById('agree').checked;
+    if (!title) { toast('请输入拍品名称'); return; }
+    if (!categoryId) { toast('请选择分类'); return; }
+    if (!startPrice || parseFloat(startPrice) <= 0) { toast('请输入起拍价'); return; }
+    if (!raisePrice || parseFloat(raisePrice) <= 0) { toast('请输入加价幅度'); return; }
+    if (!endTime) { toast('请选择截拍时间'); return; }
+    if (uploadedImages.length < 4) { toast('请至少上传4张不同角度的商品照片'); return; }
+    if (!agree) { toast('请同意发布协议'); return; }
+
+    ajaxPost('/seller/goods_add', {
+        title: title,
+        category_id: categoryId,
+        start_price: startPrice,
+        raise_price: raisePrice,
+        deposit: document.getElementById('deposit').value.trim(),
+        end_time: endTime,
+        content: document.getElementById('content').value.trim(),
+        is_featured: document.querySelector('input[name=is_featured]:checked').value,
+        is_free_shipping: document.querySelector('input[name=is_free_shipping]:checked').value,
+        images: uploadedImages
+    }, function(res){
+        if (res.code === 1) {
+            toast('发布成功');
+            setTimeout(function(){ location.href = '/seller/goods_list'; }, 600);
+        } else {
+            toast(res.msg);
+        }
+    });
+}
+</script>
+{/block}

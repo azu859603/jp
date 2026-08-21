@@ -1,0 +1,35 @@
+{extend name="layout" /}
+{block name="content"}
+<div style="padding:10px 14px;">
+    {if empty($list)}
+    <div class="empty" style="padding:60px 0;"><div class="e-ico">🤝</div>暂无成交记录</div>
+    {else}
+    {foreach $list as $d}
+    <div class="deal-card">
+        <div class="dc-top">
+            <span class="dc-no">订单编号：{$d.order_no}</span>
+            <span class="dc-price">¥ {$d.price|number_format=2}</span>
+        </div>
+        <a class="dc-goods" href="/goods/detail?id={$d.goods_id}">拍品：{$d.goods_title}</a>
+        <div class="dc-row">
+            <span>卖家店铺：{$d.seller_name}</span>
+            <span>买家：{$d.buyer_name}</span>
+        </div>
+        <div class="dc-time">成交时间：{if $d.deal_time}{$d.deal_time|date='Y-m-d H:i'}{else}-{/if}</div>
+    </div>
+    {/foreach}
+    {/if}
+</div>
+{/block}
+{block name="script"}
+<script>
+var page = {$page}, limit = {$limit}, total = {$total};
+if (page * limit < total) {
+    var btn = document.createElement('div');
+    btn.className = 'empty';
+    btn.style.padding = '20px 0';
+    btn.innerHTML = '<a class="e-btn" href="/deals?page=' + (page+1) + '">加载更多</a>';
+    document.querySelector('.page').appendChild(btn);
+}
+</script>
+{/block}

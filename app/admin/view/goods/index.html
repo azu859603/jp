@@ -1,0 +1,461 @@
+{extend name="layout" /}
+
+{block name="title"}商品列表{/block}
+{block name="crumb"}商品管理 / <b>商品列表</b>{/block}
+
+{block name="content"}
+<div class="search-bar">
+    <div class="search-input">
+        <svg class="s-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/></svg>
+        <input type="text" class="form-control" id="keyword" placeholder="商品标题">
+    </div>
+    <div class="search-input">
+        <svg class="s-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4.5 21c1.2-3.6 4-5.5 7.5-5.5s6.3 1.9 7.5 5.5"/></svg>
+        <input type="text" class="form-control" id="seller_kw" placeholder="卖家昵称/手机号">
+    </div>
+    <select class="form-control" id="category_id">
+        <option value="">全部分类</option>
+        {volist name="categories" id="c"}
+        <option value="{$c.id}">{$c.name}</option>
+        {/volist}
+    </select>
+    <select class="form-control" id="status">
+        <option value="">全部状态</option>
+        <option value="0">待审核</option>
+        <option value="1">拍卖中</option>
+        <option value="2">已成交</option>
+        <option value="3">流拍</option>
+        <option value="4">已下架</option>
+        <option value="5">审核拒绝</option>
+    </select>
+    <input type="date" class="form-control" id="create_start" title="发布时间开始">
+    <span style="color:#94a3b8;">至</span>
+    <input type="date" class="form-control" id="create_end" title="发布时间结束">
+    <button class="btn btn-primary" onclick="loadList(1)">查询</button>
+    <button class="btn" onclick="resetSearch()">重置</button>
+    <span class="spacer"></span>
+    <button class="btn btn-green" onclick="openAddGoods()">＋ 发布商品</button>
+</div>
+
+<div class="card">
+    <div class="table-tools">
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;color:#475569;">
+            <input type="checkbox" id="checkAll" onclick="toggleAll(this)"> 全选
+        </label>
+        <span class="sel-info">已选 <b id="selCount">0</b> 项</span>
+        <span class="spacer"></span>
+        <button class="btn btn-danger" id="batchDelBtn" onclick="batchDel()" disabled>批量删除</button>
+    </div>
+    <div class="table-wrap">
+        <table class="table">
+            <thead>
+            <tr>
+                <th style="width:36px;"></th>
+                <th>ID</th><th>封面</th><th>商品标题</th><th>分类</th><th>卖家</th>
+                <th>起拍价</th><th>当前/成交价</th><th>保证金</th><th>状态</th><th>出价次数</th><th>结束时间</th><th>操作</th>
+            </tr>
+            </thead>
+            <tbody id="tbody"></tbody>
+        </table>
+    </div>
+    <div class="pagination" id="pagination"></div>
+</div>
+
+<!-- 发布商品弹层 -->
+<div class="mask" id="addMask">
+    <div class="dialog" style="width:760px;">
+        <div class="dialog-title">发布商品（发到指定卖家店铺）</div>
+        <div class="dialog-body">
+            <div class="g-row">
+                <div class="g-col" style="flex:1;">
+                    <label>卖家店铺 <span class="req">*</span></label>
+                    <input type="text" class="form-control" id="sellerSearch" placeholder="输入昵称/手机号筛选" oninput="filterSeller()" style="margin-bottom:6px;">
+                    <select class="form-control" id="sellerSel" style="max-height:130px;">
+                        {volist name="sellers" id="s"}
+                        <option value="{$s.id}">{$s.nickname}（{$s.mobile}）</option>
+                        {/volist}
+                    </select>
+                    {if empty($sellers)}<div style="font-size:12px;color:#e11d48;margin-top:6px;">暂无卖家，请先在会员管理中设置卖家</div>{/if}
+                </div>
+                <div class="g-col" style="width:46%;">
+                    <label>商品分类 <span class="req">*</span></label>
+                    <select class="form-control" id="gCategory">
+                        <option value="">请选择分类</option>
+                        {volist name="categories" id="c"}
+                        <option value="{$c.id}">{$c.name}</option>
+                        {/volist}
+                    </select>
+                </div>
+            </div>
+            <div class="g-row">
+                <div class="g-col" style="flex:1;">
+                    <label>商品标题 <span class="req">*</span></label>
+                    <input type="text" class="form-control" id="gTitle" placeholder="请输入商品标题" maxlength="60">
+                </div>
+            </div>
+            <div class="g-row">
+                <div class="g-col"><label>起拍价（元） <span class="req">*</span></label><input type="number" step="0.01" min="0" class="form-control" id="gStart" placeholder="0.00"></div>
+                <div class="g-col"><label>加价幅度（元） <span class="req">*</span></label><input type="number" step="0.01" min="0" class="form-control" id="gRaise" placeholder="0.00"></div>
+                <div class="g-col"><label>保留价（元）</label><input type="number" step="0.01" min="0" class="form-control" id="gReserve" placeholder="0 表示无"></div>
+            </div>
+            <div class="g-row">
+                <div class="g-col"><label>保证金（元）</label><input type="number" step="0.01" min="0" class="form-control" id="gDeposit" placeholder="0"></div>
+                <div class="g-col"><label>佣金比例（%）</label><input type="number" step="0.01" min="0" max="100" class="form-control" id="gCommission" placeholder="0 按系统设置"></div>
+                <div class="g-col"><label>参考价（元）</label><input type="number" step="0.01" min="0" class="form-control" id="gRef" placeholder="0"></div>
+            </div>
+            <div class="g-row">
+                <div class="g-col"><label>截拍时间 <span class="req">*</span></label><input type="datetime-local" class="form-control" id="gEndTime"></div>
+                <div class="g-col"><label>延迟结束（秒）</label><input type="number" min="0" class="form-control" id="gDelay" placeholder="0 表示不延迟"></div>
+                <div class="g-col" style="display:flex;align-items:flex-end;padding-bottom:4px;">
+                    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:normal;font-size:13px;margin:0;">
+                        <input type="checkbox" id="gFreeShip" style="width:16px;height:16px;"> 包邮
+                    </label>
+                    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:normal;font-size:13px;margin:0 0 0 14px;">
+                        <input type="checkbox" id="gFeatured" style="width:16px;height:16px;"> 推荐
+                    </label>
+                </div>
+            </div>
+            <div class="g-row">
+                <div class="g-col" style="flex:1;">
+                    <label>商品图片 <span class="req">*</span>（第一张为封面，最多9张）</label>
+                    <div class="g-imgs" id="gImgs">
+                        <div class="g-img-add" onclick="uploadGoodsImg()">＋<span>上传图片</span></div>
+                    </div>
+                </div>
+            </div>
+            <div class="g-row">
+                <div class="g-col" style="flex:1;">
+                    <label>商品详情</label>
+                    <textarea class="form-control" id="gContent" rows="4" placeholder="商品描述、成色、规格等"></textarea>
+                </div>
+            </div>
+        </div>
+        <div class="dialog-footer">
+            <button class="btn" onclick="document.getElementById('addMask').classList.remove('show')">取消</button>
+            <button class="btn btn-primary" onclick="doAddGoods()">确认发布</button>
+        </div>
+    </div>
+</div>
+
+<style>
+.g-row{display:flex;gap:14px;margin-bottom:14px;}
+.g-col{flex:1;}
+.g-col label{display:block;font-size:13px;color:#334155;margin-bottom:6px;}
+.req{color:#e11d48;}
+.g-imgs{display:flex;flex-wrap:wrap;gap:10px;}
+.g-img-add{width:84px;height:84px;border:1.5px dashed #cbd5e1;border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:#94a3b8;font-size:24px;cursor:pointer;background:#f8fafc;}
+.g-img-add span{font-size:12px;color:#94a3b8;}
+.g-img{position:relative;width:84px;height:84px;border-radius:8px;overflow:hidden;border:1px solid #e2e8f0;}
+.g-img img{width:100%;height:100%;object-fit:cover;display:block;}
+.g-img .del{position:absolute;top:2px;right:2px;width:20px;height:20px;line-height:18px;text-align:center;background:rgba(0,0,0,.55);color:#fff;border-radius:50%;font-size:14px;cursor:pointer;}
+.g-img .tag{position:absolute;left:0;bottom:0;width:100%;background:rgba(0,0,0,.5);color:#fff;font-size:10px;text-align:center;padding:1px 0;}
+</style>
+
+<!-- 拒绝弹层 -->
+<div class="mask" id="rejectMask">
+    <div class="dialog">
+        <div class="dialog-title">填写拒绝原因</div>
+        <div class="dialog-body">
+            <textarea class="form-control" id="rejectReason" placeholder="请输入拒绝原因"></textarea>
+        </div>
+        <div class="dialog-footer">
+            <button class="btn" onclick="document.getElementById('rejectMask').classList.remove('show')">取消</button>
+            <button class="btn btn-primary" onclick="doReject()">确定拒绝</button>
+        </div>
+    </div>
+</div>
+
+<script>
+var currentPage = 1;
+var currentId = 0;
+var statusMap = {
+    0: ['待审核','tag-orange'], 1: ['拍卖中','tag-green'], 2: ['已成交','tag-blue'],
+    3: ['流拍','tag-gray'], 4: ['已下架','tag-purple'], 5: ['审核拒绝','tag-red']
+};
+
+function loadList(page){
+    currentPage = page;
+    fetch('/admin1314/goods/index?page=' + page + '&limit=15'
+        + '&keyword=' + encodeURIComponent(document.getElementById('keyword').value)
+        + '&seller_kw=' + encodeURIComponent(document.getElementById('seller_kw').value)
+        + '&category_id=' + document.getElementById('category_id').value
+        + '&status=' + document.getElementById('status').value
+        + '&create_start=' + document.getElementById('create_start').value
+        + '&create_end=' + document.getElementById('create_end').value, {headers:{'X-Requested-With':'XMLHttpRequest'}})
+        .then(function(r){ return r.json(); })
+        .then(function(res){
+            var html = '';
+            if(!res.data || !res.data.length){
+                html = '<tr><td colspan="13" class="empty">暂无数据</td></tr>';
+            } else {
+                res.data.forEach(function(g){
+                    var st = statusMap[g.status] || ['未知','tag-gray'];
+                    var cover = g.cover ? '<img class="thumb" src="' + g.cover + '" onerror="this.style.visibility=\'hidden\'">' : '-';
+                    html += '<tr>'
+                        + '<td><input type="checkbox" class="row-check" value="' + g.id + '" onchange="updateSel()"></td>'
+                        + '<td>' + g.id + '</td>'
+                        + '<td>' + cover + '</td>'
+                        + '<td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + g.title + '">' + g.title + '</td>'
+                        + '<td>' + (g.category_name || '-') + '</td>'
+                        + '<td>' + (g.seller_name || g.seller_mobile || g.seller_id) + '</td>'
+                        + '<td class="price">￥' + g.start_price + '</td>'
+                        + '<td>' + (g.final_price > 0 ? '<span class="price">￥' + g.final_price + '</span>' : '￥' + g.start_price) + '</td>'
+                        + '<td>￥' + g.deposit + '</td>'
+                        + '<td><span class="tag ' + st[1] + '">' + st[0] + '</span></td>'
+                        + '<td>' + g.bid_count + '</td>'
+                        + '<td>' + (g.end_time ? fmtTime(g.end_time) : '-') + '</td>'
+                        + '<td style="white-space:nowrap;">'
+                        + '<a class="btn btn-sm" href="/admin1314/goods/detail?id=' + g.id + '">详情</a> '
+                        + (g.status == 0 || g.status == 5
+                            ? '<a class="btn btn-sm btn-green" href="javascript:;" onclick="audit(' + g.id + ',\'pass\')">通过</a> '
+                            + '<a class="btn btn-sm btn-danger" href="javascript:;" onclick="openReject(' + g.id + ')">拒绝</a> '
+                            : '')
+                        + ((g.status == 1)
+                            ? '<a class="btn btn-sm btn-danger" href="javascript:;" onclick="toggleStatus(' + g.id + ',4)">下架</a> '
+                            : '')
+                        + ((g.status == 4)
+                            ? '<a class="btn btn-sm btn-green" href="javascript:;" onclick="toggleStatus(' + g.id + ',1)">上架</a> '
+                            : '')
+                        + ((g.status != 2)
+                            ? '<a class="btn btn-sm btn-danger" href="javascript:;" onclick="del(' + g.id + ')">删除</a>'
+                            : '')
+                        + '</td></tr>';
+                });
+            }
+            document.getElementById('tbody').innerHTML = html;
+            renderPagination(res.count, page);
+            resetSel();
+        });
+}
+
+function renderPagination(total, page){
+    var pages = Math.ceil(total / 15) || 1;
+    var html = '<span class="info">共 ' + total + ' 条，第 ' + page + '/' + pages + ' 页</span> ';
+    html += '<a class="' + (page <= 1 ? 'disabled' : '') + '" href="javascript:;" onclick="loadList(1)">首页</a>';
+    html += '<a class="' + (page <= 1 ? 'disabled' : '') + '" href="javascript:;" onclick="loadList(' + (page - 1) + ')">上一页</a>';
+    var start = Math.max(1, page - 2), end = Math.min(pages, page + 2);
+    for(var i = start; i <= end; i++){
+        html += i == page ? '<span class="current">' + i + '</span>' : '<a href="javascript:;" onclick="loadList(' + i + ')">' + i + '</a>';
+    }
+    html += '<a class="' + (page >= pages ? 'disabled' : '') + '" href="javascript:;" onclick="loadList(' + (page + 1) + ')">下一页</a>';
+    html += '<a class="' + (page >= pages ? 'disabled' : '') + '" href="javascript:;" onclick="loadList(' + pages + ')">末页</a>';
+    document.getElementById('pagination').innerHTML = html;
+}
+
+function resetSearch(){
+    document.getElementById('keyword').value = '';
+    document.getElementById('seller_kw').value = '';
+    document.getElementById('category_id').value = '';
+    document.getElementById('status').value = '';
+    document.getElementById('create_start').value = '';
+    document.getElementById('create_end').value = '';
+    loadList(1);
+}
+
+/* ===== 发布商品 ===== */
+var goodsImgs = [];
+
+function openAddGoods(){
+    goodsImgs = [];
+    document.getElementById('sellerSearch').value = '';
+    document.getElementById('sellerSel').selectedIndex = 0;
+    document.getElementById('gCategory').value = '';
+    document.getElementById('gTitle').value = '';
+    document.getElementById('gStart').value = '';
+    document.getElementById('gRaise').value = '';
+    document.getElementById('gReserve').value = '';
+    document.getElementById('gDeposit').value = '';
+    document.getElementById('gCommission').value = '';
+    document.getElementById('gRef').value = '';
+    document.getElementById('gEndTime').value = '';
+    document.getElementById('gDelay').value = '';
+    document.getElementById('gFreeShip').checked = false;
+    document.getElementById('gFeatured').checked = false;
+    document.getElementById('gContent').value = '';
+    filterSeller();
+    renderGoodsImgs();
+    document.getElementById('addMask').classList.add('show');
+}
+
+function filterSeller(){
+    var kw = document.getElementById('sellerSearch').value.trim().toLowerCase();
+    var sel = document.getElementById('sellerSel');
+    var first = null;
+    for(var i = 0; i < sel.options.length; i++){
+        var opt = sel.options[i];
+        var match = !kw || opt.text.toLowerCase().indexOf(kw) > -1;
+        opt.style.display = match ? '' : 'none';
+        if(match && !first) first = opt;
+    }
+    if(first) sel.selectedIndex = first.index;
+}
+
+function uploadGoodsImg(){
+    if(goodsImgs.length >= 9){ alert('最多上传9张图片'); return; }
+    var input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = function(e){
+        var file = e.target.files[0];
+        if(!file) return;
+        var fd = new FormData();
+        fd.append('file', file);
+        fetch('/admin1314/upload/image', {method:'POST', headers:{'X-Requested-With':'XMLHttpRequest'}, body:fd})
+            .then(function(r){ return r.json(); })
+            .then(function(res){
+                if(res.code === 1){
+                    goodsImgs.push(res.url);
+                    renderGoodsImgs();
+                } else {
+                    alert(res.msg || '上传失败');
+                }
+            })
+            .catch(function(){ alert('网络错误，请重试'); });
+    };
+    input.click();
+}
+
+function removeGoodsImg(i){
+    goodsImgs.splice(i, 1);
+    renderGoodsImgs();
+}
+
+function renderGoodsImgs(){
+    var html = '';
+    goodsImgs.forEach(function(url, i){
+        html += '<div class="g-img"><img src="' + url + '"><span class="tag">' + (i === 0 ? '封面' : '') + '</span><span class="del" onclick="removeGoodsImg(' + i + ')">×</span></div>';
+    });
+    html += '<div class="g-img-add" onclick="uploadGoodsImg()">＋<span>上传图片</span></div>';
+    document.getElementById('gImgs').innerHTML = html;
+}
+
+function doAddGoods(){
+    var sellerId = document.getElementById('sellerSel').value;
+    var title = document.getElementById('gTitle').value.trim();
+    var categoryId = document.getElementById('gCategory').value;
+    var startPrice = document.getElementById('gStart').value;
+    var raisePrice = document.getElementById('gRaise').value;
+    var endTime = document.getElementById('gEndTime').value;
+    if(!sellerId){ alert('请选择卖家店铺'); return; }
+    if(!title){ alert('请输入商品标题'); return; }
+    if(!categoryId){ alert('请选择分类'); return; }
+    if(!startPrice || parseFloat(startPrice) <= 0){ alert('起拍价必须大于0'); return; }
+    if(!raisePrice || parseFloat(raisePrice) <= 0){ alert('加价幅度必须大于0'); return; }
+    if(!endTime){ alert('请选择截拍时间'); return; }
+    if(goodsImgs.length === 0){ alert('请至少上传一张商品图片'); return; }
+    ajaxPost('/admin1314/goods/add', {
+        seller_id: sellerId,
+        title: title,
+        category_id: categoryId,
+        content: document.getElementById('gContent').value.trim(),
+        start_price: startPrice,
+        raise_price: raisePrice,
+        reserve_price: document.getElementById('gReserve').value || 0,
+        deposit: document.getElementById('gDeposit').value || 0,
+        commission_rate: document.getElementById('gCommission').value || 0,
+        reference_price: document.getElementById('gRef').value || 0,
+        end_time: endTime,
+        delay_seconds: document.getElementById('gDelay').value || 0,
+        is_free_shipping: document.getElementById('gFreeShip').checked ? 1 : 0,
+        is_featured: document.getElementById('gFeatured').checked ? 1 : 0,
+        cover: goodsImgs[0],
+        images: goodsImgs.join(',')
+    }, function(res){
+        alert(res.msg);
+        if(res.code == 1){
+            document.getElementById('addMask').classList.remove('show');
+            loadList(1);
+        }
+    });
+}
+
+/* ===== 全选删除 ===== */
+function toggleAll(el){
+    document.querySelectorAll('.row-check').forEach(function(cb){ cb.checked = el.checked; });
+    updateSel();
+}
+
+function updateSel(){
+    var n = document.querySelectorAll('.row-check:checked').length;
+    document.getElementById('selCount').textContent = n;
+    document.getElementById('batchDelBtn').disabled = n === 0;
+    var all = document.querySelectorAll('.row-check');
+    var checkAll = document.getElementById('checkAll');
+    if(all.length) checkAll.checked = all.length === n;
+}
+
+function resetSel(){
+    document.getElementById('checkAll').checked = false;
+    document.getElementById('selCount').textContent = '0';
+    document.getElementById('batchDelBtn').disabled = true;
+}
+
+function getCheckedIds(){
+    var ids = [];
+    document.querySelectorAll('.row-check:checked').forEach(function(cb){ ids.push(cb.value); });
+    return ids;
+}
+
+function batchDel(){
+    var ids = getCheckedIds();
+    if(!ids.length){ alert('请先选择商品'); return; }
+    confirmDialog('确定删除选中的 ' + ids.length + ' 个商品吗？（已成交商品自动跳过）', function(){
+        ajaxPost('/admin1314/goods/delete', {ids: ids.join(',')}, function(res){
+            alert(res.msg);
+            if(res.code == 1) loadList(currentPage);
+        });
+    });
+}
+
+function audit(id, action){
+    confirmDialog(action == 'pass' ? '通过后商品将进入拍卖中，确定通过吗？' : '确定拒绝该商品吗？', function(){
+        ajaxPost('/admin1314/goods/audit', {id:id, action:action}, function(res){
+            alert(res.msg); if(res.code == 1) loadList(currentPage);
+        });
+    });
+}
+
+function openReject(id){
+    currentId = id;
+    document.getElementById('rejectReason').value = '';
+    document.getElementById('rejectMask').classList.add('show');
+}
+
+function doReject(){
+    var reason = document.getElementById('rejectReason').value.trim();
+    if(!reason){ alert('请填写拒绝原因'); return; }
+    ajaxPost('/admin1314/goods/audit', {id:currentId, action:'reject', reason:reason}, function(res){
+        alert(res.msg);
+        if(res.code == 1){
+            document.getElementById('rejectMask').classList.remove('show');
+            loadList(currentPage);
+        }
+    });
+}
+
+function toggleStatus(id, status){
+    var tip = status == 1 ? '确定上架该商品吗？' : '下架后商品将停止竞拍，确定下架吗？';
+    confirmDialog(tip, function(){
+        ajaxPost('/admin1314/goods/setStatus', {id:id, status:status}, function(res){
+            alert(res.msg); if(res.code == 1) loadList(currentPage);
+        });
+    });
+}
+
+function del(id){
+    confirmDialog('删除后不可恢复，确定删除该商品吗？', function(){
+        ajaxPost('/admin1314/goods/delete', {id:id}, function(res){
+            alert(res.msg); if(res.code == 1) loadList(currentPage);
+        });
+    });
+}
+
+function fmtTime(ts){
+    var d = new Date(ts * 1000);
+    function p(n){ return n < 10 ? '0' + n : n; }
+    return d.getFullYear() + '-' + p(d.getMonth()+1) + '-' + p(d.getDate()) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
+}
+
+loadList(1);
+</script>
+{/block}

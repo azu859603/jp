@@ -1,0 +1,180 @@
+{extend name="layout" /}
+
+{block name="title"}分类管理{/block}
+{block name="crumb"}商品管理 / <b>分类管理</b>{/block}
+
+{block name="content"}
+<div class="page-title">
+    <span>商品分类</span>
+    <div class="tools">
+        <button class="btn btn-primary" onclick="openEdit(0)">+ 新增分类</button>
+    </div>
+</div>
+
+<div class="card">
+    <div class="table-wrap">
+        <table class="table">
+            <thead>
+            <tr><th>ID</th><th>分类名称</th><th>图标</th><th>排序</th><th>商品数</th><th>状态</th><th>操作</th></tr>
+            </thead>
+            <tbody>
+            {empty name="list"}
+            <tr><td colspan="7" class="empty">暂无分类</td></tr>
+            {else /}
+            {volist name="list" id="c"}
+            <tr>
+                <td>{$c.id}</td>
+                <td>{$c.name}</td>
+                <td>{if !empty($c.image)}<img src="{$c.image}" style="width:36px;height:36px;border-radius:4px;object-fit:cover;vertical-align:middle;">{else /}{$c.icon ?: '-'}{/if}</td>
+                <td>{$c.sort}</td>
+                <td>{$c.goods_count}</td>
+                <td>{if $c.status == 1}<span class="tag tag-green">显示</span>{else /}<span class="tag tag-gray">隐藏</span>{/if}</td>
+                <td style="white-space:nowrap;">
+                    <a class="btn btn-sm" href="javascript:;" onclick="openEdit({$c.id})">编辑</a>
+                    <a class="btn btn-sm btn-danger" href="javascript:;" onclick="del({$c.id})">删除</a>
+                </td>
+            </tr>
+            {/volist}
+            {/empty}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- 编辑弹层 -->
+<div class="mask" id="editMask">
+    <div class="dialog">
+        <div class="dialog-title" id="editTitle">新增分类</div>
+        <div class="dialog-body">
+            <input type="hidden" id="editId" value="0">
+            <div class="form-group">
+                <label>分类名称 <span class="req">*</span></label>
+                <input type="text" class="form-control" id="editName" placeholder="请输入分类名称">
+            </div>
+            <div class="form-group">
+                <label>分类图片（建议正方形，首页展示）</label>
+                <div class="upload-box">
+                    <div class="up-item add" id="cateImgAdd" onclick="uploadCateImg()">+</div>
+                </div>
+                <div class="tip">上传后首页分类方块将展示该图片，不传则显示图标/首字</div>
+                <input type="hidden" id="editImage" value="">
+            </div>
+            <div class="form-group">
+                <label>图标（可选，无图片时兜底展示，支持Emoji）</label>
+                <input type="text" class="form-control" id="editIcon" placeholder="例如：📱">
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>排序（数字越小越靠前）</label>
+                    <input type="number" class="form-control" id="editSort" value="0">
+                </div>
+                <div class="form-group">
+                    <label>状态</label>
+                    <select class="form-control" id="editStatus">
+                        <option value="1">显示</option>
+                        <option value="0">隐藏</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        <div class="dialog-footer">
+            <button class="btn" onclick="document.getElementById('editMask').classList.remove('show')">取消</button>
+            <button class="btn btn-primary" onclick="doSave()">保存</button>
+        </div>
+    </div>
+</div>
+
+<script>
+var editData = {:json_encode($list, JSON_UNESCAPED_UNICODE)};
+
+function openEdit(id){
+    document.getElementById('editId').value = id;
+    document.getElementById('editName').value = '';
+    document.getElementById('editIcon').value = '';
+    document.getElementById('editImage').value = '';
+    document.getElementById('cateImgBox') && document.getElementById('cateImgBox').remove();
+    document.getElementById('editSort').value = 0;
+    document.getElementById('editStatus').value = 1;
+    document.getElementById('editTitle').textContent = '新增分类';
+    if(id > 0){
+        editData.forEach(function(c){
+            if(c.id == id){
+                document.getElementById('editName').value = c.name;
+                document.getElementById('editIcon').value = c.icon;
+                document.getElementById('editSort').value = c.sort;
+                document.getElementById('editStatus').value = c.status;
+                document.getElementById('editTitle').textContent = '编辑分类';
+                if(c.image) setCateImg(c.image);
+            }
+        });
+    }
+    document.getElementById('editMask').classList.add('show');
+}
+
+function setCateImg(url){
+    var box = document.getElementById('cateImgBox');
+    if(!box){
+        box = document.createElement('div');
+        box.className = 'up-item';
+        box.id = 'cateImgBox';
+        document.getElementById('cateImgAdd').parentNode.insertBefore(box, document.getElementById('cateImgAdd'));
+    }
+    box.innerHTML = '<img src="'+url+'"><span class="del" onclick="removeCateImg()">×</span>';
+    box.onclick = function(){ uploadCateImg(); };
+    document.getElementById('editImage').value = url;
+}
+
+function removeCateImg(){
+    var box = document.getElementById('cateImgBox');
+    if(box) box.remove();
+    document.getElementById('editImage').value = '';
+}
+
+function uploadCateImg(){
+    var input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = function(e){
+        var file = e.target.files[0];
+        if(!file) return;
+        var fd = new FormData();
+        fd.append('file', file);
+        fetch('/admin1314/category/upload', {method:'POST', headers:{'X-Requested-With':'XMLHttpRequest'}, body:fd})
+            .then(function(r){ return r.json(); })
+            .then(function(res){
+                if(res.code == 1){
+                    setCateImg(res.url);
+                } else {
+                    alert(res.msg || '上传失败');
+                }
+            })
+            .catch(function(){ alert('网络错误，请重试'); });
+    };
+    input.click();
+}
+
+function doSave(){
+    var data = {
+        id: document.getElementById('editId').value,
+        name: document.getElementById('editName').value.trim(),
+        icon: document.getElementById('editIcon').value.trim(),
+        image: document.getElementById('editImage').value.trim(),
+        sort: document.getElementById('editSort').value,
+        status: document.getElementById('editStatus').value
+    };
+    if(!data.name){ alert('请输入分类名称'); return; }
+    ajaxPost('/admin1314/category/save', data, function(res){
+        alert(res.msg);
+        if(res.code == 1) location.reload();
+    });
+}
+
+function del(id){
+    confirmDialog('确定删除该分类吗？', function(){
+        ajaxPost('/admin1314/category/delete', {id:id}, function(res){
+            alert(res.msg); if(res.code == 1) location.reload();
+        });
+    });
+}
+</script>
+{/block}

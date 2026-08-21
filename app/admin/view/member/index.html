@@ -1,0 +1,361 @@
+{extend name="layout" /}
+
+{block name="title"}会员列表{/block}
+{block name="crumb"}会员管理 / <b>会员列表</b>{/block}
+
+{block name="content"}
+<div class="search-bar">
+    <div class="search-input">
+        <svg class="s-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/></svg>
+        <input type="text" class="form-control" id="keyword" placeholder="手机号/昵称/邀请码">
+    </div>
+    <select class="form-control" id="is_seller">
+        <option value="">全部类型</option>
+        <option value="0">普通会员</option>
+        <option value="1">卖家</option>
+    </select>
+    <select class="form-control" id="status">
+        <option value="">全部状态</option>
+        <option value="1">正常</option>
+        <option value="0">禁用</option>
+    </select>
+    <input type="date" class="form-control" id="reg_start" title="注册开始日期">
+    <span style="color:#94a3b8;">至</span>
+    <input type="date" class="form-control" id="reg_end" title="注册结束日期">
+    <button class="btn btn-primary" onclick="loadList(1)">查询</button>
+    <button class="btn" onclick="resetSearch()">重置</button>
+    <span class="spacer"></span>
+    <button class="btn btn-green" onclick="openAdd()">＋ 添加会员</button>
+</div>
+
+<div class="card">
+    <div class="table-wrap">
+        <table class="table">
+            <thead>
+            <tr>
+                <th>ID</th><th>会员</th><th>手机号</th><th>类型</th>
+                <th>余额</th><th>冻结</th><th>成交(买/卖)</th><th>状态</th><th>注册时间</th><th>操作</th>
+            </tr>
+            </thead>
+            <tbody id="tbody"></tbody>
+        </table>
+    </div>
+    <div class="pagination" id="pagination"></div>
+</div>
+
+<!-- 添加会员弹层 -->
+<div class="mask" id="addMask">
+    <div class="dialog">
+        <div class="dialog-title">添加会员</div>
+        <div class="dialog-body">
+            <div class="form-group">
+                <label>手机号 <span class="req">*</span></label>
+                <input type="tel" maxlength="11" class="form-control" id="addMobile" placeholder="请输入手机号">
+            </div>
+            <div class="form-group">
+                <label>昵称</label>
+                <input type="text" class="form-control" id="addNickname" placeholder="留空自动生成">
+            </div>
+            <div class="form-group">
+                <label>登录密码 <span class="req">*</span></label>
+                <input type="text" class="form-control" id="addPassword" placeholder="至少6位">
+            </div>
+            <div class="form-group">
+                <label>会员类型</label>
+                <div style="display:flex;gap:16px;">
+                    <label style="display:flex;align-items:center;gap:6px;font-weight:normal;font-size:13px;"><input type="radio" name="addType" value="0" checked onchange="onAddType()"> 普通会员</label>
+                    <label style="display:flex;align-items:center;gap:6px;font-weight:normal;font-size:13px;"><input type="radio" name="addType" value="1" onchange="onAddType()"> 虚拟会员</label>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>初始余额（元）</label>
+                <input type="number" step="0.01" min="0" class="form-control" id="addBalance" placeholder="0" value="0">
+                <div class="tip" id="addTypeTip" style="display:none;">虚拟会员余额为系统设置的永存金额，不支持充值/提现，不审计流水</div>
+            </div>
+            <div class="form-group" style="margin-bottom:0;">
+                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:normal;font-size:13px;">
+                    <input type="checkbox" id="addIsSeller" style="width:16px;height:16px;"> 同时开通卖家权限
+                </label>
+            </div>
+        </div>
+        <div class="dialog-footer">
+            <button class="btn" onclick="document.getElementById('addMask').classList.remove('show')">取消</button>
+            <button class="btn btn-primary" onclick="doAddMember()">确定添加</button>
+        </div>
+    </div>
+</div>
+
+<!-- 详情弹层 -->
+<div class="mask" id="detailMask">
+    <div class="dialog" style="width:760px;">
+        <div class="dialog-title">会员详情</div>
+        <div class="dialog-body" id="detailBody"></div>
+        <div class="dialog-footer">
+            <button class="btn" onclick="document.getElementById('detailMask').classList.remove('show')">关闭</button>
+        </div>
+    </div>
+</div>
+
+<!-- 余额调整弹层 -->
+<div class="mask" id="balanceMask">
+    <div class="dialog">
+        <div class="dialog-title">调整余额</div>
+        <div class="dialog-body">
+            <div class="form-group">
+                <label>调整金额（正数增加，负数扣减）</label>
+                <input type="number" step="0.01" class="form-control" id="balanceAmount" placeholder="例如：100 或 -50">
+            </div>
+            <div class="form-group">
+                <label>备注</label>
+                <input type="text" class="form-control" id="balanceRemark" placeholder="调整原因" value="后台调整">
+            </div>
+        </div>
+        <div class="dialog-footer">
+            <button class="btn" onclick="document.getElementById('balanceMask').classList.remove('show')">取消</button>
+            <button class="btn btn-primary" onclick="doAdjustBalance()">确定</button>
+        </div>
+    </div>
+</div>
+
+<!-- 重置密码弹层 -->
+<div class="mask" id="pwdMask">
+    <div class="dialog">
+        <div class="dialog-title">重置密码</div>
+        <div class="dialog-body">
+            <div class="form-group">
+                <label>新密码（至少6位）</label>
+                <input type="text" class="form-control" id="pwdValue" placeholder="请输入新密码">
+            </div>
+        </div>
+        <div class="dialog-footer">
+            <button class="btn" onclick="document.getElementById('pwdMask').classList.remove('show')">取消</button>
+            <button class="btn btn-primary" onclick="doResetPwd()">确定</button>
+        </div>
+    </div>
+</div>
+
+<!-- 私信弹层 -->
+<div class="mask" id="msgMask">
+    <div class="dialog">
+        <div class="dialog-title" id="msgDialogTitle">发送站内信</div>
+        <div class="dialog-body">
+            <div class="form-group">
+                <label>标题 <span class="req">*</span></label>
+                <input type="text" class="form-control" id="msgTitleVal" maxlength="100" placeholder="请输入私信标题">
+            </div>
+            <div class="form-group" style="margin-bottom:0;">
+                <label>内容 <span class="req">*</span></label>
+                <textarea class="form-control" id="msgContent" rows="6" maxlength="2000" placeholder="请输入私信内容"></textarea>
+            </div>
+        </div>
+        <div class="dialog-footer">
+            <button class="btn" onclick="document.getElementById('msgMask').classList.remove('show')">取消</button>
+            <button class="btn btn-primary" onclick="sendMsg()">发送</button>
+        </div>
+    </div>
+</div>
+
+<script>
+var currentId = 0;
+var currentPage = 1;
+
+function loadList(page){
+    currentPage = page;
+    fetch('/admin1314/member/index?page=' + page + '&limit=15&keyword=' + encodeURIComponent(document.getElementById('keyword').value)
+        + '&is_seller=' + document.getElementById('is_seller').value
+        + '&status=' + document.getElementById('status').value
+        + '&reg_start=' + document.getElementById('reg_start').value
+        + '&reg_end=' + document.getElementById('reg_end').value, {headers:{'X-Requested-With':'XMLHttpRequest'}})
+        .then(function(r){ return r.json(); })
+        .then(function(res){
+            var html = '';
+            if(!res.data || !res.data.length){
+                html = '<tr><td colspan="11" class="empty">暂无数据</td></tr>';
+            } else {
+                res.data.forEach(function(u){
+                    var typeHtml = u.is_seller == 1 ? '<span class="tag tag-orange">卖家</span>' : '<span class="tag tag-gray">普通会员</span>';
+                    if(u.is_virtual == 1) typeHtml = '<span class="tag tag-purple">虚拟会员</span>';
+                    var statusHtml = u.status == 1 ? '<span class="tag tag-green">正常</span>' : '<span class="tag tag-red">禁用</span>';
+                    html += '<tr>'
+                        + '<td>' + u.id + '</td>'
+                        + '<td>' + (u.nickname || '-') + '</td>'
+                        + '<td>' + u.mobile + '</td>'
+                        // + '<td>' + u.invite_code + '</td>'
+                        + '<td>' + typeHtml + '</td>'
+                        + '<td class="price">￥' + u.balance + '</td>'
+                        + '<td>￥' + u.freeze_balance + '</td>'
+                        + '<td>' + u.total_buy + ' / ' + u.total_sell + '</td>'
+                        + '<td>' + statusHtml + '</td>'
+                        + '<td>' + (u.reg_time ? fmtTime(u.reg_time) : '-') + '</td>'
+                        + '<td style="white-space:nowrap;">'
+                        + '<a class="btn btn-sm" href="/admin1314/member/detail?id=' + u.id + '">详情</a> '
+                        + '<a class="btn btn-sm" href="javascript:;" onclick="openBalance(' + u.id + ')">余额</a> '
+                        + '<a class="btn btn-sm" href="javascript:;" onclick="openPwd(' + u.id + ')">重置密码</a> '
+                        + '<a class="btn btn-sm" href="javascript:;" onclick="openMsg(' + u.id + ',\'' + encodeURIComponent(u.nickname || '-') + '\')">私信</a> '
+                        + (u.status == 1
+                            ? '<a class="btn btn-sm btn-danger" href="javascript:;" onclick="toggleStatus(' + u.id + ',0)">禁用</a>'
+                            : '<a class="btn btn-sm btn-green" href="javascript:;" onclick="toggleStatus(' + u.id + ',1)">启用</a>') + ' '
+                        + (u.is_seller == 1
+                            ? '<a class="btn btn-sm btn-danger" href="javascript:;" onclick="toggleSeller(' + u.id + ',0)">取消卖家</a>'
+                            : '<a class="btn btn-sm" href="javascript:;" onclick="toggleSeller(' + u.id + ',1)">设为卖家</a>')
+                        + '</td></tr>';
+                });
+            }
+            document.getElementById('tbody').innerHTML = html;
+            renderPagination(res.count, page);
+        });
+}
+
+function renderPagination(total, page){
+    var pages = Math.ceil(total / 15) || 1;
+    var html = '<span class="info">共 ' + total + ' 条，第 ' + page + '/' + pages + ' 页</span> ';
+    html += '<a class="' + (page <= 1 ? 'disabled' : '') + '" href="javascript:;" onclick="loadList(1)">首页</a>';
+    html += '<a class="' + (page <= 1 ? 'disabled' : '') + '" href="javascript:;" onclick="loadList(' + (page - 1) + ')">上一页</a>';
+    var start = Math.max(1, page - 2), end = Math.min(pages, page + 2);
+    for(var i = start; i <= end; i++){
+        html += i == page ? '<span class="current">' + i + '</span>' : '<a href="javascript:;" onclick="loadList(' + i + ')">' + i + '</a>';
+    }
+    html += '<a class="' + (page >= pages ? 'disabled' : '') + '" href="javascript:;" onclick="loadList(' + (page + 1) + ')">下一页</a>';
+    html += '<a class="' + (page >= pages ? 'disabled' : '') + '" href="javascript:;" onclick="loadList(' + pages + ')">末页</a>';
+    document.getElementById('pagination').innerHTML = html;
+}
+
+function resetSearch(){
+    document.getElementById('keyword').value = '';
+    document.getElementById('is_seller').value = '';
+    document.getElementById('status').value = '';
+    document.getElementById('reg_start').value = '';
+    document.getElementById('reg_end').value = '';
+    loadList(1);
+}
+
+function openAdd(){
+    document.getElementById('addMobile').value = '';
+    document.getElementById('addNickname').value = '';
+    document.getElementById('addPassword').value = '';
+    document.getElementById('addBalance').value = '0';
+    document.getElementById('addIsSeller').checked = false;
+    document.querySelector('input[name="addType"][value="0"]').checked = true;
+    onAddType();
+    document.getElementById('addMask').classList.add('show');
+}
+
+function onAddType(){
+    var v = document.querySelector('input[name="addType"]:checked').value;
+    var balance = document.getElementById('addBalance');
+    var tip = document.getElementById('addTypeTip');
+    if(v == '1'){
+        balance.disabled = true;
+        balance.value = '';
+        balance.placeholder = '虚拟会员余额由系统设置';
+        tip.style.display = 'block';
+    } else {
+        balance.disabled = false;
+        balance.value = '0';
+        balance.placeholder = '0';
+        tip.style.display = 'none';
+    }
+}
+
+function doAddMember(){
+    var mobile = document.getElementById('addMobile').value.trim();
+    var password = document.getElementById('addPassword').value.trim();
+    if(!/^1\d{10}$/.test(mobile)){ alert('手机号格式不正确'); return; }
+    if(password.length < 6){ alert('密码至少6位'); return; }
+    ajaxPost('/admin1314/member/add', {
+        mobile: mobile,
+        nickname: document.getElementById('addNickname').value.trim(),
+        password: password,
+        balance: document.getElementById('addBalance').value,
+        is_seller: document.getElementById('addIsSeller').checked ? 1 : 0,
+        is_virtual: document.querySelector('input[name="addType"]:checked').value
+    }, function(res){
+        alert(res.msg);
+        if(res.code == 1){
+            document.getElementById('addMask').classList.remove('show');
+            loadList(1);
+        }
+    });
+}
+
+function toggleStatus(id, status){
+    confirmDialog('确定要' + (status == 1 ? '启用' : '禁用') + '该会员吗？', function(){
+        ajaxPost('/admin1314/member/setStatus', {id:id, status:status}, function(res){
+            alert(res.msg); if(res.code == 1) loadList(currentPage);
+        });
+    });
+}
+
+function toggleSeller(id, val){
+    confirmDialog('确定要' + (val == 1 ? '将该会员设为卖家' : '取消该会员的卖家资格') + '吗？', function(){
+        ajaxPost('/admin1314/member/setSeller', {id:id, is_seller:val}, function(res){
+            alert(res.msg); if(res.code == 1) loadList(currentPage);
+        });
+    });
+}
+
+function openBalance(id){
+    currentId = id;
+    document.getElementById('balanceAmount').value = '';
+    document.getElementById('balanceRemark').value = '后台调整';
+    document.getElementById('balanceMask').classList.add('show');
+}
+
+function doAdjustBalance(){
+    var amount = document.getElementById('balanceAmount').value;
+    var remark = document.getElementById('balanceRemark').value.trim();
+    if(!amount || amount == 0){ alert('请输入调整金额'); return; }
+    ajaxPost('/admin1314/member/adjustBalance', {id:currentId, amount:amount, remark:remark}, function(res){
+        alert(res.msg);
+        if(res.code == 1){
+            document.getElementById('balanceMask').classList.remove('show');
+            loadList(currentPage);
+        }
+    });
+}
+
+function openPwd(id){
+    currentId = id;
+    document.getElementById('pwdValue').value = '';
+    document.getElementById('pwdMask').classList.add('show');
+}
+
+function doResetPwd(){
+    var pwd = document.getElementById('pwdValue').value.trim();
+    if(pwd.length < 6){ alert('密码至少6位'); return; }
+    ajaxPost('/admin1314/member/resetPassword', {id:currentId, password:pwd}, function(res){
+        alert(res.msg);
+        if(res.code == 1) document.getElementById('pwdMask').classList.remove('show');
+    });
+}
+
+var msgUserId = 0;
+
+function openMsg(id, name){
+    msgUserId = id;
+    document.getElementById('msgDialogTitle').textContent = '发送站内信 - ' + decodeURIComponent(name);
+    document.getElementById('msgTitleVal').value = '';
+    document.getElementById('msgContent').value = '';
+    document.getElementById('msgMask').classList.add('show');
+}
+
+function sendMsg(){
+    var title = document.getElementById('msgTitleVal').value.trim();
+    var content = document.getElementById('msgContent').value.trim();
+    if(!title){ alert('请输入私信标题'); return; }
+    if(!content){ alert('请输入私信内容'); return; }
+    ajaxPost('/admin1314/member/sendMessage', {user_id: msgUserId, title: title, content: content}, function(res){
+        alert(res.msg);
+        if(res.code == 1) document.getElementById('msgMask').classList.remove('show');
+    });
+}
+
+function fmtTime(ts){
+    var d = new Date(ts * 1000);
+    function p(n){ return n < 10 ? '0' + n : n; }
+    return d.getFullYear() + '-' + p(d.getMonth()+1) + '-' + p(d.getDate()) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
+}
+
+loadList(1);
+</script>
+{/block}

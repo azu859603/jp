@@ -1,0 +1,109 @@
+{extend name="layout"/}
+{block name="title"}{$page_title}{/block}
+{block name="content"}
+<style>
+/* 店铺头部 */
+.shop-head{background:#fff;padding:16px 14px 14px;border-bottom:8px solid #f5f5f5;}
+.shop-head .sh-top{display:flex;align-items:center;}
+.shop-head .sh-avatar{width:56px;height:56px;border-radius:50%;background:#f7f7f7;overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:30px;color:#ddd;}
+.shop-head .sh-avatar img{width:100%;height:100%;object-fit:cover;}
+.shop-head .sh-name{flex:1;min-width:0;margin-left:10px;}
+.shop-head .sh-name .nm{font-size:17px;font-weight:600;color:#333;display:flex;align-items:center;gap:6px;}
+.shop-head .sh-name .nm .badge{font-size:10px;font-weight:400;color:#fff;background:#E4393C;border-radius:3px;padding:1px 5px;line-height:1.5;flex-shrink:0;}
+.shop-head .sh-name .auth{display:flex;align-items:center;gap:3px;font-size:11px;color:#16a34a;margin-top:4px;}
+.shop-head .sh-name .auth svg{width:12px;height:12px;flex-shrink:0;}
+.shop-head .follow-btn{flex-shrink:0;width:64px;height:30px;line-height:28px;text-align:center;border:1px solid #E4393C;border-radius:15px;font-size:13px;color:#E4393C;background:#fff;}
+.shop-head .follow-btn.on{background:#E4393C;color:#fff;border-color:#E4393C;}
+.shop-head .sh-intro{font-size:12px;color:#898989;line-height:1.6;margin-top:10px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+.shop-head .sh-stats{display:flex;margin-top:12px;background:#fafafa;border-radius:8px;padding:10px 0;}
+.shop-head .sh-stats .st{flex:1;text-align:center;}
+.shop-head .sh-stats .st .v{font-size:15px;font-weight:600;color:#333;}
+.shop-head .sh-stats .st .k{font-size:11px;color:#898989;margin-top:2px;}
+/* 店铺拍品 */
+.shop-goods-t{display:flex;align-items:center;padding:12px 14px 2px;font-size:15px;font-weight:600;color:#333;background:#fff;}
+.shop-goods-t::before{content:'';width:4px;height:14px;background:#E4393C;border-radius:2px;margin-right:7px;}
+.shop-goods-t .more{margin-left:auto;font-size:12px;color:#898989;font-weight:400;}
+</style>
+<!-- 店铺头部 -->
+<div class="shop-head">
+    <div class="sh-top">
+        <div class="sh-avatar">
+            {if !empty($seller.avatar)}
+            <img src="{$seller.avatar}" alt="{$shop_name}">
+            {else}
+            <span>🏪</span>
+            {/if}
+        </div>
+        <div class="sh-name">
+            <div class="nm">{$shop_name}<span class="badge">钻石店铺</span></div>
+            {if $enterprise_auth}
+            <div class="auth">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                企业认证
+            </div>
+            {/if}
+        </div>
+        <a class="follow-btn {if $followed}on{/if}" href="javascript:;" onclick="toggleFollow();">{if $followed}已关注{else}关注{/if}</a>
+    </div>
+    {if !empty($seller.seller_intro)}
+    <div class="sh-intro">{$seller.seller_intro}</div>
+    {/if}
+    <div class="sh-stats">
+        <div class="st"><div class="v">{$seller.deposit|number_format=2}</div><div class="k">消保金</div></div>
+        <div class="st"><div class="v">{$seller.shop_score|number_format=2}</div><div class="k">店铺评分</div></div>
+        <div class="st"><div class="v">{$fans}</div><div class="k">粉丝</div></div>
+    </div>
+</div>
+
+<!-- 店铺拍品 -->
+<div class="shop-goods-t">店铺拍品{if !empty($goods)}<span class="more">共 {$goods|count} 件</span>{/if}</div>
+{if empty($goods)}
+<div class="empty"><div class="e-ico">🏺</div><div>该店铺暂无拍卖中的拍品</div></div>
+{else}
+<div class="goods-grid" style="background:#fff;padding-bottom:10px;">
+    {foreach $goods as $g}
+    <a class="grid-item" href="/goods/detail?id={$g.id}">
+        <div class="g-thumb">
+            {if !empty($g.cover)}
+            <img src="{$g.cover}" alt="{$g.title}">
+            {else}
+            <span class="noimg">🏺</span>
+            {/if}
+        </div>
+        <div class="g-body">
+            <div class="g-title">{$g.title}</div>
+            <div class="g-price"><small>¥ </small>{$g.price_str}</div>
+            <div class="g-meta">
+                <span class="time" data-countdown="{$g.end_time}" data-format="short">--</span>
+                <span class="bid-btn">去出价</span>
+            </div>
+        </div>
+    </a>
+    {/foreach}
+</div>
+{/if}
+{/block}
+{block name="script"}
+<script>
+function toggleFollow() {
+    var sellerId = {$seller.id};
+    ajaxPost('/goods/toggleFollow', {seller_id: sellerId}, function (res) {
+        if (res.code == 1) {
+            var btn = document.querySelector('.follow-btn');
+            if (res.followed == 1) {
+                btn.classList.add('on');
+                btn.textContent = '已关注';
+            } else {
+                btn.classList.remove('on');
+                btn.textContent = '关注';
+            }
+            toast(res.msg);
+        } else {
+            if (res.code == -1) { toast('请先登录'); setTimeout(function(){ location.href = '/user/login'; }, 600); return; }
+            toast(res.msg);
+        }
+    });
+}
+initCountdowns();
+</script>
+{/block}

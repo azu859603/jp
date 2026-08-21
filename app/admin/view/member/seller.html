@@ -1,0 +1,93 @@
+{extend name="layout" /}
+
+{block name="title"}卖家审核{/block}
+{block name="crumb"}会员管理 / <b>卖家审核</b>{/block}
+
+{block name="content"}
+<div class="search-bar">
+    <select class="form-control" id="status" onchange="loadList(1)">
+        <option value="" selected>全部申请记录</option>
+        <option value="0">待审核</option>
+        <option value="1">已通过</option>
+        <option value="2">已拒绝</option>
+    </select>
+</div>
+
+<div class="card">
+    <div class="table-wrap">
+        <table class="table">
+            <thead>
+            <tr>
+                <th>ID</th><th>申请人</th><th>店铺/企业</th><th>营业执照</th><th>注册时间</th><th>当前状态</th><th>操作</th>
+            </tr>
+            </thead>
+            <tbody id="tbody"></tbody>
+        </table>
+    </div>
+    <div class="pagination" id="pagination"></div>
+</div>
+
+<script>
+var currentPage = 1;
+
+function loadList(page){
+    currentPage = page;
+    fetch('/admin1314/member/seller?page=' + page + '&limit=15&status=' + document.getElementById('status').value, {headers:{'X-Requested-With':'XMLHttpRequest'}})
+        .then(function(r){ return r.json(); })
+        .then(function(res){
+            var html = '';
+            if(!res.data || !res.data.length){
+                html = '<tr><td colspan="7" class="empty">暂无数据</td></tr>';
+            } else {
+                res.data.forEach(function(u){
+                    var st = u.seller_check;
+                    var stHtml = st == 0 ? '<span class="tag tag-orange">待审核</span>'
+                        : (st == 1 ? '<span class="tag tag-green">已通过</span>' : '<span class="tag tag-red">已拒绝</span>');
+                    var licHtml = '-';
+                    if (u.license_img) {
+                        var arr = String(u.license_img).split(',').filter(function(s){ return s; });
+                        licHtml = arr.map(function(p){
+                            return '<img src="' + p + '" style="height:34px;border-radius:4px;cursor:pointer;margin-right:4px;" onclick="window.open(\'' + p + '\')">';
+                        }).join('');
+                    }
+                    html += '<tr>'
+                        + '<td>' + u.id + '</td>'
+                        + '<td>' + (u.nickname || '-') + '<br><span style="color:#94a3b8;font-size:12px;">' + u.mobile + (u.real_name ? ' ｜ ' + u.real_name : '') + '</span></td>'
+                        + '<td>' + (u.shop_name || '-') + '<br><span style="color:#94a3b8;font-size:12px;">' + (u.company_name || '') + '</span></td>'
+                        + '<td>' + licHtml + '</td>'
+                        + '<td>' + (u.reg_time ? fmtTime(u.reg_time) : '-') + '</td>'
+                        + '<td>' + stHtml + '</td>'
+                        + '<td style="white-space:nowrap;">'
+                        + '<a class="btn btn-sm" href="/admin1314/member/detail?id=' + u.id + '">详情</a> '
+                        + (st == 0 ? '<a class="btn btn-sm btn-green" href="javascript:;" onclick="audit(' + u.id + ',\'pass\')">通过</a> '
+                            + '<a class="btn btn-sm btn-danger" href="javascript:;" onclick="audit(' + u.id + ',\'reject\')">拒绝</a>' : '')
+                        + '</td></tr>';
+                });
+            }
+            document.getElementById('tbody').innerHTML = html;
+            var pages = Math.ceil(res.count / 15) || 1;
+            var ph = '<span class="info">共 ' + res.count + ' 条，第 ' + page + '/' + pages + ' 页</span> ';
+            ph += '<a class="' + (page <= 1 ? 'disabled' : '') + '" href="javascript:;" onclick="loadList(' + (page - 1) + ')">上一页</a>';
+            ph += '<a class="' + (page >= pages ? 'disabled' : '') + '" href="javascript:;" onclick="loadList(' + (page + 1) + ')">下一页</a>';
+            document.getElementById('pagination').innerHTML = ph;
+        });
+}
+
+function audit(id, action){
+    var tip = action == 'pass' ? '通过后该会员将获得卖家权限，确定通过吗？' : '确定拒绝该会员的卖家申请吗？';
+    confirmDialog(tip, function(){
+        ajaxPost('/admin1314/member/sellerAudit', {id:id, action:action}, function(res){
+            alert(res.msg); if(res.code == 1) loadList(currentPage);
+        });
+    });
+}
+
+function fmtTime(ts){
+    var d = new Date(ts * 1000);
+    function p(n){ return n < 10 ? '0' + n : n; }
+    return d.getFullYear() + '-' + p(d.getMonth()+1) + '-' + p(d.getDate()) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
+}
+
+loadList(1);
+</script>
+{/block}

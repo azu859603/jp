@@ -1,0 +1,33 @@
+{extend name="layout" /}
+{block name="content"}
+<style>
+.fol-item{display:flex;align-items:center;padding:14px;border-bottom:1px solid #f7f7f7;gap:10px;}
+.fol-item .avatar{width:48px;height:48px;border-radius:50%;object-fit:cover;background:#f5f5f5;flex-shrink:0;font-size:24px;display:flex;align-items:center;justify-content:center;}
+.fol-item .info{flex:1;min-width:0;}
+.fol-item .n{font-size:14px;color:#333;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.fol-item .s{font-size:11px;color:#999;margin-top:4px;}
+.fol-item .go{font-size:12px;color:#fff;background:#E4393C;border-radius:14px;padding:5px 12px;flex-shrink:0;}
+</style>
+<div class="bid-list">
+    <div class="b-head">关注的店铺（{$list|count}）</div>
+    {foreach $list as $v}
+    <div class="fol-item">
+        {if !empty($v.avatar)}
+        <img class="avatar" src="{$v.avatar}" onerror="this.style.display='none'">
+        {/if}
+        <div class="info">
+            <div class="n">{$v.shop_name}</div>
+            <div class="s">在售 {$v.saling_count} 件 · 共 {$v.goods_count} 件 · 关注于 {$v.create_time|date='Y-m-d'}</div>
+        </div>
+        <a class="go" href="/search?type=shop&keyword={$v.shop_name|urlencode=###}">进店看看</a>
+    </div>
+    {/foreach}
+    {if empty($list)}
+    <div class="empty" style="padding:60px 0;">
+        <div class="e-ico">🏪</div>
+        <div>还没有关注的店铺</div>
+        <a class="e-btn" href="/">去逛逛</a>
+    </div>
+    {/if}
+</div>
+{/block}

@@ -1,0 +1,113 @@
+{extend name="layout" /}
+{block name="content"}
+
+<!-- 实名认证（白底头卡片，无顶部渐变状态卡） -->
+<div class="apply-card">
+   
+    <div class="apply-body">
+        {if $user.auth_status==2}
+        <!-- 已通过状态 -->
+        <div class="ap-st">
+            <div class="st-ico">✅</div>
+            <div class="st-t text-green">已通过</div>
+            <div class="st-d">认证姓名：{$user.real_name}<br>身份证号：{if !empty($user.id_card)}{$user.id_card|substr=0,4}**********{$user.id_card|substr=-4,4}{/if}{if !empty($user.auth_time)}<br>认证时间：{$user.auth_time|date='Y-m-d'}{/if}</div>
+        </div>
+        <div class="ap-submit">
+            <a class="btn btn-red" href="/seller/apply">申请成为卖家</a>
+        </div>
+        {else}
+        <div class="ap-form">
+            <div class="form-row">
+                <span class="fl">真实姓名</span>
+                <div class="fr"><input type="text" id="real_name" placeholder="请输入与身份证一致的姓名" value="{$user.real_name|default=''}"></div>
+            </div>
+            <div class="form-row">
+                <span class="fl">身份证号</span>
+                <div class="fr"><input type="text" id="id_card" maxlength="18" placeholder="请输入18位身份证号" value="{$user.id_card|default=''}"></div>
+            </div>
+            <div class="form-row area">
+                <span class="fl">身份证正面</span>
+                <div class="fr">
+                    <div class="id-upload" style="width:100%;">
+                        <div id="frontBox" class="upload-item" onclick="document.getElementById('frontFile').click()">
+                            {if !empty($user.id_card_front)}<img src="{$user.id_card_front}">{else}<div class="u-plus">＋</div><div class="u-txt">上传人像面</div>{/if}
+                        </div>
+                        <input type="file" id="frontFile" accept="image/*" style="display:none;" onchange="uploadIdCard(this, 'front')">
+                    </div>
+                </div>
+            </div>
+            <div class="form-row area">
+                <span class="fl">身份证反面</span>
+                <div class="fr">
+                    <div class="id-upload" style="width:100%;">
+                        <div id="backBox" class="upload-item" onclick="document.getElementById('backFile').click()">
+                            {if !empty($user.id_card_back)}<img src="{$user.id_card_back}">{else}<div class="u-plus">＋</div><div class="u-txt">上传国徽面</div>{/if}
+                        </div>
+                        <input type="file" id="backFile" accept="image/*" style="display:none;" onchange="uploadIdCard(this, 'back')">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 状态提示（显示在提交按钮上方） -->
+        {if $user.auth_status==1}
+        <div class="ap-status orange">⏳ 审核中：资料已提交，请耐心等待审核（1-3 个工作日）</div>
+        {elseif $user.auth_status==3}
+        <div class="ap-status red">❌ 未通过：{$user.auth_reason|default='请联系管理员'}，请修改资料后重新提交</div>
+        {/if}
+
+        <div class="ap-submit">
+            <button class="btn btn-red" onclick="doAuth()">提交认证</button>
+        </div>
+        {/if}
+    </div>
+</div>
+{/block}
+{block name="script"}
+<script>
+var frontUrl = '{if !empty($user.id_card_front)}{$user.id_card_front}{/if}';
+var backUrl = '{if !empty($user.id_card_back)}{$user.id_card_back}{/if}';
+
+function uploadIdCard(input, side) {
+    var file = input.files[0];
+    if (!file) return;
+    var formData = new FormData();
+    formData.append('file', file);
+    fetch('/upload/image', {
+        method: 'POST',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        body: formData
+    }).then(function(r){ return r.json(); }).then(function(res){
+        if (res.code === 1) {
+            var box = document.getElementById(side === 'front' ? 'frontBox' : 'backBox');
+            box.innerHTML = '<img src="' + res.url + '">';
+            if (side === 'front') { frontUrl = res.url; } else { backUrl = res.url; }
+        } else {
+            toast(res.msg);
+        }
+    }).catch(function(){ toast('上传失败，请重试'); });
+    input.value = '';
+}
+
+function doAuth() {
+    var realName = document.getElementById('real_name').value.trim();
+    var idCard = document.getElementById('id_card').value.trim();
+    if (!realName) { toast('请输入真实姓名'); return; }
+    if (!/^\d{17}[\dXx]$/.test(idCard)) { toast('请输入正确的18位身份证号'); return; }
+    if (!frontUrl || !backUrl) { toast('请上传身份证正反面照片'); return; }
+    ajaxPost('/user/auth', {
+        real_name: realName,
+        id_card: idCard,
+        id_card_front: frontUrl,
+        id_card_back: backUrl
+    }, function(res){
+        if (res.code === 1) {
+            toast(res.msg);
+            setTimeout(function(){ location.reload(); }, 600);
+        } else {
+            toast(res.msg);
+        }
+    });
+}
+</script>
+{/block}

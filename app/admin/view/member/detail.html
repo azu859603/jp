@@ -1,0 +1,193 @@
+{extend name="layout" /}
+
+{block name="title"}会员详情{/block}
+{block name="crumb"}会员管理 / <a href="/admin1314/member/index">会员列表</a> / <b>会员详情</b>{/block}
+
+{block name="content"}
+<div class="card">
+    <div class="card-title">基本信息</div>
+    <table class="detail-list">
+        <tr><td>会员ID</td><td>{$user.id}</td></tr>
+        <tr><td>手机号</td><td>{$user.mobile}</td></tr>
+        <tr><td>昵称</td><td>{$user.nickname ?: '-'}</td></tr>
+        <tr><td>邀请码</td><td>{$user.invite_code}</td></tr>
+        <tr><td>会员类型</td>
+            <td>{if $user.is_virtual == 1}<span class="tag tag-purple">虚拟会员</span>{else /}<span class="tag tag-gray">普通会员</span>{/if}
+                {if $user.is_seller == 1}<span class="tag tag-orange">卖家</span>{/if}
+                {if $user.seller_check == 0}<span class="tag tag-orange">待审核</span>
+                {elseif $user.seller_check == 1 /}<span class="tag tag-green">已审核</span>
+                {else /}<span class="tag tag-red">已拒绝</span>{/if}
+            </td>
+        </tr>
+        {if !empty($user.shop_name)}
+        <tr><td>店铺名称</td><td>{$user.shop_name}</td></tr>
+        <tr><td>企业名称</td><td>{$user.company_name ?: '-'}</td></tr>
+        <tr><td>店铺介绍</td><td>{$user.seller_intro ?: '-'}</td></tr>
+        <tr><td>消费保证金</td><td class="price">￥{$user.deposit}</td></tr>
+        <tr><td>店铺评分</td><td>{$user.shop_score}</td></tr>
+        <tr><td>粉丝数量</td><td>{$user.fans_count}</td></tr>
+        <tr><td>店铺资料</td>
+            <td><button class="btn btn-sm btn-primary" onclick="openShopEdit()">编辑店铺资料</button></td>
+        </tr>
+        <tr><td>营业执照</td>
+            <td>
+                {if !empty($user.lic_list)}
+                {foreach $user.lic_list as $li}<img src="{$li}" style="height:80px;border-radius:6px;cursor:pointer;margin-right:6px;" onclick="window.open('{$li}')">{/foreach}
+                {else /}-
+                {/if}
+            </td>
+        </tr>
+        {/if}
+        <tr><td>可用余额</td><td class="price">￥{$user.balance}</td></tr>
+        <tr><td>冻结余额</td><td>￥{$user.freeze_balance}</td></tr>
+        <tr><td>积分</td><td>{$user.points}</td></tr>
+        <tr><td>注册时间</td><td>{$user.reg_time_text}</td></tr>
+        <tr><td>最后登录</td><td>{$user.last_login_text}</td></tr>
+        <tr><td>注册IP</td><td>{$user.reg_ip ?: '-'}</td></tr>
+        <tr><td>会员状态</td><td>{if $user.status == 1}<span class="tag tag-green">正常</span>{else /}<span class="tag tag-red">禁用</span>{/if}</td></tr>
+        <tr><td>统计</td><td>卖出 {$user.sell_count} 单 / 买入 {$user.buy_count} 单 / 出价 {$user.bid_count} 次</td></tr>
+    </table>
+</div>
+
+<div class="card">
+    <div class="card-title">提现账户绑定</div>
+    <div class="table-wrap">
+        <table class="table">
+            <thead><tr><th>支付方式</th><th>姓名</th><th>账号</th><th>开户行/网络</th><th>收款码</th><th>绑定时间</th></tr></thead>
+            <tbody>
+            {empty name="pay_accounts"}
+            <tr><td colspan="6" class="empty">未绑定提现账户</td></tr>
+            {else /}
+            {volist name="pay_accounts" id="p"}
+            <tr>
+                <td><span class="tag tag-blue">{$p.type_name}</span></td>
+                <td>{$p.real_name ?: '-'}</td>
+                <td>{$p.account}</td>
+                <td>{$p.bank_name ?: '-'}</td>
+                <td>{if $p.qr_code}<img src="{$p.qr_code}" style="height:36px;border-radius:4px;cursor:pointer;" onclick="window.open('{$p.qr_code}')" title="点击查看大图">{else /}-{/if}</td>
+                <td>{$p.create_time|date='Y-m-d H:i:s'}</td>
+            </tr>
+            {/volist}
+            {/empty}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-title">最近余额流水</div>
+    <div class="table-wrap">
+        <table class="table">
+            <thead><tr><th>类型</th><th>金额</th><th>余额</th><th>备注</th><th>时间</th></tr></thead>
+            <tbody>
+            {empty name="logs"}
+            <tr><td colspan="5" class="empty">暂无流水</td></tr>
+            {else /}
+            {volist name="logs" id="l"}
+            <tr>
+                <td>
+                    {switch name="l.type"}
+                    {case value="recharge"}<span class="tag tag-green">充值</span>{/case}
+                    {case value="deposit"}<span class="tag tag-blue">保证金</span>{/case}
+                    {case value="buy"}<span class="tag tag-orange">支付货款</span>{/case}
+                    {case value="income"}<span class="tag tag-green">卖出收入</span>{/case}
+                    {case value="refund"}<span class="tag tag-gray">退回</span>{/case}
+                    {case value="withdraw"}<span class="tag tag-red">提现</span>{/case}
+                    {default /}<span class="tag tag-gray">{$l.type}</span>
+                    {/switch}
+                </td>
+                <td class="{if $l.amount >= 0}price{/if}">{$l.amount > 0 ? '+' : ''}{$l.amount}</td>
+                <td>￥{$l.balance}</td>
+                <td>{$l.remark}</td>
+                <td>{$l.create_time|date='Y-m-d H:i:s'}</td>
+            </tr>
+            {/volist}
+            {/empty}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-title">最近参与竞拍</div>
+    <div class="table-wrap">
+        <table class="table">
+            <thead><tr><th>商品</th><th>出价</th><th>是否得标</th><th>时间</th></tr></thead>
+            <tbody>
+            {empty name="bids"}
+            <tr><td colspan="4" class="empty">暂无出价记录</td></tr>
+            {else /}
+            {volist name="bids" id="b"}
+            <tr>
+                <td>{$b.goods_title}</td>
+                <td class="price">￥{$b.price}</td>
+                <td>{if $b.is_winner == 1}<span class="tag tag-green">得标</span>{else /}<span class="tag tag-gray">未得标</span>{/if}</td>
+                <td>{$b.create_time|date='Y-m-d H:i:s'}</td>
+            </tr>
+            {/volist}
+            {/empty}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- 编辑店铺资料弹窗 -->
+<div class="mask" id="shopEditMask">
+    <div class="dialog">
+        <div class="dialog-title">编辑店铺资料</div>
+        <div class="dialog-body">
+            <div class="form-group" style="margin-bottom:12px;">
+                <label>店铺介绍</label>
+                <textarea class="form-control" id="se_intro" rows="3" maxlength="200" placeholder="请输入店铺介绍"></textarea>
+            </div>
+            <div class="form-group" style="margin-bottom:12px;">
+                <label>消费保证金（元）</label>
+                <input class="form-control" type="number" id="se_deposit" min="0" step="0.01" placeholder="0.00">
+            </div>
+            <div class="form-group" style="margin-bottom:12px;">
+                <label>店铺评分（0-5）</label>
+                <input class="form-control" type="number" id="se_score" min="0" max="5" step="0.1" placeholder="5.0">
+            </div>
+            <div class="form-group">
+                <label>粉丝数量</label>
+                <input class="form-control" type="number" id="se_fans" min="0" step="1" placeholder="0">
+            </div>
+        </div>
+        <div class="dialog-footer">
+            <button class="btn" onclick="document.getElementById('shopEditMask').classList.remove('show')">取消</button>
+            <button class="btn btn-primary" onclick="saveShop()">保存</button>
+        </div>
+    </div>
+</div>
+
+<script>
+var shopUserId = {$user.id};
+var shopData = {
+    intro: {:json_encode($user.seller_intro)},
+    deposit: '{$user.deposit}',
+    score: '{$user.shop_score}',
+    fans: '{$user.fans_count}'
+};
+
+function openShopEdit(){
+    document.getElementById('se_intro').value = shopData.intro || '';
+    document.getElementById('se_deposit').value = shopData.deposit;
+    document.getElementById('se_score').value = shopData.score;
+    document.getElementById('se_fans').value = shopData.fans;
+    document.getElementById('shopEditMask').classList.add('show');
+}
+
+function saveShop(){
+    ajaxPost('/admin1314/member/updateShop', {
+        id: shopUserId,
+        seller_intro: document.getElementById('se_intro').value.trim(),
+        deposit: document.getElementById('se_deposit').value,
+        shop_score: document.getElementById('se_score').value,
+        fans_count: document.getElementById('se_fans').value
+    }, function(res){
+        alert(res.msg);
+        if(res.code == 1) location.reload();
+    });
+}
+</script>
+{/block}

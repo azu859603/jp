@@ -1,0 +1,84 @@
+{extend name="layout" /}
+{block name="content"}
+<div class="search-top">
+    <div class="search-box">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/></svg>
+        <input type="text" id="kw" placeholder="请输入搜索内容" value="{$keyword}" onkeydown="if(event.keyCode==13)doSearch();">
+    </div>
+    <a class="search-btn" href="javascript:doSearch();">搜索</a>
+</div>
+<div class="search-tabs">
+    <a href="javascript:switchTab('goods');" class="{if $type=='goods'}on{/if}" id="tab-goods">拍品</a>
+    <a href="javascript:switchTab('shop');" class="{if $type=='shop'}on{/if}" id="tab-shop">店铺</a>
+</div>
+
+{if $keyword==''}
+<div class="empty"><div class="e-ico">🔍</div><div>输入关键词搜索拍品或店铺</div></div>
+{elseif empty($list)}
+<div class="empty"><div class="e-ico">🔍</div><div>没有找到与“{$keyword}”相关的内容</div></div>
+{else}
+{if $type=='goods'}
+<div class="goods-grid">
+    {foreach $list as $g}
+    <a class="grid-item" href="/goods/detail?id={$g.id}">
+        <div class="g-thumb">
+            {if !empty($g.cover)}
+            <img src="{$g.cover}" alt="{$g.title}">
+            {else}
+            <span class="noimg">🏺</span>
+            {/if}
+        </div>
+        <div class="g-body">
+            <div class="g-title">{$g.title}</div>
+            <div class="g-price"><small>¥ </small>{$g.price_str}</div>
+            <div class="g-meta">
+                <span class="time">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 13.5"/></svg>
+                    <b data-countdown="{$g.end_time}" data-format="short">--</b>
+                </span>
+                <span>{$g.bid_count}次出价</span>
+            </div>
+        </div>
+    </a>
+    {/foreach}
+</div>
+{else}
+<div style="padding:6px 0;">
+    {foreach $list as $s}
+    <a class="shop-card" href="/shop/detail?id={$s.id}">
+        <div class="avatar">
+            {if !empty($s.avatar)}
+            <img src="{$s.avatar}" alt="{$s.nickname}">
+            {else}
+            <span class="noa">🏪</span>
+            {/if}
+        </div>
+        <div class="sinfo">
+            <div class="sname">{if !empty($s.shop_name)}{$s.shop_name}{else}{$s.nickname}{/if}</div>
+            {if !empty($s.seller_intro)}<div class="sintro">{$s.seller_intro}</div>{/if}
+            <div class="smeta">累计售出 {$s.total_sell} 件 · 成交 {$s.total_buy} 次</div>
+        </div>
+        <span class="enter">进店</span>
+    </a>
+    {/foreach}
+</div>
+{/if}
+{if $page*$limit < $total}
+<a class="load-more" href="/search?keyword={$keyword|urlencode=###}&type={$type}&page={$page+1}">加载更多</a>
+{else}
+<div class="no-more">—— 没有更多数据了 ——</div>
+{/if}
+{/if}
+{/block}
+{block name="script"}
+<script>
+function doSearch() {
+    var kw = document.getElementById('kw').value.trim();
+    location.href = '/search?keyword=' + encodeURIComponent(kw) + '&type={$type}';
+}
+function switchTab(t) {
+    location.href = '/search?keyword=' + encodeURIComponent(document.getElementById('kw').value.trim()) + '&type=' + t;
+}
+initCountdowns();
+</script>
+{/block}

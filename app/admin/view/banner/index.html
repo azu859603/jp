@@ -1,0 +1,181 @@
+{extend name="layout" /}
+
+{block name="title"}轮播管理{/block}
+{block name="crumb"}系统设置 / <b>轮播管理</b>{/block}
+
+{block name="content"}
+<div class="page-title">
+    <span>首页轮播</span>
+    <div class="tools">
+        <button class="btn btn-primary" onclick="openEdit(0)">+ 新增轮播</button>
+    </div>
+</div>
+
+<div class="card">
+    <div class="table-wrap">
+        <table class="table">
+            <thead>
+            <tr><th>ID</th><th>预览</th><th>标题</th><th>跳转链接</th><th>排序</th><th>状态</th><th>操作</th></tr>
+            </thead>
+            <tbody>
+            {empty name="list"}
+            <tr><td colspan="7" class="empty">暂无轮播图，点击右上角新增</td></tr>
+            {else /}
+            {volist name="list" id="b"}
+            <tr>
+                <td>{$b.id}</td>
+                <td><img src="{$b.image}" style="width:88px;height:44px;border-radius:4px;object-fit:cover;vertical-align:middle;"></td>
+                <td>{$b.title ?: '-'}</td>
+                <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{$b.url ?: '-'}</td>
+                <td>{$b.sort}</td>
+                <td>{if $b.status == 1}<span class="tag tag-green">显示</span>{else /}<span class="tag tag-gray">隐藏</span>{/if}</td>
+                <td style="white-space:nowrap;">
+                    <a class="btn btn-sm" href="javascript:;" onclick="openEdit({$b.id})">编辑</a>
+                    <a class="btn btn-sm btn-danger" href="javascript:;" onclick="del({$b.id})">删除</a>
+                </td>
+            </tr>
+            {/volist}
+            {/empty}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- 编辑弹层 -->
+<div class="mask" id="editMask">
+    <div class="dialog">
+        <div class="dialog-title" id="editTitle">新增轮播</div>
+        <div class="dialog-body">
+            <input type="hidden" id="editId" value="0">
+            <div class="form-group">
+                <label>轮播图片（建议 750×300，首页顶部展示）</label>
+                <div class="upload-box">
+                    <div class="up-item add" id="bannerImgAdd" onclick="uploadBannerImg()">+</div>
+                </div>
+                <div class="tip">点击上传，可点击图片替换，悬停右上角删除</div>
+                <input type="hidden" id="editImage" value="">
+            </div>
+            <div class="form-group">
+                <label>标题（选填）</label>
+                <input type="text" class="form-control" id="editTitleInput" placeholder="例如：新品首发专场" maxlength="30">
+            </div>
+            <div class="form-group">
+                <label>跳转链接（选填）</label>
+                <input type="text" class="form-control" id="editUrl" placeholder="例如：/?category_id=1 或 /search">
+                <div class="tip">支持站内地址（/开头）或完整网址（http/https）</div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>排序（数字越小越靠前）</label>
+                    <input type="number" class="form-control" id="editSort" value="0">
+                </div>
+                <div class="form-group">
+                    <label>状态</label>
+                    <select class="form-control" id="editStatus">
+                        <option value="1">显示</option>
+                        <option value="0">隐藏</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        <div class="dialog-footer">
+            <button class="btn" onclick="document.getElementById('editMask').classList.remove('show')">取消</button>
+            <button class="btn btn-primary" onclick="doSave()">保存</button>
+        </div>
+    </div>
+</div>
+
+<script>
+var editData = {:json_encode($list, JSON_UNESCAPED_UNICODE)};
+
+function openEdit(id){
+    document.getElementById('editId').value = id;
+    document.getElementById('editTitleInput').value = '';
+    document.getElementById('editUrl').value = '';
+    document.getElementById('editImage').value = '';
+    document.getElementById('bannerImgBox') && document.getElementById('bannerImgBox').remove();
+    document.getElementById('editSort').value = 0;
+    document.getElementById('editStatus').value = 1;
+    document.getElementById('editTitle').textContent = '新增轮播';
+    if(id > 0){
+        editData.forEach(function(b){
+            if(b.id == id){
+                document.getElementById('editTitleInput').value = b.title;
+                document.getElementById('editUrl').value = b.url;
+                document.getElementById('editSort').value = b.sort;
+                document.getElementById('editStatus').value = b.status;
+                document.getElementById('editTitle').textContent = '编辑轮播';
+                if(b.image) setBannerImg(b.image);
+            }
+        });
+    }
+    document.getElementById('editMask').classList.add('show');
+}
+
+function setBannerImg(url){
+    var box = document.getElementById('bannerImgBox');
+    if(!box){
+        box = document.createElement('div');
+        box.className = 'up-item';
+        box.id = 'bannerImgBox';
+        document.getElementById('bannerImgAdd').parentNode.insertBefore(box, document.getElementById('bannerImgAdd'));
+    }
+    box.innerHTML = '<img src="'+url+'"><span class="del" onclick="removeBannerImg()">×</span>';
+    box.onclick = function(){ uploadBannerImg(); };
+    document.getElementById('editImage').value = url;
+}
+
+function removeBannerImg(){
+    var box = document.getElementById('bannerImgBox');
+    if(box) box.remove();
+    document.getElementById('editImage').value = '';
+}
+
+function uploadBannerImg(){
+    var input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = function(e){
+        var file = e.target.files[0];
+        if(!file) return;
+        var fd = new FormData();
+        fd.append('file', file);
+        fetch('/admin1314/banner/upload', {method:'POST', headers:{'X-Requested-With':'XMLHttpRequest'}, body:fd})
+            .then(function(r){ return r.json(); })
+            .then(function(res){
+                if(res.code == 1){
+                    setBannerImg(res.url);
+                } else {
+                    alert(res.msg || '上传失败');
+                }
+            })
+            .catch(function(){ alert('网络错误，请重试'); });
+    };
+    input.click();
+}
+
+function doSave(){
+    var data = {
+        id: document.getElementById('editId').value,
+        title: document.getElementById('editTitleInput').value.trim(),
+        image: document.getElementById('editImage').value.trim(),
+        url: document.getElementById('editUrl').value.trim(),
+        sort: document.getElementById('editSort').value,
+        status: document.getElementById('editStatus').value
+    };
+    if(!data.image){ alert('请上传轮播图片'); return; }
+    ajaxPost('/admin1314/banner/save', data, function(res){
+        alert(res.msg);
+        if(res.code == 1) location.reload();
+    });
+}
+
+function del(id){
+    confirmDialog('确定删除该轮播图吗？', function(){
+        ajaxPost('/admin1314/banner/delete', {id:id}, function(res){
+            alert(res.msg); if(res.code == 1) location.reload();
+        });
+    });
+}
+</script>
+{/block}

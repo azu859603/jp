@@ -1,0 +1,135 @@
+{extend name="layout" /}
+{block name="content"}
+<div class="order-tabs">
+    <a href="/order/list" {if $order_status==''}class="on"{/if}>全部</a>
+    <a href="/order/list?order_status=0" {if $order_status=='0'}class="on"{/if}>待付款</a>
+    <a href="/order/list?order_status=1" {if $order_status=='1'}class="on"{/if}>待发货</a>
+    <a href="/order/list?order_status=2" {if $order_status=='2'}class="on"{/if}>待收货</a>
+    <a href="/order/list?order_status=3" {if $order_status=='3'}class="on"{/if}>已完成</a>
+    <a href="/order/list?order_status=5" {if $order_status=='5'}class="on"{/if}>售后中</a>
+</div>
+{if empty($list)}
+<div class="empty"><div class="e-ico">📦</div><div>没有更多数据了</div></div>
+{else}
+{foreach $list as $o}
+<div class="order-card">
+    <div class="o-head">
+        <span>订单号：{$o.order_no}</span>
+        <span class="st">{$o.status_name}</span>
+    </div>
+    <a class="o-body" href="/order/pay?id={$o.id}">
+        <div class="thumb">
+            {if !empty($o.goods_cover)}
+            <img src="{$o.goods_cover}" alt="">
+            {else}
+            <span class="noimg">🏺</span>
+            {/if}
+        </div>
+        <div class="oinfo">
+            <div class="oname">{$o.goods_title}</div>
+            <div class="oprice"><small>¥ </small>{$o.price|number_format=2}</div>
+            <div class="osub">{$o.create_time|date='Y-m-d H:i'}</div>
+        </div>
+    </a>
+    {if $o.order_status==2 && !empty($o.ship_no)}
+    <div class="o-ship">
+        <span class="ship-ico">🚚</span>
+        <span class="ship-info">{$o.ship_company|default='快递'} <b>{$o.ship_no}</b></span>
+        <a class="ship-copy" href="javascript:copyShip('{$o.ship_no}')">复制单号</a>
+    </div>
+    {/if}
+    <div class="o-foot">
+        {if $o.order_status==0}
+        <a class="btn-sm solid-red" href="/order/pay?id={$o.id}">去付款</a>
+        <a class="btn-sm gray" href="javascript:cancelOrder({$o.id})">取消</a>
+        {elseif $o.order_status==2}
+        <a class="btn-sm solid-red" href="javascript:confirmReceipt({$o.id})">确认收货</a>
+        {elseif $o.order_status==3 && empty($o.has_after_sale)}
+        <a class="btn-sm gray" href="javascript:openAfterSale({$o.id})">申请售后</a>
+        {elseif $o.order_status==5}
+        <span class="aft-tip">售后处理中</span>
+        {/if}
+    </div>
+</div>
+{/foreach}
+{if $page*$limit < $total}
+<a class="load-more" href="/order/list?order_status={$order_status}&page={$page+1}">加载更多</a>
+{else}
+<div class="no-more">—— 没有更多数据了 ——</div>
+{/if}
+{/if}
+
+<!-- 申请售后弹窗 -->
+<div class="mask" id="aftMask" onclick="closeAfterSale()"></div>
+<div class="sheet" id="aftSheet">
+    <div class="s-title">申请售后 <span class="s-close" onclick="closeAfterSale()">×</span></div>
+    <div class="s-body">
+        <div class="aft-tip">请填写售后理由，提交后订单将转为售后单，由平台审核处理。</div>
+        <textarea id="aftReason" class="aft-textarea" rows="4" maxlength="500" placeholder="请输入售后理由（至少 5 个字）"></textarea>
+        <button class="btn btn-red" onclick="doAfterSale()">确认提交</button>
+    </div>
+</div>
+{/block}
+{block name="script"}
+<script>
+function copyShip(no) {
+    function done() { toast('物流单号已复制'); }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(no).then(done).catch(function(){
+            fallbackCopy(no, done);
+        });
+    } else {
+        fallbackCopy(no, done);
+    }
+}
+function fallbackCopy(no, done) {
+    var ta = document.createElement('textarea');
+    ta.value = no;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand('copy'); done(); } catch(e) { toast('复制失败，请手动复制'); }
+    document.body.removeChild(ta);
+}
+function cancelOrder(id) {
+    confirmBox('确定要取消该订单吗？', '提示', function(){
+        ajaxPost('/order/cancel', {id: id}, function(res){
+            if(res.code==1){ toast('已取消'); setTimeout(function(){ location.reload(); }, 600); }
+            else { toast(res.msg); }
+        });
+    });
+}
+function confirmReceipt(id) {
+    confirmBox('确定已收到商品？', '提示', function(){
+        ajaxPost('/order/confirm', {id: id}, function(res){
+            if(res.code==1){ toast('已确认收货'); setTimeout(function(){ location.reload(); }, 600); }
+            else { toast(res.msg); }
+        });
+    });
+}
+var aftOrderId = 0;
+function openAfterSale(id) {
+    aftOrderId = id;
+    document.getElementById('aftReason').value = '';
+    document.getElementById('aftMask').classList.add('show');
+    document.getElementById('aftSheet').classList.add('show');
+    setTimeout(function(){ document.getElementById('aftReason').focus(); }, 300);
+}
+function closeAfterSale() {
+    document.getElementById('aftMask').classList.remove('show');
+    document.getElementById('aftSheet').classList.remove('show');
+}
+function doAfterSale() {
+    var reason = document.getElementById('aftReason').value.trim();
+    if (reason.length < 5) { toast('请填写售后理由（至少 5 个字）'); return; }
+    confirmBox('确认提交售后申请？提交后订单将转为售后单，等待平台处理。', '提示', function(){
+        ajaxPost('/order/afterSaleApply', {id: aftOrderId, reason: reason}, function(res){
+            if(res.code==1){ toast(res.msg); closeAfterSale(); setTimeout(function(){ location.reload(); }, 800); }
+            else if(res.code==-1){ location.href='/user/login'; }
+            else { toast(res.msg); }
+        });
+    });
+}
+</script>
+{/block}

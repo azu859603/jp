@@ -1,0 +1,17 @@
+{extend name="layout" /}
+{block name="content"}
+<div class="msg-detail">
+    <div class="md-head">
+        <div class="md-title">{$msg.title}</div>
+        <div class="md-meta">平台通知 · {$msg.create_time|date='Y-m-d H:i'}</div>
+    </div>
+    <div class="md-body">{$msg.content|nl2br}</div>
+</div>
+<style>
+.msg-detail{background:#fff;margin:12px 14px;border-radius:10px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.04);}
+.msg-detail .md-head{padding:16px 14px 12px;border-bottom:1px solid #f5f5f5;}
+.msg-detail .md-title{font-size:16px;font-weight:600;color:#333;line-height:1.5;}
+.msg-detail .md-meta{font-size:12px;color:#bbb;margin-top:6px;}
+.msg-detail .md-body{padding:14px;font-size:14px;color:#444;line-height:1.8;word-break:break-all;}
+</style>
+{/block}

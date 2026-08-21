@@ -1,0 +1,169 @@
+{extend name="layout" /}
+
+{block name="title"}管理员管理{/block}
+{block name="crumb"}系统设置 / <b>管理员管理</b>{/block}
+
+{block name="content"}
+<div class="page-title">
+    <span>管理员列表</span>
+    <div class="tools">
+        <button class="btn btn-primary" onclick="openEdit(0)">+ 新增管理员</button>
+    </div>
+</div>
+
+<div class="card">
+    <div class="table-wrap">
+        <table class="table">
+            <thead>
+            <tr>
+                <th>ID</th><th>用户名</th><th>姓名</th><th>角色</th><th>状态</th>
+                <th>最后登录</th><th>创建时间</th><th>操作</th>
+            </tr>
+            </thead>
+            <tbody id="tbody"></tbody>
+        </table>
+    </div>
+</div>
+
+<!-- 编辑弹层 -->
+<div class="mask" id="editMask">
+    <div class="dialog">
+        <div class="dialog-title" id="editTitle">新增管理员</div>
+        <div class="dialog-body">
+            <input type="hidden" id="editId" value="0">
+            <div class="form-group">
+                <label>用户名 {if $admin.id != 1 && false}<span class="req">*</span>{/if}</label>
+                <input type="text" class="form-control" id="editUsername" placeholder="登录用户名">
+            </div>
+            <div class="form-group">
+                <label>密码（修改时留空则不修改）</label>
+                <input type="text" class="form-control" id="editPassword" placeholder="至少6位">
+            </div>
+            <div class="form-group">
+                <label>姓名</label>
+                <input type="text" class="form-control" id="editRealName" placeholder="真实姓名">
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>角色</label>
+                    <select class="form-control" id="editRole">
+                        <option value="2">普通管理员</option>
+                        <option value="1">超级管理员</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>状态</label>
+                    <select class="form-control" id="editStatus">
+                        <option value="1">启用</option>
+                        <option value="0">禁用</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        <div class="dialog-footer">
+            <button class="btn" onclick="document.getElementById('editMask').classList.remove('show')">取消</button>
+            <button class="btn btn-primary" onclick="doSave()">保存</button>
+        </div>
+    </div>
+</div>
+
+<script>
+var listData = [];
+var myId = {$admin.id};
+
+function loadList(){
+    fetch('/admin1314/admin_user/index', {headers:{'X-Requested-With':'XMLHttpRequest'}})
+        .then(function(r){ return r.json(); })
+        .then(function(res){
+            listData = res.data || [];
+            var html = '';
+            if(!listData.length){
+                html = '<tr><td colspan="8" class="empty">暂无数据</td></tr>';
+            } else {
+                listData.forEach(function(a){
+                    var roleHtml = a.role == 1 ? '<span class="tag tag-orange">超级管理员</span>' : '<span class="tag tag-gray">普通管理员</span>';
+                    var stHtml = a.status == 1 ? '<span class="tag tag-green">启用</span>' : '<span class="tag tag-red">禁用</span>';
+                    html += '<tr>'
+                        + '<td>' + a.id + '</td>'
+                        + '<td>' + a.username + '</td>'
+                        + '<td>' + (a.real_name || '-') + '</td>'
+                        + '<td>' + roleHtml + '</td>'
+                        + '<td>' + stHtml + '</td>'
+                        + '<td>' + (a.last_login_time ? fmtTime(a.last_login_time) : '-') + '</td>'
+                        + '<td>' + (a.create_time ? fmtTime(a.create_time) : '-') + '</td>'
+                        + '<td style="white-space:nowrap;">'
+                        + '<a class="btn btn-sm" href="javascript:;" onclick="openEdit(' + a.id + ')">编辑</a> '
+                        + (a.id != 1 ? '<a class="btn btn-sm btn-danger" href="javascript:;" onclick="del(' + a.id + ')">删除</a>' : '')
+                        + '</td></tr>';
+                });
+            }
+            document.getElementById('tbody').innerHTML = html;
+        });
+}
+
+function openEdit(id){
+    document.getElementById('editId').value = id;
+    document.getElementById('editUsername').value = '';
+    document.getElementById('editPassword').value = '';
+    document.getElementById('editRealName').value = '';
+    document.getElementById('editRole').value = 2;
+    document.getElementById('editStatus').value = 1;
+    document.getElementById('editTitle').textContent = '新增管理员';
+    if(id > 0){
+        listData.forEach(function(a){
+            if(a.id == id){
+                document.getElementById('editUsername').value = a.username;
+                document.getElementById('editRealName').value = a.real_name;
+                document.getElementById('editRole').value = a.role;
+                document.getElementById('editStatus').value = a.status;
+                document.getElementById('editTitle').textContent = '编辑管理员';
+                if(a.id == 1){
+                    document.getElementById('editRole').value = 1;
+                    document.getElementById('editRole').disabled = true;
+                } else {
+                    document.getElementById('editRole').disabled = false;
+                }
+            }
+        });
+    }
+    document.getElementById('editMask').classList.add('show');
+}
+
+function doSave(){
+    var data = {
+        id: document.getElementById('editId').value,
+        username: document.getElementById('editUsername').value.trim(),
+        password: document.getElementById('editPassword').value.trim(),
+        real_name: document.getElementById('editRealName').value.trim(),
+        role: document.getElementById('editRole').value,
+        status: document.getElementById('editStatus').value
+    };
+    if(data.id == 0 && !data.username){ alert('请输入用户名'); return; }
+    if(data.id == 0 && data.password.length < 6){ alert('密码至少6位'); return; }
+    if(data.id > 0 && data.password && data.password.length < 6){ alert('密码至少6位'); return; }
+    ajaxPost('/admin1314/admin_user/save', data, function(res){
+        alert(res.msg);
+        if(res.code == 1){
+            document.getElementById('editMask').classList.remove('show');
+            loadList();
+        }
+    });
+}
+
+function del(id){
+    confirmDialog('确定删除该管理员吗？', function(){
+        ajaxPost('/admin1314/admin_user/delete', {id:id}, function(res){
+            alert(res.msg); if(res.code == 1) loadList();
+        });
+    });
+}
+
+function fmtTime(ts){
+    var d = new Date(ts * 1000);
+    function p(n){ return n < 10 ? '0' + n : n; }
+    return d.getFullYear() + '-' + p(d.getMonth()+1) + '-' + p(d.getDate()) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
+}
+
+loadList();
+</script>
+{/block}

@@ -1,0 +1,21 @@
+{extend name="layout" /}
+{block name="content"}
+<div class="bid-list">
+    <div class="b-head">我的出价记录</div>
+    {foreach $list as $b}
+    <a class="bid-row" href="/goods/detail?id={$b.goods_id}" style="display:flex;align-items:center;padding:12px 14px;border-bottom:1px solid #f7f7f7;">
+        <span class="b-user" style="flex:1;color:#333;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{$b.title}</span>
+        <span class="b-price" style="color:#E4393C;font-weight:600;margin-right:6px;">¥{$b.price|number_format=2}</span>
+        {if $b.is_lead}<span class="lead-tag" style="margin-right:6px;">领先</span>{else}<span class="out-tag" style="margin-right:6px;">出局</span>{/if}
+        <span class="b-time" style="font-size:11px;color:#bbb;">{$b.create_time|date='m-d H:i'}</span>
+    </a>
+    {/foreach}
+    {if empty($list)}
+    <div class="empty" style="padding:60px 0;">
+        <div class="e-ico">🔨</div>
+        <div>暂无出价记录</div>
+        <a class="e-btn" href="/">去逛逛</a>
+    </div>
+    {/if}
+</div>
+{/block}

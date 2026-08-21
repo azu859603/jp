@@ -1,0 +1,137 @@
+{extend name="layout" /}
+
+{block name="title"}新闻管理{/block}
+{block name="crumb"}系统设置 / <b>新闻管理</b>{/block}
+
+{block name="content"}
+<div class="page-title">
+    <span>新闻公告</span>
+    <div class="tools">
+        <button class="btn btn-primary" onclick="openEdit(0)">+ 发布新闻</button>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-head">
+        <form class="filter-form" onsubmit="doFilter();return false;">
+            <input type="text" class="form-control" style="width:220px;" id="filterKeyword" placeholder="搜索标题" value="{$keyword}">
+            <select class="form-control" style="width:130px;" id="filterStatus">
+                <option value="-1" {if $status==-1}selected{/if}>全部状态</option>
+                <option value="1" {if $status==1}selected{/if}>显示</option>
+                <option value="0" {if $status==0}selected{/if}>隐藏</option>
+            </select>
+            <button class="btn btn-primary" type="submit">筛选</button>
+        </form>
+    </div>
+    <div class="table-wrap">
+        <table class="table">
+            <thead>
+            <tr><th>ID</th><th>标题</th><th>内容预览</th><th>状态</th><th>发布时间</th><th>更新时间</th><th>操作</th></tr>
+            </thead>
+            <tbody>
+            {empty name="list"}
+            <tr><td colspan="7" class="empty">暂无新闻，点击右上角发布</td></tr>
+            {else /}
+            {volist name="list" id="n"}
+            <tr>
+                <td>{$n.id}</td>
+                <td style="max-width:260px;">{$n.title}</td>
+                <td class="gray" style="max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{$n.content|strip_tags|mb_substr=0,30}</td>
+                <td>{if $n.status == 1}<span class="tag tag-green">显示</span>{else /}<span class="tag tag-gray">隐藏</span>{/if}</td>
+                <td>{$n.create_time|date='Y-m-d H:i'}</td>
+                <td>{if $n.update_time>0}{$n.update_time|date='Y-m-d H:i'}{else /}-{/if}</td>
+                <td style="white-space:nowrap;">
+                    <a class="btn btn-sm" href="javascript:;" onclick="openEdit({$n.id})">编辑</a>
+                    <a class="btn btn-sm btn-danger" href="javascript:;" onclick="del({$n.id})">删除</a>
+                </td>
+            </tr>
+            {/volist}
+            {/empty}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- 编辑弹层 -->
+<div class="mask" id="editMask">
+    <div class="dialog" style="width:560px;">
+        <div class="dialog-title" id="editTitle">发布新闻</div>
+        <div class="dialog-body">
+            <input type="hidden" id="editId" value="0">
+            <div class="form-group">
+                <label>新闻标题 <span class="req">*</span></label>
+                <input type="text" class="form-control" id="editTitleInput" maxlength="100" placeholder="请输入新闻标题（100字以内）">
+            </div>
+            <div class="form-group">
+                <label>新闻内容 <span class="req">*</span></label>
+                <textarea class="form-control" id="editContent" rows="8" placeholder="请输入新闻内容" style="resize:vertical;"></textarea>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>状态</label>
+                    <select class="form-control" id="editStatus">
+                        <option value="1">显示</option>
+                        <option value="0">隐藏</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        <div class="dialog-footer">
+            <button class="btn" onclick="document.getElementById('editMask').classList.remove('show')">取消</button>
+            <button class="btn btn-primary" onclick="doSave()">保存</button>
+        </div>
+    </div>
+</div>
+
+<script>
+var editData = {:json_encode($list, JSON_UNESCAPED_UNICODE)};
+
+function openEdit(id){
+    document.getElementById('editId').value = id;
+    document.getElementById('editTitleInput').value = '';
+    document.getElementById('editContent').value = '';
+    document.getElementById('editStatus').value = 1;
+    document.getElementById('editTitle').textContent = '发布新闻';
+    if(id > 0){
+        editData.forEach(function(n){
+            if(n.id == id){
+                document.getElementById('editTitleInput').value = n.title;
+                document.getElementById('editContent').value = n.content;
+                document.getElementById('editStatus').value = n.status;
+                document.getElementById('editTitle').textContent = '编辑新闻';
+            }
+        });
+    }
+    document.getElementById('editMask').classList.add('show');
+}
+
+function doSave(){
+    var data = {
+        id: document.getElementById('editId').value,
+        title: document.getElementById('editTitleInput').value.trim(),
+        content: document.getElementById('editContent').value.trim(),
+        status: document.getElementById('editStatus').value
+    };
+    if(!data.title){ alert('请输入新闻标题'); return; }
+    if(!data.content){ alert('请输入新闻内容'); return; }
+    ajaxPost('/admin1314/news/save', data, function(res){
+        alert(res.msg);
+        if(res.code == 1) location.reload();
+    });
+}
+
+function del(id){
+    confirmDialog('确定删除该新闻吗？', function(){
+        ajaxPost('/admin1314/news/delete', {id:id}, function(res){
+            alert(res.msg); if(res.code == 1) location.reload();
+        });
+    });
+}
+
+function doFilter(){
+    var kw = document.getElementById('filterKeyword').value.trim();
+    var st = document.getElementById('filterStatus').value;
+    location.href = '/admin1314/news/index?status=' + st + '&keyword=' + encodeURIComponent(kw);
+}
+</script>
+{/block}

@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>首页 - 竞拍商城V2</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:"Microsoft YaHei","PingFang SC",sans-serif;background:#f5f6f8;color:#333;font-size:14px;}
+a{color:#333;text-decoration:none;}
+a:hover{color:#e64a19;}
+img{border:0;vertical-align:middle;}
+.header{background:#fff;border-bottom:1px solid #eee;}
+.header-inner{max-width:1200px;margin:0 auto;display:flex;align-items:center;height:64px;padding:0 16px;}
+.logo{font-size:22px;font-weight:bold;color:#e64a19;margin-right:40px;white-space:nowrap;}
+.logo span{color:#333;}
+.nav{display:flex;gap:24px;font-size:15px;}
+.nav a{padding:6px 2px;}
+.nav a.active,.nav a:hover{color:#e64a19;font-weight:bold;}
+.header-right{margin-left:auto;display:flex;align-items:center;gap:14px;}
+.search-box{display:flex;margin-left:20px;}
+.search-box input{width:200px;height:34px;border:1px solid #ddd;border-radius:4px 0 0 4px;padding:0 10px;font-size:13px;outline:none;}
+.search-box button{height:34px;padding:0 16px;background:#e64a19;color:#fff;border:0;border-radius:0 4px 4px 0;cursor:pointer;font-size:13px;}
+.btn{display:inline-block;padding:8px 18px;border-radius:4px;font-size:14px;cursor:pointer;border:0;}
+.btn-primary{background:#e64a19;color:#fff;}
+.btn-primary:hover{background:#cf3f10;color:#fff;}
+.btn-plain{background:#fff;border:1px solid #ddd;color:#333;}
+.btn-plain:hover{border-color:#e64a19;color:#e64a19;}
+.btn-danger{background:#f56c6c;color:#fff;}
+.btn-sm{padding:4px 10px;font-size:12px;}
+.btn-disabled{background:#ccc;color:#fff;cursor:not-allowed;}
+.tag{display:inline-block;padding:1px 8px;border-radius:3px;font-size:12px;}
+.tag-red{background:#fde2e2;color:#f56c6c;}
+.tag-green{background:#e1f3d8;color:#67c23a;}
+.tag-blue{background:#e1eefb;color:#409eff;}
+.tag-orange{background:#fdf3e1;color:#e6a23c;}
+.tag-gray{background:#f0f0f0;color:#999;}
+.container{max-width:1200px;margin:20px auto;padding:0 16px;min-height:500px;}
+.crumbs{color:#999;font-size:13px;margin-bottom:14px;}
+.crumbs a{color:#e64a19;}
+.footer{background:#fff;border-top:1px solid #eee;padding:24px 0;text-align:center;color:#999;font-size:13px;margin-top:40px;}
+/* 首页商品卡 */
+.goods-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;}
+.goods-card{background:#fff;border-radius:8px;overflow:hidden;transition:box-shadow .2s;border:1px solid #f0f0f0;}
+.goods-card:hover{box-shadow:0 6px 20px rgba(0,0,0,.1);}
+.goods-cover{height:200px;background:#f7f7f7;display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative;}
+.goods-cover img{width:100%;height:100%;object-fit:cover;}
+.goods-cover .no-img{color:#bbb;font-size:40px;}
+.goods-info{padding:12px 14px;}
+.goods-title{font-size:14px;height:40px;line-height:20px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;}
+.goods-price-row{display:flex;justify-content:space-between;align-items:flex-end;margin-top:10px;}
+.goods-price{color:#e64a19;font-size:20px;font-weight:bold;}
+.goods-price small{font-size:12px;font-weight:normal;color:#999;}
+.goods-end{font-size:12px;color:#999;text-align:right;}
+.goods-end b{color:#e64a19;font-weight:normal;}
+.goods-meta{display:flex;justify-content:space-between;font-size:12px;color:#999;margin-top:8px;padding-top:8px;border-top:1px dashed #eee;}
+/* 筛选条 */
+.filter-bar{background:#fff;border-radius:8px;padding:14px 16px;margin-bottom:16px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.filter-bar a{padding:5px 14px;border-radius:14px;font-size:13px;}
+.filter-bar a.active,.filter-bar a:hover{background:#e64a19;color:#fff;}
+.filter-bar .sort-links{margin-left:auto;}
+.pagination{display:flex;justify-content:center;gap:6px;margin:24px 0;}
+.pagination a,.pagination span{display:inline-block;min-width:34px;height:34px;line-height:34px;text-align:center;background:#fff;border:1px solid #e5e5e5;border-radius:4px;padding:0 8px;font-size:13px;}
+.pagination .cur{background:#e64a19;color:#fff;border-color:#e64a19;}
+.pagination .disable{color:#ccc;}
+/* 表单 */
+.form-panel{background:#fff;border-radius:8px;padding:30px;max-width:420px;margin:20px auto;}
+.form-panel h2{font-size:20px;text-align:center;margin-bottom:24px;}
+.form-item{margin-bottom:16px;}
+.form-item label{display:block;font-size:13px;color:#666;margin-bottom:6px;}
+.form-item input,.form-item select,.form-item textarea{width:100%;height:38px;border:1px solid #ddd;border-radius:4px;padding:0 10px;font-size:14px;outline:none;}
+.form-item textarea{height:80px;padding:8px 10px;resize:vertical;}
+.form-item input:focus,.form-item select:focus{border-color:#e64a19;}
+.form-tip{font-size:12px;color:#999;margin-top:4px;}
+.form-link{text-align:center;font-size:13px;color:#999;margin-top:14px;}
+.form-link a{color:#e64a19;}
+.captcha-row{display:flex;gap:10px;}
+.captcha-row input{flex:1;}
+.captcha-row img{height:38px;cursor:pointer;border:1px solid #ddd;border-radius:4px;}
+/* 提示框 */
+.msg-panel{background:#fff;border-radius:8px;padding:50px 30px;text-align:center;max-width:480px;margin:60px auto;}
+.msg-panel .icon{font-size:48px;}
+.msg-panel .text{font-size:16px;margin:16px 0 24px;color:#555;}
+/* 详情页 */
+.detail-wrap{display:flex;gap:20px;}
+.detail-left{width:420px;background:#fff;border-radius:8px;padding:16px;}
+.detail-main-img{height:320px;background:#f7f7f7;display:flex;align-items:center;justify-content:center;border-radius:6px;overflow:hidden;}
+.detail-main-img img{max-width:100%;max-height:100%;object-fit:contain;}
+.thumb-row{display:flex;gap:8px;margin-top:10px;}
+.thumb-row img{width:60px;height:60px;object-fit:cover;border-radius:4px;cursor:pointer;border:2px solid transparent;}
+.thumb-row img.cur{border-color:#e64a19;}
+.detail-right{flex:1;}
+.detail-box{background:#fff;border-radius:8px;padding:20px 24px;}
+.detail-title{font-size:20px;font-weight:bold;line-height:1.4;}
+.detail-price-box{background:#fff7f3;border-radius:6px;padding:16px 20px;margin-top:16px;display:flex;align-items:center;gap:30px;flex-wrap:wrap;}
+.detail-price-box .cur-price{color:#e64a19;font-size:30px;font-weight:bold;}
+.detail-price-box .cur-price small{font-size:13px;color:#999;font-weight:normal;}
+.price-item{font-size:13px;color:#666;line-height:1.9;}
+.price-item b{color:#333;}
+.countdown{font-size:15px;color:#e64a19;font-weight:bold;}
+.countdown.done{color:#999;}
+.bid-area{margin-top:16px;}
+.bid-input-row{display:flex;align-items:center;gap:10px;}
+.bid-input-row input{width:200px;height:40px;border:1px solid #e64a19;border-radius:4px;padding:0 10px;font-size:16px;outline:none;}
+.bid-tip{font-size:12px;color:#999;margin-top:8px;}
+.bid-tip b{color:#e64a19;}
+.detail-info{margin-top:16px;font-size:13px;color:#666;line-height:2;}
+.detail-info span{margin-right:24px;}
+.bid-list{margin-top:14px;max-height:320px;overflow:auto;}
+.bid-row{display:flex;justify-content:space-between;padding:8px 4px;border-bottom:1px dashed #f0f0f0;font-size:13px;}
+.bid-row .price{color:#e64a19;font-weight:bold;}
+.bid-row .winner{color:#67c23a;}
+/* 个人中心 */
+.center-wrap{display:flex;gap:20px;}
+.sidebar{width:200px;flex-shrink:0;}
+.sidebar .user-card{background:#fff;border-radius:8px;padding:20px 16px;text-align:center;margin-bottom:16px;}
+.sidebar .avatar{width:64px;height:64px;border-radius:50%;background:#e64a19;color:#fff;font-size:26px;line-height:64px;margin:0 auto 10px;overflow:hidden;}
+.sidebar .avatar img{width:100%;height:100%;object-fit:cover;}
+.sidebar .nick{font-size:15px;font-weight:bold;}
+.sidebar .mobile{font-size:12px;color:#999;margin-top:4px;}
+.sidebar .balance-card{background:linear-gradient(135deg,#e64a19,#ff7a45);border-radius:8px;padding:18px;color:#fff;margin-bottom:16px;}
+.sidebar .balance-card .label{font-size:12px;opacity:.85;}
+.sidebar .balance-card .num{font-size:24px;font-weight:bold;margin:6px 0;}
+.sidebar .balance-card .sub{font-size:12px;opacity:.85;}
+.sidebar .menu{background:#fff;border-radius:8px;overflow:hidden;}
+.sidebar .menu a{display:block;padding:12px 18px;border-left:3px solid transparent;font-size:14px;}
+.sidebar .menu a.active,.sidebar .menu a:hover{color:#e64a19;border-left-color:#e64a19;background:#fff7f3;}
+.center-main{flex:1;min-width:0;}
+.panel{background:#fff;border-radius:8px;padding:20px 24px;margin-bottom:16px;}
+.panel h3{font-size:16px;margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid #f0f0f0;}
+.panel h3 .more{float:right;font-size:13px;font-weight:normal;color:#999;}
+.panel h3 .more a{color:#e64a19;}
+.table{width:100%;border-collapse:collapse;}
+.table th,.table td{padding:10px 8px;text-align:left;font-size:13px;border-bottom:1px solid #f2f2f2;}
+.table th{background:#fafafa;color:#666;font-weight:normal;}
+.table .empty{text-align:center;color:#999;padding:40px 0;}
+.table .op a{color:#e64a19;margin-right:8px;}
+.table .op a.gray{color:#999;}
+/* 订单 */
+.order-card{background:#fff;border-radius:8px;margin-bottom:14px;overflow:hidden;}
+.order-head{display:flex;justify-content:space-between;padding:10px 16px;background:#fafafa;font-size:13px;color:#666;border-bottom:1px solid #f0f0f0;}
+.order-body{display:flex;padding:14px 16px;gap:14px;align-items:center;}
+.order-body img{width:70px;height:70px;object-fit:cover;border-radius:4px;background:#f7f7f7;}
+.order-body .title{font-size:14px;flex:1;}
+.order-body .title .sub{font-size:12px;color:#999;margin-top:6px;}
+.order-foot{display:flex;justify-content:space-between;align-items:center;padding:10px 16px;border-top:1px solid #f0f0f0;font-size:13px;}
+.order-foot .price{color:#e64a19;font-weight:bold;font-size:16px;}
+.order-foot .price small{font-size:12px;color:#999;font-weight:normal;}
+.status-tabs{display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap;}
+.status-tabs a{padding:6px 16px;border-radius:16px;background:#fff;font-size:13px;border:1px solid #eee;}
+.status-tabs a.active,.status-tabs a:hover{background:#e64a19;color:#fff;border-color:#e64a19;}
+/* 地址 */
+.address-item{border:1px solid #eee;border-radius:6px;padding:14px 16px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;}
+.address-item .name{font-weight:bold;margin-right:12px;}
+.address-item .addr{color:#666;font-size:13px;}
+.address-item .op a{color:#e64a19;margin-left:10px;font-size:13px;}
+/* 通用 */
+.mt10{margin-top:10px;}.mt16{margin-top:16px;}.mt24{margin-top:24px;}
+.flex{display:flex;}.flex-between{display:flex;justify-content:space-between;align-items:center;}
+.text-red{color:#e64a19;}.text-green{color:#67c23a;}.text-gray{color:#999;}
+.hidden{display:none;}
+.money{color:#e64a19;font-weight:bold;}
+/* 响应式 */
+@media (max-width:900px){
+    .goods-grid{grid-template-columns:repeat(2,1fr);}
+    .detail-wrap{flex-direction:column;}
+    .detail-left{width:100%;}
+    .center-wrap{flex-direction:column;}
+    .sidebar{width:100%;}
+    .search-box{display:none;}
+}
+</style>
+</head>
+<body>
+<div class="header">
+    <div class="header-inner">
+        <a href="/" class="logo">拍<span>卖</span>网</a>
+        <div class="nav">
+            <a href="/" class="active">首页</a>
+            <a href="/seller/apply" >卖家中心</a>
+        </div>
+        <div class="search-box">
+            <form action="/" method="get">
+                <input type="text" name="keyword" placeholder="搜索拍品" value="">
+                <button type="submit">搜索</button>
+            </form>
+        </div>
+        <div class="header-right">
+                        <a href="/user/login">登录</a>
+            <a href="/user/register" class="btn btn-primary btn-sm">免费注册</a>
+                    </div>
+    </div>
+</div>
+<div class="container">
+    
+<div class="filter-bar">
+    <a href="/" class="active">全部</a>
+        <a href="/?category_id=1&keyword=" >数码家电</a>
+        <a href="/?category_id=2&keyword=" >潮玩手办</a>
+        <a href="/?category_id=3&keyword=" >文玩收藏</a>
+        <a href="/?category_id=4&keyword=" >奢侈品</a>
+        <a href="/?category_id=5&keyword=" >珠宝首饰</a>
+        <a href="/?category_id=6&keyword=" >日用百货</a>
+        <a href="/?category_id=7&keyword=" >运动户外</a>
+        <div class="sort-links">
+        <a href="/?category_id=0&sort=end&keyword=" class="active">即将结束</a>
+        <a href="/?category_id=0&sort=new&keyword=" >最新发布</a>
+        <a href="/?category_id=0&sort=price&keyword=" >价格最高</a>
+    </div>
+</div>
+
+<div class="goods-grid">
+        <a href="/goods/detail?id=3" class="goods-card">
+        <div class="goods-cover">
+                        <span class="no-img">🖼</span>
+                    </div>
+        <div class="goods-info">
+            <div class="goods-title">和田玉手串</div>
+            <div class="goods-price-row">
+                <div class="goods-price"><small>¥</small>500</div>
+                <div class="goods-end"><span>距结束</span><br><b class="cd" data-end="1787400000">--:--:--</b></div>
+            </div>
+            <div class="goods-meta">
+                <span>0 次出价</span>
+                <span>李四</span>
+            </div>
+        </div>
+    </a>
+        <a href="/goods/detail?id=1" class="goods-card">
+        <div class="goods-cover">
+                        <span class="no-img">🖼</span>
+                    </div>
+        <div class="goods-info">
+            <div class="goods-title">iPhone 15 Pro 256G 国行</div>
+            <div class="goods-price-row">
+                <div class="goods-price"><small>¥</small>3300</div>
+                <div class="goods-end"><span>距结束</span><br><b class="cd" data-end="1787500000">--:--:--</b></div>
+            </div>
+            <div class="goods-meta">
+                <span>6 次出价</span>
+                <span>王五</span>
+            </div>
+        </div>
+    </a>
+    </div>
+
+<div class="pagination">
+        <span class="disable">上一页</span>
+        <span class="disable">下一页</span>
+    </div>
+
+</div>
+<div class="footer">
+    竞拍商城V2 © 2026 &nbsp;|&nbsp; 竞拍出价需缴纳保证金，请理性出价
+</div>
+<script>
+// AJAX 公共函数
+function ajaxGet(url, cb, errMsg){
+    fetch(url, {headers:{'X-Requested-With':'XMLHttpRequest'}})
+        .then(function(r){ return r.json(); })
+        .then(function(res){ cb(res); })
+        .catch(function(){ alert(errMsg || '网络错误，请重试'); });
+}
+function ajaxPost(url, data, cb, errMsg){
+    fetch(url, {method:'POST', headers:{'X-Requested-With':'XMLHttpRequest','Content-Type':'application/x-www-form-urlencoded'}, body:new URLSearchParams(data)})
+        .then(function(r){ return r.json(); })
+        .then(function(res){ cb(res); })
+        .catch(function(){ alert(errMsg || '网络错误，请重试'); });
+}
+// 倒计时
+function startCountdown(el, endTime, onEnd){
+    var timer = setInterval(function(){
+        var diff = endTime - Math.floor(Date.now()/1000);
+        if(diff <= 0){
+            el.textContent = '已结束';
+            el.className = el.className.replace('countdown','') + ' countdown done';
+            clearInterval(timer);
+            if(onEnd) onEnd();
+            return;
+        }
+        var d = Math.floor(diff/86400), h = Math.floor(diff%86400/3600), m = Math.floor(diff%3600/60), s = diff%60;
+        function p(n){ return n<10 ? '0'+n : n; }
+        var txt = '';
+        if(d>0) txt += d + '天';
+        txt += p(h) + ':' + p(m) + ':' + p(s);
+        el.textContent = txt;
+    }, 1000);
+}
+</script>
+
+<script>
+document.querySelectorAll('.cd').forEach(function(el){
+    startCountdown(el, parseInt(el.getAttribute('data-end')));
+});
+</script>
+
+
+<script type='text/javascript'>
+console.group('基本');
+console.log("\u8bf7\u6c42\u4fe1\u606f 2026-08-17 22:16:48 HTTP\/1.1 GET : http:\/\/127.0.0.1:8000\/");
+console.log("\u8fd0\u884c\u65f6\u95f4 0.062483s [ \u541e\u5410\u7387\uff1a16.00req\/s ] \u5185\u5b58\u6d88\u8017\uff1a4,152.94kb \u6587\u4ef6\u52a0\u8f7d\uff1a133");
+console.log("\u67e5\u8be2\u4fe1\u606f 0 queries");
+console.log("\u7f13\u5b58\u4fe1\u606f 0 reads,0 writes");
+console.log("\u4f1a\u8bdd\u4fe1\u606f SESSION_ID=403ebc9a0e21badc3949c6364f44c14d");
+console.groupEnd();console.groupCollapsed('文件');
+console.log("1 D:\\work\\08\\17_3\\public\\router.php ( 0.79 KB )");
+console.log("2 D:\\work\\08\\17_3\\public\\index.php ( 0.81 KB )");
+console.log("3 D:\\work\\08\\17_3\\vendor\\autoload.php ( 0.73 KB )");
+console.log("4 D:\\work\\08\\17_3\\vendor\\composer\\autoload_real.php ( 1.63 KB )");
+console.log("5 D:\\work\\08\\17_3\\vendor\\composer\\platform_check.php ( 0.90 KB )");
+console.log("6 D:\\work\\08\\17_3\\vendor\\composer\\ClassLoader.php ( 15.99 KB )");
+console.log("7 D:\\work\\08\\17_3\\vendor\\composer\\autoload_static.php ( 33.70 KB )");
+console.log("8 D:\\work\\08\\17_3\\vendor\\topthink\\think-helper\\src\\helper.php ( 8.34 KB )");
+console.log("9 D:\\work\\08\\17_3\\vendor\\topthink\\think-orm\\stubs\\load_stubs.php ( 0.16 KB )");
+console.log("10 D:\\work\\08\\17_3\\vendor\\topthink\\framework\\src\\think\\Exception.php ( 1.69 KB )");
+console.log("11 D:\\work\\08\\17_3\\vendor\\topthink\\framework\\src\\think\\Facade.php ( 2.71 KB )");
+console.log("12 D:\\work\\08\\17_3\\vendor\\topthink\\framework\\src\\think\\App.php ( 14.17 KB )");
+console.log("13 D:\\work\\08\\17_3\\vendor\\topthink\\framework\\src\\think\\Container.php ( 15.38 KB )");
+console.log("14 D:\\work\\08\\17_3\\vendor\\psr\\container\\src\\ContainerInterface.php ( 1.02 KB )");
+console.log("15 D:\\work\\08\\17_3\\app\\provider.php ( 0.63 KB )");
+console.log("16 D:\\work\\08\\17_3\\vendor\\topthink\\framework\\src\\think\\Http.php ( 6.12 KB )");
+console.log("17 D:\\work\\08\\17_3\\vendor\\topthink\\think-helper\\src\\helper\\Str.php ( 7.29 KB )");
+console.log("18 D:\\work\\08\\17_3\\vendor\\topthink\\framework\\src\\think\\Env.php ( 4.64 KB )");
+console.log("19 D:\\work\\08\\17_3\\app\\common.php ( 0.90 KB )");
+console.log("20 D:\\work\\08\\17_3\\vendor\\topthink\\framework\\src\\helper.php ( 18.44 KB )");
+console.log("21 D:\\work\\08\\17_3\\vendor\\topthink\\framework\\src\\think\\Config.php ( 5.03 KB )");
+console.log("22 D:\\work\\08\\17_3\\config\\app.php ( 1.30 KB )");
+console.log("23 D:\\work\\08\\17_3\\vendor\\topthink\\framework\\src\\think\\facade\\Env.php ( 1.67 KB )");
+console.log("24 D:\\work\\08\\17_3\\config\\cache.php ( 0.69 KB )");
+console.log("25 D:\\work\\08\\17_3\\config\\console.php ( 0.24 KB )");
+console.log("26 D:\\work\\08\\17_3\\config\\cookie.php ( 0.58 KB )");
+console.log("27 D:\\work\\08\\17_3\\config\\database.php ( 2.69 KB )");
+console.log("28 D:\\work\\08\\17_3\\config\\filesystem.php ( 0.68 KB )");
+console.log("29 D:\\work\\08\\17_3\\config\\lang.php ( 0.85 KB )");
+console.log("30 D:\\work\\08\\17_3\\config\\log.php ( 1.25 KB )");
+console.log("31 D:\\work\\08\\17_3\\config\\middleware.php ( 0.26 KB )");
+console.log("32 D:\\work\\08\\17_3\\config\\route.php ( 1.20 KB )");
+console.log("33 D:\\work\\08\\17_3\\config\\session.php ( 0.58 KB )");
+console.log("34 D:\\work\\08\\17_3\\config\\trace.php ( 0.11 KB )");
+console.log("35 D:\\work\\08\\17_3\\config\\view.php ( 0.84 KB )");
+console.log("36 D:\\work\\08\\17_3\\app\\service.php ( 0.71 KB )");
+console.log("37 D:\\work\\08\\17_3\\app\\AppService.php ( 0.28 KB )");
+console.log("38 D:\\work\\08\\17_3\\vendor\\topthink\\framework\\src\\think\\Service.php ( 1.67 KB )");
+console.log("39 D:\\work\\08\\17_3\\vendor\\topthink\\framework\\src\\think\\Lang.php ( 7.60 KB )");
+console.log("40 D:\\work\\08\\17_3\\vendor\\topthink\\framework\\src\\lang\\zh-cn.php ( 12.88 KB )");
+console.log("41 D:\\work\\08\\17_3\\vendor\\topthink\\framework\\src\\think\\Event.php ( 6.96 KB )");
+console.log("42 D:\\work\\08\\17_3\\vendor\\topthink\\framework\\src\\think\\initializer\\Error.php ( 3.27 KB )");
+console.log("43 D:\\work\\08\\17_3\\vendor\\topthink\\framework\\src\\think\\initializer\\RegisterService.php ( 1.33 KB )");
+console.log("44 D:\\work\\08\\17_3\\vendor\\services.php ( 0.18 KB )");
+console.log("45 D:\\work\\08\\17_3\\vendor\\topthink\\framework\\src\\think\\service\\PaginatorService.php ( 1.52 KB )");
+console.log("46 D:\\work\\08\\17_3\\vendor\\topthink\\framework\\src\\think\\service\\ValidateService.php ( 0.99 KB )");
+console.log("47 D:\\work\\08\\17_3\\vendor\\topthink\\framework\\src\\think\\service\\ModelService.php ( 1.76 KB )");
+console.log("48 D:\\work\\08\\17_3\\vendor\\topthink\\think-multi-app\\src\\Service.php ( 1.08 KB )");
+console.log("49 D:\\work\\08\\17_3\\vendor\\topthink\\think-trace\\src\\Service.php ( 0.77 KB )");
+console.log("50 D:\\work\\08\\17_3\\vendor\\topthink\\framework\\src\\think\\Middleware.php ( 6.78 KB )");
+console.log("51 D:\\work\\08\\17_3\\vendor\\topthink\\framework\\src\\think\\initializer\\BootService.php ( 0.77 KB )");
+console.log("52 D:\\work\\08\\17_3\\vendor\\topthink\\think-orm\\src\\Paginator.php ( 11.71 KB )");
+console.log("53 D:\\work\\08\\17_3\\vendor\\topthink\\framework\\src\\think\\Validate.php ( 46.10 KB )");
+console.log("54 D:\\work\\08\\17_3\\vendor\\topthink\\think-orm\\src\\Model.php ( 26.86 KB )");
+console.log("55 D:\\work\\08\\17_3\\vendor\\topthink\\think-orm\\src\\model\\concern\\Attribute.php ( 19.19 KB )");
+console.log("56 D:\\work\\08\\17_3\\vendor\\topthink\\think-orm\\src\\model\\concern\\RelationShip.php ( 26.44 KB )");
+console.log("57 D:\\work\\08\\17_3\\vendor\\topthink\\think-orm\\src\\model\\concern\\ModelEvent.php ( 2.58 KB )");
+console.log("58 D:\\work\\08\\17_3\\vendor\\topthink\\think-orm\\src\\model\\concern\\TimeStamp.php ( 5.69 KB )");
+console.log("59 D:\\work\\08\\17_3\\vendor\\topthink\\think-orm\\src\\model\\concern\\AutoWriteId.php ( 1.44 KB )");
+console.log("60 D:\\work\\08\\17_3\\vendor\\topthink\\think-orm\\src\\model\\concern\\Conversion.php ( 10.85 KB )");
+console.log("61 D:\\work\\08\\17_3\\vendor\\topthink\\think-helper\\src\\contract\\Arrayable.php ( 0.09 KB )");
+console.log("62 D:\\work\\08\\17_3\\vendor\\topthink\\think-helper\\src\\contract\\Jsonable.php ( 0.13 KB )");
+console.log("63 D:\\work\\08\\17_3\\vendor\\topthink\\framework\\src\\think\\Db.php ( 2.87 KB )");
+console.log("64 D:\\work\\08\\17_3\\vendor\\topthink\\think-orm\\src\\DbManager.php ( 8.33 KB )");
+console.log("65 D:\\work\\08\\17_3\\vendor\\topthink\\framework\\src\\think\\Log.php ( 8.50 KB )");
+console.log("66 D:\\work\\08\\17_3\\vendor\\topthink\\framework\\src\\think\\Manager.php ( 3.98 KB )");
+console.log("67 D:\\work\\08\\17_3\\vendor\\psr\\log\\Psr\\Log\\LoggerInterface.php ( 3.04 KB )");
+console.log("68 D:\\work\\08\\17_3\\vendor\\topthink\\framework\\src\\think\\Cache.php ( 4.79 KB )");
+console.log("69 D:\\work\\08\\17_3\\vendor\\psr\\simple-cache\\src\\CacheInterface.php ( 4.50 KB )");
+console.log("70 D:\\work\\08\\17_3\\vendor\\topthink\\think-helper\\src\\helper\\Arr.php ( 16.63 KB )");
+console.log("71 D:\\work\\08\\17_3\\vendor\\topthink\\framework\\src\\think\\cache\\driver\\File.php ( 7.42 KB )");
+console.log("72 D:\\work\\08\\17_3\\vendor\\topthink\\framework\\src\\think\\cache\\Driver.php ( 8.06 KB )");
+console.log("73 D:\\work\\08\\17_3\\vendor\\topthink\\framework\\src\\think\\contract\\CacheHandlerInterface.php ( 2.25 KB )");
+console.log("74 D:\\work\\08\\17_3\\vendor\\topthink\\framework\\src\\think\\Console.php ( 22.65 KB )");
+console.log("75 D:\\work\\08\\17_3\\vendor\\topthink\\framework\\src\\think\\Request.php ( 54.04 KB )");
+console.log("76 D:\\work\\08\\17_3\\app\\middleware.php ( 0.12 KB )");
+console.log("77 D:\\work\\08\\17_3\\vendor\\topthink\\framework\\src\\think\\Pipeline.php ( 2.61 KB )");
+console.log("78 D:\\work\\08\\17_3\\vendor\\topthink\\think-trace\\src\\TraceDebug.php ( 2.94 KB )");
+console.log("79 D:\\work\\08\\17_3\\vendor\\topthink\\framework\\src\\think\\middleware\\SessionInit.php ( 2.06 KB )");
+console.log("80 D:\\work\\08\\17_3\\vendor\\topthink\\framework\\src\\think\\Session.php ( 1.80 KB )");
+console.log("81 D:\\work\\08\\17_3\\vendor\\topthink\\framework\\src\\think\\session\\driver\\File.php ( 6.28 KB )");
+console.log("82 D:\\work\\08\\17_3\\vendor\\topthink\\framework\\src\\think\\contract\\SessionHandlerInterface.php ( 0.87 KB )");
+console.log("83 D:\\work\\08\\17_3\\vendor\\topthink\\framework\\src\\think\\session\\Store.php ( 7.26 KB )");
+console.log("84 D:\\work\\08\\17_3\\vendor\\topthink\\think-multi-app\\src\\MultiApp.php ( 7.06 KB )");
+console.log("85 D:\\work\\08\\17_3\\app\\index\\common.php ( 5.15 KB )");
+console.log("86 D:\\work\\08\\17_3\\vendor\\topthink\\framework\\src\\think\\Route.php ( 23.96 KB )");
+console.log("87 D:\\work\\08\\17_3\\vendor\\topthink\\framework\\src\\think\\route\\RuleName.php ( 5.33 KB )");
+console.log("88 D:\\work\\08\\17_3\\vendor\\topthink\\framework\\src\\think\\route\\Domain.php ( 5.55 KB )");
+console.log("89 D:\\work\\08\\17_3\\vendor\\topthink\\framework\\src\\think\\route\\RuleGroup.php ( 13.61 KB )");
+console.log("90 D:\\work\\08\\17_3\\vendor\\topthink\\framework\\src\\think\\route\\Rule.php ( 22.85 KB )");
+console.log("91 D:\\work\\08\\17_3\\vendor\\topthink\\framework\\src\\think\\route\\RuleItem.php ( 8.81 KB )");
+console.log("92 D:\\work\\08\\17_3\\vendor\\topthink\\framework\\src\\think\\route\\dispatch\\Url.php ( 3.42 KB )");
+console.log("93 D:\\work\\08\\17_3\\vendor\\topthink\\framework\\src\\think\\route\\dispatch\\Controller.php ( 6.61 KB )");
+console.log("94 D:\\work\\08\\17_3\\vendor\\topthink\\framework\\src\\think\\route\\Dispatch.php ( 6.49 KB )");
+console.log("95 D:\\work\\08\\17_3\\app\\index\\controller\\Index.php ( 2.52 KB )");
+console.log("96 D:\\work\\08\\17_3\\app\\index\\controller\\Base.php ( 3.46 KB )");
+console.log("97 D:\\work\\08\\17_3\\app\\BaseController.php ( 2.12 KB )");
+console.log("98 D:\\work\\08\\17_3\\vendor\\topthink\\think-orm\\src\\facade\\Db.php ( 0.93 KB )");
+console.log("99 D:\\work\\08\\17_3\\vendor\\topthink\\think-orm\\src\\db\\connector\\Mysql.php ( 4.33 KB )");
+console.log("100 D:\\work\\08\\17_3\\vendor\\topthink\\think-orm\\src\\db\\PDOConnection.php ( 51.60 KB )");
+console.log("101 D:\\work\\08\\17_3\\vendor\\topthink\\think-orm\\src\\db\\Connection.php ( 8.81 KB )");
+console.log("102 D:\\work\\08\\17_3\\vendor\\topthink\\think-orm\\src\\db\\ConnectionInterface.php ( 4.86 KB )");
+console.log("103 D:\\work\\08\\17_3\\vendor\\topthink\\think-orm\\src\\db\\builder\\Mysql.php ( 16.56 KB )");
+console.log("104 D:\\work\\08\\17_3\\vendor\\topthink\\think-orm\\src\\db\\Builder.php ( 22.26 KB )");
+console.log("105 D:\\work\\08\\17_3\\vendor\\topthink\\think-orm\\src\\db\\BaseBuilder.php ( 27.29 KB )");
+console.log("106 D:\\work\\08\\17_3\\vendor\\topthink\\think-orm\\src\\db\\Query.php ( 15.21 KB )");
+console.log("107 D:\\work\\08\\17_3\\vendor\\topthink\\think-orm\\src\\db\\BaseQuery.php ( 41.60 KB )");
+console.log("108 D:\\work\\08\\17_3\\vendor\\topthink\\think-orm\\src\\db\\concern\\TimeFieldQuery.php ( 7.43 KB )");
+console.log("109 D:\\work\\08\\17_3\\vendor\\topthink\\think-orm\\src\\db\\concern\\AggregateQuery.php ( 3.26 KB )");
+console.log("110 D:\\work\\08\\17_3\\vendor\\topthink\\think-orm\\src\\db\\concern\\ModelRelationQuery.php ( 19.29 KB )");
+console.log("111 D:\\work\\08\\17_3\\vendor\\topthink\\think-orm\\src\\db\\concern\\ParamsBind.php ( 3.66 KB )");
+console.log("112 D:\\work\\08\\17_3\\vendor\\topthink\\think-orm\\src\\db\\concern\\ResultOperation.php ( 6.98 KB )");
+console.log("113 D:\\work\\08\\17_3\\vendor\\topthink\\think-orm\\src\\db\\concern\\Transaction.php ( 2.77 KB )");
+console.log("114 D:\\work\\08\\17_3\\vendor\\topthink\\think-orm\\src\\db\\concern\\WhereQuery.php ( 18.79 KB )");
+console.log("115 D:\\work\\08\\17_3\\vendor\\topthink\\think-orm\\src\\db\\concern\\JoinAndViewQuery.php ( 6.96 KB )");
+console.log("116 D:\\work\\08\\17_3\\vendor\\topthink\\think-orm\\src\\db\\concern\\TableFieldInfo.php ( 2.46 KB )");
+console.log("117 D:\\work\\08\\17_3\\vendor\\topthink\\framework\\src\\think\\log\\driver\\File.php ( 6.17 KB )");
+console.log("118 D:\\work\\08\\17_3\\vendor\\topthink\\framework\\src\\think\\contract\\LogHandlerInterface.php ( 0.86 KB )");
+console.log("119 D:\\work\\08\\17_3\\vendor\\topthink\\framework\\src\\think\\log\\Channel.php ( 6.54 KB )");
+console.log("120 D:\\work\\08\\17_3\\vendor\\topthink\\framework\\src\\think\\event\\LogRecord.php ( 0.86 KB )");
+console.log("121 D:\\work\\08\\17_3\\vendor\\topthink\\framework\\src\\think\\facade\\Session.php ( 1.15 KB )");
+console.log("122 D:\\work\\08\\17_3\\vendor\\topthink\\think-helper\\src\\Collection.php ( 16.47 KB )");
+console.log("123 D:\\work\\08\\17_3\\vendor\\topthink\\framework\\src\\think\\facade\\View.php ( 1.71 KB )");
+console.log("124 D:\\work\\08\\17_3\\vendor\\topthink\\framework\\src\\think\\View.php ( 4.41 KB )");
+console.log("125 D:\\work\\08\\17_3\\vendor\\topthink\\think-view\\src\\Think.php ( 8.00 KB )");
+console.log("126 D:\\work\\08\\17_3\\vendor\\topthink\\think-template\\src\\Template.php ( 46.61 KB )");
+console.log("127 D:\\work\\08\\17_3\\vendor\\topthink\\think-template\\src\\template\\driver\\File.php ( 2.41 KB )");
+console.log("128 D:\\work\\08\\17_3\\vendor\\topthink\\think-template\\src\\template\\contract\\DriverInterface.php ( 0.86 KB )");
+console.log("129 D:\\work\\08\\17_3\\runtime\\index\\temp\\0afc33114aee4d41b9a311cc94e86fc6.php ( 18.15 KB )");
+console.log("130 D:\\work\\08\\17_3\\vendor\\topthink\\framework\\src\\think\\Response.php ( 8.60 KB )");
+console.log("131 D:\\work\\08\\17_3\\vendor\\topthink\\framework\\src\\think\\response\\Html.php ( 0.98 KB )");
+console.log("132 D:\\work\\08\\17_3\\vendor\\topthink\\framework\\src\\think\\Cookie.php ( 6.28 KB )");
+console.log("133 D:\\work\\08\\17_3\\vendor\\topthink\\think-trace\\src\\Console.php ( 6.29 KB )");
+console.groupEnd();console.groupCollapsed('流程');
+console.groupEnd();console.group('错误');
+console.groupEnd();console.groupCollapsed('sql');
+console.log("%cCONNECT:[ UseTime:0.019064s ] mysql:host=127.0.0.1;port=3306;dbname=auction;charset=utf8mb4", "color:#009bb4;");
+console.log("%cSHOW FULL COLUMNS FROM `goods` [ RunTime:0.001842s ]", "color:#009bb4;");
+console.log("%cSELECT `id` FROM `goods` WHERE  `status` = 1  AND `end_time` <= 1786976208 [ RunTime:0.000606s ]", "color:#009bb4;");
+console.log("%cSHOW FULL COLUMNS FROM `setting` [ RunTime:0.003245s ]", "color:#009bb4;");
+console.log("%cSELECT * FROM `setting` [ RunTime:0.000899s ]", "color:#009bb4;");
+console.log("%cSELECT COUNT(*) AS think_count FROM `goods` `g` LEFT JOIN `user` `u` ON `g`.`seller_id`=`u`.`id` WHERE  `g`.`status` = \'1\'  AND `g`.`start_time` <= \'1786976208\'  AND `g`.`end_time` > \'1786976208\' [ RunTime:0.001187s ]", "color:#009bb4;");
+console.log("%cSELECT `g`.*,u.nickname as seller_name FROM `goods` `g` LEFT JOIN `user` `u` ON `g`.`seller_id`=`u`.`id` WHERE  `g`.`status` = \'1\'  AND `g`.`start_time` <= \'1786976208\'  AND `g`.`end_time` > \'1786976208\' ORDER BY `g`.`end_time` ASC,`g`.`id` DESC LIMIT 0,12 [ RunTime:0.001339s ]", "color:#009bb4;");
+console.log("%cSHOW FULL COLUMNS FROM `bid_record` [ RunTime:0.003722s ]", "color:#009bb4;");
+console.log("%cSELECT MAX(`price`) AS think_max FROM `bid_record` WHERE  `goods_id` = 3  AND `status` = 0 [ RunTime:0.000961s ]", "color:#009bb4;");
+console.log("%cSELECT MAX(`price`) AS think_max FROM `bid_record` WHERE  `goods_id` = 1  AND `status` = 0 [ RunTime:0.000952s ]", "color:#009bb4;");
+console.log("%cSHOW FULL COLUMNS FROM `category` [ RunTime:0.001510s ]", "color:#009bb4;");
+console.log("%cSELECT * FROM `category` WHERE  `status` = 1 ORDER BY `sort` ASC [ RunTime:0.000810s ]", "color:#009bb4;");
+console.groupEnd();console.group('调试');
+console.groupEnd();
+</script></body>
+</html>

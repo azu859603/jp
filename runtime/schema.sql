@@ -1,0 +1,1 @@
+﻿SHOW CREATE TABLE `order`; SHOW CREATE TABLE category; SHOW CREATE TABLE setting; SHOW CREATE TABLE user_address; SHOW CREATE TABLE balance_log; SHOW CREATE TABLE withdraw;

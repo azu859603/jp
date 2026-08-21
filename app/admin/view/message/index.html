@@ -1,0 +1,139 @@
+{extend name="layout" /}
+
+{block name="title"}咨询审核{/block}
+{block name="crumb"}会员管理 / <b>咨询审核</b>{/block}
+
+{block name="content"}
+<div class="search-bar">
+    <div class="search-input">
+        <svg class="s-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/></svg>
+        <input type="text" class="form-control" id="keyword" placeholder="内容/商品/发送人/接收人">
+    </div>
+    <button class="btn btn-primary" onclick="loadList(1)">查询</button>
+    <button class="btn" onclick="resetSearch()">重置</button>
+</div>
+
+<div class="card">
+    <div class="table-wrap">
+        <table class="table">
+            <thead>
+            <tr>
+                <th>ID</th><th>发送者</th><th>接收者</th><th>咨询商品</th><th>内容</th><th>状态</th><th>时间</th><th>操作</th>
+            </tr>
+            </thead>
+            <tbody id="tbody"></tbody>
+        </table>
+    </div>
+    <div class="pagination" id="pagination"></div>
+</div>
+
+<!-- 修改内容弹层 -->
+<div class="mask" id="editMask">
+    <div class="dialog" style="width:560px;">
+        <div class="dialog-title" id="editDialogTitle">修改信息</div>
+        <div class="dialog-body">
+            <div class="form-group" style="margin-bottom:0;">
+                <label>聊天内容 <span class="req">*</span></label>
+                <textarea class="form-control" id="editContent" rows="6" maxlength="500" placeholder="请输入内容（最多500字）"></textarea>
+            </div>
+        </div>
+        <div class="dialog-footer">
+            <button class="btn" onclick="document.getElementById('editMask').classList.remove('show')">取消</button>
+            <button class="btn btn-primary" onclick="doEdit()">保存</button>
+        </div>
+    </div>
+</div>
+
+<script>
+var currentPage = 1;
+var editMsgId = 0;
+
+function esc(s){
+    return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function cut(s, n){
+    s = String(s == null ? '' : s);
+    return s.length > n ? s.substring(0, n) + '…' : s;
+}
+
+function loadList(page){
+    currentPage = page;
+    fetch('/admin1314/message/index?page=' + page + '&limit=15&keyword=' + encodeURIComponent(document.getElementById('keyword').value), {headers:{'X-Requested-With':'XMLHttpRequest'}})
+        .then(function(r){ return r.json(); })
+        .then(function(res){
+            var html = '';
+            if(!res.data || !res.data.length){
+                html = '<tr><td colspan="8" class="empty">暂无数据</td></tr>';
+            } else {
+                res.data.forEach(function(m){
+                    var statusHtml = m.is_read == 1 ? '<span class="tag tag-green">已读</span>' : '<span class="tag tag-orange">未读</span>';
+                    var fromText = esc(m.from_name) + ' <span style="color:#94a3b8;font-size:12px;">[' + esc(m.from_mobile || 'UID' + m.from_uid) + ']</span>';
+                    var toText = esc(m.to_name) + ' <span style="color:#94a3b8;font-size:12px;">[' + esc(m.to_mobile || 'UID' + m.to_uid) + ']</span>';
+                    html += '<tr>'
+                        + '<td>' + m.id + '</td>'
+                        + '<td>' + fromText + '</td>'
+                        + '<td>' + toText + '</td>'
+                        + '<td title="' + esc(m.goods_title || '') + '"><a href="/goods/detail?id=' + m.goods_id + '" target="_blank">' + esc(cut(m.goods_title || '-', 16)) + '</a></td>'
+                        + '<td class="msg-content" title="' + esc(m.content) + '" style="max-width:260px;">' + esc(cut(m.content, 40)) + '</td>'
+                        + '<td>' + statusHtml + '</td>'
+                        + '<td>' + (m.time_text || '-') + '</td>'
+                        + '<td style="white-space:nowrap;">'
+                        + '<a class="btn btn-sm" href="javascript:;" onclick="openEdit(' + m.id + ',\'' + esc(m.content).replace(/'/g, "\\'") + '\')">编辑</a> '
+                        + '<a class="btn btn-sm btn-danger" href="javascript:;" onclick="doDelete(' + m.id + ')">删除</a>'
+                        + '</td></tr>';
+                });
+            }
+            document.getElementById('tbody').innerHTML = html;
+            renderPagination(res.count, page);
+        });
+}
+
+function renderPagination(total, page){
+    var pages = Math.ceil(total / 15) || 1;
+    var html = '<span class="info">共 ' + total + ' 条，第 ' + page + '/' + pages + ' 页</span> ';
+    html += '<a class="' + (page <= 1 ? 'disabled' : '') + '" href="javascript:;" onclick="loadList(1)">首页</a>';
+    html += '<a class="' + (page <= 1 ? 'disabled' : '') + '" href="javascript:;" onclick="loadList(' + (page - 1) + ')">上一页</a>';
+    var start = Math.max(1, page - 2), end = Math.min(pages, page + 2);
+    for(var i = start; i <= end; i++){
+        html += i == page ? '<span class="current">' + i + '</span>' : '<a href="javascript:;" onclick="loadList(' + i + ')">' + i + '</a>';
+    }
+    html += '<a class="' + (page >= pages ? 'disabled' : '') + '" href="javascript:;" onclick="loadList(' + (page + 1) + ')">下一页</a>';
+    html += '<a class="' + (page >= pages ? 'disabled' : '') + '" href="javascript:;" onclick="loadList(' + pages + ')">末页</a>';
+    document.getElementById('pagination').innerHTML = html;
+}
+
+function resetSearch(){
+    document.getElementById('keyword').value = '';
+    loadList(1);
+}
+
+function openEdit(id, content){
+    editMsgId = id;
+    document.getElementById('editContent').value = content;
+    document.getElementById('editMask').classList.add('show');
+}
+
+function doEdit(){
+    var content = document.getElementById('editContent').value.trim();
+    if(!content){ alert('内容不能为空'); return; }
+    ajaxPost('/admin1314/message/update', {id: editMsgId, content: content}, function(res){
+        alert(res.msg);
+        if(res.code == 1){
+            document.getElementById('editMask').classList.remove('show');
+            loadList(currentPage);
+        }
+    });
+}
+
+function doDelete(id){
+    confirmDialog('确定要删除这条咨询信息吗？删除后双方都将无法查看。', function(){
+        ajaxPost('/admin1314/message/delete', {id: id}, function(res){
+            alert(res.msg);
+            if(res.code == 1) loadList(currentPage);
+        });
+    });
+}
+
+loadList(1);
+</script>
+{/block}

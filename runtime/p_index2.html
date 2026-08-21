@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>系统概览 - 竞拍商城</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"Microsoft YaHei",Arial,sans-serif;background:#f0f2f5;font-size:14px;color:#333}
+a{text-decoration:none;color:#333}
+a:hover{color:#ff7a00}
+
+/* 布局 */
+.layout{display:flex;min-height:100vh}
+.sidebar{width:220px;background:#1e293b;color:#cbd5e1;flex-shrink:0;display:flex;flex-direction:column;position:fixed;top:0;bottom:0;left:0;z-index:100}
+.main{flex:1;margin-left:220px;display:flex;flex-direction:column;min-height:100vh}
+
+/* 侧边栏 */
+.sidebar .logo{height:60px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:bold;color:#fff;border-bottom:1px solid #334155}
+.sidebar .logo span{color:#ff7a00}
+.sidebar nav{flex:1;overflow-y:auto;padding:10px 0}
+.sidebar nav::-webkit-scrollbar{width:4px}
+.sidebar nav::-webkit-scrollbar-thumb{background:#475569;border-radius:2px}
+.menu-group{margin-bottom:4px}
+.menu-group>.menu-title{display:flex;align-items:center;padding:11px 20px;cursor:pointer;font-size:14px;transition:background .2s}
+.menu-group>.menu-title:hover{background:#334155;color:#fff}
+.menu-group>.menu-title .icon{margin-right:10px}
+.menu-group>.menu-title .arrow{margin-left:auto;font-size:10px;transition:transform .2s}
+.menu-group.open>.menu-title .arrow{transform:rotate(90deg)}
+.menu-group.open>.menu-title{background:#334155;color:#fff}
+.menu-group .menu-items{display:none;background:#0f172a;padding:4px 0}
+.menu-group.open .menu-items{display:block}
+.menu-items a{display:block;padding:10px 20px 10px 50px;font-size:13px;color:#94a3b8;transition:all .2s}
+.menu-items a:hover{color:#fff;background:#1e293b}
+.menu-items a.active{color:#ff7a00;background:#1e293b;border-left:3px solid #ff7a00}
+
+/* 顶栏 */
+.topbar{height:60px;background:#fff;border-bottom:1px solid #e5e7eb;display:flex;align-items:center;justify-content:space-between;padding:0 24px;position:sticky;top:0;z-index:90}
+.topbar .breadcrumb{color:#64748b;font-size:13px}
+.topbar .breadcrumb b{color:#333}
+.topbar .admin-info{display:flex;align-items:center;gap:12px}
+.topbar .admin-info .avatar{width:34px;height:34px;border-radius:50%;background:#ff7a00;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:bold}
+.topbar .admin-info .name{font-size:14px}
+.topbar .admin-info a{font-size:13px;color:#64748b}
+.topbar .admin-info a:hover{color:#ff7a00}
+
+/* 内容区 */
+.content{padding:20px 24px;flex:1}
+.page-title{font-size:18px;font-weight:bold;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between}
+.page-title .tools{display:flex;gap:10px}
+
+/* 卡片 */
+.card{background:#fff;border-radius:10px;box-shadow:0 1px 3px rgba(0,0,0,.06);padding:20px;margin-bottom:20px}
+.card .card-title{font-size:15px;font-weight:bold;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid #f1f5f9}
+
+/* 统计卡片 */
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:20px}
+.stat-card{background:#fff;border-radius:10px;padding:20px;box-shadow:0 1px 3px rgba(0,0,0,.06);display:flex;align-items:center;gap:16px}
+.stat-card .stat-icon{width:52px;height:52px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:24px}
+.stat-card .stat-info .num{font-size:24px;font-weight:bold;color:#1e293b}
+.stat-card .stat-info .label{font-size:13px;color:#94a3b8;margin-top:2px}
+.bg-orange{background:#fff3e6}.bg-blue{background:#e8f0fe}.bg-green{background:#e6f7ee}.bg-purple{background:#f3e8ff}.bg-red{background:#fee2e2}.bg-cyan{background:#e0f7fa}
+
+/* 表格 */
+.table-wrap{overflow-x:auto}
+table.table{width:100%;border-collapse:collapse}
+table.table th{background:#f8fafc;padding:12px 12px;text-align:left;font-weight:600;font-size:13px;color:#475569;border-bottom:1px solid #e2e8f0;white-space:nowrap}
+table.table td{padding:12px;border-bottom:1px solid #f1f5f9;font-size:13px;vertical-align:middle}
+table.table tr:hover td{background:#fafbfc}
+table.table .thumb{width:46px;height:46px;border-radius:6px;object-fit:cover;background:#f1f5f9}
+table.table .price{color:#ff7a00;font-weight:bold}
+table.table .empty{text-align:center;color:#94a3b8;padding:40px 0}
+
+/* 标签 */
+.tag{display:inline-block;padding:2px 10px;border-radius:20px;font-size:12px;line-height:20px}
+.tag-green{background:#e6f7ee;color:#16a34a}
+.tag-red{background:#fee2e2;color:#dc2626}
+.tag-orange{background:#fff3e6;color:#ea580c}
+.tag-blue{background:#e8f0fe;color:#2563eb}
+.tag-gray{background:#f1f5f9;color:#64748b}
+.tag-purple{background:#f3e8ff;color:#9333ea}
+
+/* 按钮 */
+.btn{display:inline-block;padding:7px 16px;border-radius:6px;border:1px solid #e2e8f0;background:#fff;color:#475569;font-size:13px;cursor:pointer;transition:all .2s;line-height:20px}
+.btn:hover{border-color:#ff7a00;color:#ff7a00}
+.btn-primary{background:#ff7a00;border-color:#ff7a00;color:#fff}
+.btn-primary:hover{background:#e96c00;color:#fff}
+.btn-danger{background:#fff;border-color:#fca5a5;color:#dc2626}
+.btn-danger:hover{background:#dc2626;color:#fff}
+.btn-green{background:#16a34a;border-color:#16a34a;color:#fff}
+.btn-green:hover{background:#15803d;color:#fff}
+.btn-sm{padding:3px 10px;font-size:12px}
+.btn-block{width:100%}
+
+/* 表单 */
+.form-group{margin-bottom:16px}
+.form-group label{display:block;margin-bottom:6px;font-size:13px;color:#475569}
+.form-group label .req{color:#dc2626;margin-right:2px}
+.form-control{width:100%;padding:9px 12px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;outline:none;transition:border .2s;background:#fff}
+.form-control:focus{border-color:#ff7a00}
+textarea.form-control{resize:vertical;min-height:80px}
+select.form-control{appearance:auto}
+.form-row{display:flex;gap:16px}
+.form-row .form-group{flex:1}
+.form-inline{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px}
+.form-inline .form-control{width:auto;min-width:140px}
+
+/* 搜索栏 */
+.search-bar{background:#fff;border-radius:10px;padding:16px 20px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,.06);display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+
+/* 分页 */
+.pagination{display:flex;justify-content:center;align-items:center;gap:6px;margin-top:16px;flex-wrap:wrap}
+.pagination a,.pagination span{display:inline-block;padding:6px 12px;border:1px solid #e2e8f0;border-radius:6px;font-size:13px;background:#fff;color:#475569}
+.pagination a:hover{border-color:#ff7a00;color:#ff7a00}
+.pagination .current{background:#ff7a00;border-color:#ff7a00;color:#fff}
+.pagination .disabled{opacity:.5;pointer-events:none}
+.pagination .info{font-size:13px;color:#94a3b8}
+
+/* 详情 */
+.detail-list{width:100%}
+.detail-list tr td{padding:10px 12px;border-bottom:1px solid #f1f5f9;font-size:13px}
+.detail-list tr td:first-child{width:140px;color:#94a3b8;background:#fafbfc;font-weight:600}
+
+/* 弹层 */
+.mask{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;z-index:999}
+.mask.show{display:flex}
+.dialog{background:#fff;border-radius:10px;width:420px;max-width:92%;max-height:85vh;overflow-y:auto;padding:24px}
+.dialog .dialog-title{font-size:16px;font-weight:bold;margin-bottom:20px}
+.dialog .dialog-body{max-height:60vh;overflow-y:auto}
+.dialog .dialog-footer{display:flex;justify-content:flex-end;gap:10px;margin-top:20px;padding-top:16px;border-top:1px solid #f1f5f9}
+
+/* 提示 */
+.tip{font-size:12px;color:#94a3b8;margin-top:4px}
+.footer{text-align:center;padding:16px;color:#94a3b8;font-size:12px}
+
+/* 上传预览 */
+.upload-box{display:flex;gap:10px;flex-wrap:wrap}
+.upload-box .up-item{position:relative;width:90px;height:90px;border:1px dashed #d1d5db;border-radius:8px;overflow:hidden;cursor:pointer;background:#fafbfc}
+.upload-box .up-item img{width:100%;height:100%;object-fit:cover}
+.upload-box .up-item .del{position:absolute;top:2px;right:2px;background:rgba(0,0,0,.6);color:#fff;width:18px;height:18px;border-radius:50%;display:none;align-items:center;justify-content:center;font-size:11px;cursor:pointer}
+.upload-box .up-item:hover .del{display:flex}
+.upload-box .up-item.add{display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:28px}
+.upload-box .up-item.add:hover{border-color:#ff7a00;color:#ff7a00}
+</style>
+</head>
+<body>
+<div class="layout">
+    <aside class="sidebar">
+        <div class="logo">🏆 <span>竞拍</span>商城</div>
+        <nav id="menu">
+                        <div class="menu-group" data-key="dashboard">
+                <div class="menu-title">
+                    <span class="icon">📊</span>仪表盘<span class="arrow">▶</span>
+                </div>
+                <div class="menu-items">
+                                        <a href="/admin/index/index" class="active">系统概览</a>
+                                    </div>
+            </div>
+                        <div class="menu-group" data-key="member">
+                <div class="menu-title">
+                    <span class="icon">👥</span>会员管理<span class="arrow">▶</span>
+                </div>
+                <div class="menu-items">
+                                        <a href="/admin/member/index" class="">会员列表</a>
+                                        <a href="/admin/member/seller" class="">卖家审核</a>
+                                    </div>
+            </div>
+                        <div class="menu-group" data-key="goods">
+                <div class="menu-title">
+                    <span class="icon">📦</span>商品管理<span class="arrow">▶</span>
+                </div>
+                <div class="menu-items">
+                                        <a href="/admin/goods/index" class="">商品列表</a>
+                                        <a href="/admin/goods/check" class="">商品审核</a>
+                                        <a href="/admin/category/index" class="">分类管理</a>
+                                    </div>
+            </div>
+                        <div class="menu-group" data-key="auction">
+                <div class="menu-title">
+                    <span class="icon">🔨</span>竞拍管理<span class="arrow">▶</span>
+                </div>
+                <div class="menu-items">
+                                        <a href="/admin/bid/index" class="">出价记录</a>
+                                    </div>
+            </div>
+                        <div class="menu-group" data-key="order">
+                <div class="menu-title">
+                    <span class="icon">🧾</span>订单管理<span class="arrow">▶</span>
+                </div>
+                <div class="menu-items">
+                                        <a href="/admin/order/index" class="">订单列表</a>
+                                    </div>
+            </div>
+                        <div class="menu-group" data-key="finance">
+                <div class="menu-title">
+                    <span class="icon">💰</span>财务管理<span class="arrow">▶</span>
+                </div>
+                <div class="menu-items">
+                                        <a href="/admin/withdraw/index" class="">提现审核</a>
+                                        <a href="/admin/balance/index" class="">余额流水</a>
+                                    </div>
+            </div>
+                        <div class="menu-group" data-key="system">
+                <div class="menu-title">
+                    <span class="icon">⚙️</span>系统设置<span class="arrow">▶</span>
+                </div>
+                <div class="menu-items">
+                                        <a href="/admin/setting/index" class="">基础设置</a>
+                                        <a href="/admin/admin_user/index" class="">管理员管理</a>
+                                        <a href="/admin/log/index" class="">操作日志</a>
+                                    </div>
+            </div>
+                    </nav>
+    </aside>
+    <div class="main">
+        <header class="topbar">
+            <div class="breadcrumb">首页 / <b>系统概览</b></div>
+            <div class="admin-info">
+                <div class="avatar">超级管理员</div>
+                <span class="name">超级管理员</span>
+                <a href="/admin/login/logout">退出</a>
+            </div>
+        </header>
+        <div class="content">
+            
+<!-- 统计卡片 -->
+<div class="stat-grid">
+    <div class="stat-card">
+        <div class="stat-icon bg-orange">👥</div>
+        <div class="stat-info"><div class="num">4</div><div class="label">会员总数</div></div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon bg-purple">🏪</div>
+        <div class="stat-info"><div class="num">1</div><div class="label">卖家数量</div></div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon bg-blue">📦</div>
+        <div class="stat-info"><div class="num">4</div><div class="label">商品总数</div></div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon bg-green">🔨</div>
+        <div class="stat-info"><div class="num">2</div><div class="label">竞拍中</div></div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon bg-red">🧾</div>
+        <div class="stat-info"><div class="num">1</div><div class="label">订单总数</div></div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon bg-cyan">💰</div>
+        <div class="stat-info"><div class="num">￥480</div><div class="label">成交总额</div></div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon bg-orange">📈</div>
+        <div class="stat-info"><div class="num">￥48</div><div class="label">平台佣金</div></div>
+    </div>
+</div>
+
+<!-- 待办事项 -->
+<div class="card">
+    <div class="card-title">待办事项</div>
+    <table class="table">
+        <tr>
+            <td>商品待审核 <b class="price">0</b> 个</td>
+            <td><a class="btn btn-sm" href="/admin/goods/check">去处理</a></td>
+        </tr>
+        <tr>
+            <td>卖家开通待审核 <b class="price">2</b> 个</td>
+            <td><a class="btn btn-sm" href="/admin/member/seller">去处理</a></td>
+        </tr>
+        <tr>
+            <td>待打款订单 <b class="price">0</b> 个</td>
+            <td><a class="btn btn-sm" href="/admin/order/index?pay_status=0">去处理</a></td>
+        </tr>
+        <tr>
+            <td>提现申请待审核 <b class="price">0</b> 笔</td>
+            <td><a class="btn btn-sm" href="/admin/withdraw/index?status=0">去处理</a></td>
+        </tr>
+    </table>
+</div>
+
+<!-- 近7天成交 -->
+<div class="card">
+    <div class="card-title">近7天成交走势</div>
+    <div style="display:flex;align-items:flex-end;gap:18px;height:180px;padding:10px 6px 0;">
+                <div style="flex:1;display:flex;flex-direction:column;align-items:center;height:100%;justify-content:flex-end;">
+            <div style="font-size:12px;color:#ff7a00;font-weight:bold;margin-bottom:4px;">0</div>
+            <div style="width:100%;max-width:46px;background:linear-gradient(180deg,#ffb066,#ff7a00);border-radius:6px 6px 0 0;height:4px;min-height:4px;" title="成交0单"></div>
+            <div style="font-size:12px;color:#94a3b8;margin-top:6px;">08-11</div>
+        </div>
+                <div style="flex:1;display:flex;flex-direction:column;align-items:center;height:100%;justify-content:flex-end;">
+            <div style="font-size:12px;color:#ff7a00;font-weight:bold;margin-bottom:4px;">0</div>
+            <div style="width:100%;max-width:46px;background:linear-gradient(180deg,#ffb066,#ff7a00);border-radius:6px 6px 0 0;height:4px;min-height:4px;" title="成交0单"></div>
+            <div style="font-size:12px;color:#94a3b8;margin-top:6px;">08-12</div>
+        </div>
+                <div style="flex:1;display:flex;flex-direction:column;align-items:center;height:100%;justify-content:flex-end;">
+            <div style="font-size:12px;color:#ff7a00;font-weight:bold;margin-bottom:4px;">0</div>
+            <div style="width:100%;max-width:46px;background:linear-gradient(180deg,#ffb066,#ff7a00);border-radius:6px 6px 0 0;height:4px;min-height:4px;" title="成交0单"></div>
+            <div style="font-size:12px;color:#94a3b8;margin-top:6px;">08-13</div>
+        </div>
+                <div style="flex:1;display:flex;flex-direction:column;align-items:center;height:100%;justify-content:flex-end;">
+            <div style="font-size:12px;color:#ff7a00;font-weight:bold;margin-bottom:4px;">0</div>
+            <div style="width:100%;max-width:46px;background:linear-gradient(180deg,#ffb066,#ff7a00);border-radius:6px 6px 0 0;height:4px;min-height:4px;" title="成交0单"></div>
+            <div style="font-size:12px;color:#94a3b8;margin-top:6px;">08-14</div>
+        </div>
+                <div style="flex:1;display:flex;flex-direction:column;align-items:center;height:100%;justify-content:flex-end;">
+            <div style="font-size:12px;color:#ff7a00;font-weight:bold;margin-bottom:4px;">0</div>
+            <div style="width:100%;max-width:46px;background:linear-gradient(180deg,#ffb066,#ff7a00);border-radius:6px 6px 0 0;height:4px;min-height:4px;" title="成交0单"></div>
+            <div style="font-size:12px;color:#94a3b8;margin-top:6px;">08-15</div>
+        </div>
+                <div style="flex:1;display:flex;flex-direction:column;align-items:center;height:100%;justify-content:flex-end;">
+            <div style="font-size:12px;color:#ff7a00;font-weight:bold;margin-bottom:4px;">0</div>
+            <div style="width:100%;max-width:46px;background:linear-gradient(180deg,#ffb066,#ff7a00);border-radius:6px 6px 0 0;height:4px;min-height:4px;" title="成交0单"></div>
+            <div style="font-size:12px;color:#94a3b8;margin-top:6px;">08-16</div>
+        </div>
+                <div style="flex:1;display:flex;flex-direction:column;align-items:center;height:100%;justify-content:flex-end;">
+            <div style="font-size:12px;color:#ff7a00;font-weight:bold;margin-bottom:4px;">480</div>
+            <div style="width:100%;max-width:46px;background:linear-gradient(180deg,#ffb066,#ff7a00);border-radius:6px 6px 0 0;height:120px;min-height:4px;" title="成交1单"></div>
+            <div style="font-size:12px;color:#94a3b8;margin-top:6px;">08-17</div>
+        </div>
+            </div>
+</div>
+
+<div class="card">
+    <div class="card-title">最近订单</div>
+    <div class="table-wrap">
+        <table class="table">
+            <thead>
+            <tr><th>订单号</th><th>商品</th><th>买家</th><th>成交价</th><th>佣金</th><th>状态</th><th>时间</th></tr>
+            </thead>
+            <tbody>
+                        <tr>
+                <td>AU20260817120000123</td>
+                <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">限量版潮玩手办</td>
+                <td>2</td>
+                <td class="price">￥480.00</td>
+                <td>￥48.00</td>
+                <td>
+                    <span class="tag tag-green">已完成</span>
+                                    </td>
+                <td>2026-08-17 05:33</td>
+            </tr>
+                                    </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-title">最新出价</div>
+    <div class="table-wrap">
+        <table class="table">
+            <thead>
+            <tr><th>商品</th><th>出价人</th><th>出价</th><th>状态</th><th>时间</th></tr>
+            </thead>
+            <tbody>
+                        <tr>
+                <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">限量版潮玩手办</td>
+                <td>李四</td>
+                <td class="price">￥480.00</td>
+                <td>
+                    <span class="tag tag-green">得标</span>
+                                    </td>
+                <td>2026-08-17 05:16</td>
+            </tr>
+                        <tr>
+                <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">限量版潮玩手办</td>
+                <td>赵六</td>
+                <td class="price">￥320.00</td>
+                <td>
+                    <span class="tag tag-blue">竞拍中</span>
+                                    </td>
+                <td>2026-08-17 05:00</td>
+            </tr>
+                        <tr>
+                <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">限量版潮玩手办</td>
+                <td>李四</td>
+                <td class="price">￥300.00</td>
+                <td>
+                    <span class="tag tag-green">得标</span>
+                                    </td>
+                <td>2026-08-17 04:43</td>
+            </tr>
+                        <tr>
+                <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">iPhone 15 Pro 256G 国行</td>
+                <td>李四</td>
+                <td class="price">￥3300.00</td>
+                <td>
+                    <span class="tag tag-blue">竞拍中</span>
+                                    </td>
+                <td>2026-08-17 04:26</td>
+            </tr>
+                        <tr>
+                <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">iPhone 15 Pro 256G 国行</td>
+                <td>赵六</td>
+                <td class="price">￥3200.00</td>
+                <td>
+                    <span class="tag tag-blue">竞拍中</span>
+                                    </td>
+                <td>2026-08-17 04:10</td>
+            </tr>
+                        <tr>
+                <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">iPhone 15 Pro 256G 国行</td>
+                <td>李四</td>
+                <td class="price">￥3100.00</td>
+                <td>
+                    <span class="tag tag-blue">竞拍中</span>
+                                    </td>
+                <td>2026-08-17 03:53</td>
+            </tr>
+                                    </tbody>
+        </table>
+    </div>
+</div>
+
+        </div>
+        <div class="footer">竞拍商城管理系统 v1.0</div>
+    </div>
+</div>
+
+<div class="mask" id="dialogMask">
+    <div class="dialog">
+        <div class="dialog-title" id="dialogTitle">提示</div>
+        <div class="dialog-body" id="dialogBody"></div>
+        <div class="dialog-footer">
+            <button class="btn" onclick="closeDialog()">取消</button>
+            <button class="btn btn-primary" id="dialogOk">确定</button>
+        </div>
+    </div>
+</div>
+
+<script>
+// 菜单展开
+document.querySelectorAll('.menu-group').forEach(function(g){
+    if(g.querySelector('a.active')){g.classList.add('open');}
+    g.querySelector('.menu-title').addEventListener('click',function(){
+        document.querySelectorAll('.menu-group.open').forEach(function(o){if(o!==g)o.classList.remove('open')});
+        g.classList.toggle('open');
+    });
+});
+
+// 确认弹层
+var dialogCallback = null;
+function confirmDialog(msg, cb){
+    document.getElementById('dialogBody').innerHTML = msg;
+    document.getElementById('dialogMask').classList.add('show');
+    dialogCallback = cb;
+}
+function closeDialog(){
+    document.getElementById('dialogMask').classList.remove('show');
+    dialogCallback = null;
+}
+document.getElementById('dialogOk').onclick = function(){
+    var cb = dialogCallback;
+    closeDialog();
+    if(typeof cb === 'function') cb();
+};
+document.getElementById('dialogMask').addEventListener('click',function(e){
+    if(e.target === this) closeDialog();
+});
+
+// 表单提交
+function submitForm(formId, url, successMsg, failMsg){
+    var form = document.getElementById(formId);
+    var btn = form.querySelector('[type=submit]');
+    if(btn) btn.disabled = true;
+    var fd = new FormData(form);
+    fetch(url, {method:'POST', body:fd})
+        .then(function(r){ return r.json(); })
+        .then(function(res){
+            if(btn) btn.disabled = false;
+            if(res.code == 1){
+                if(res.msg) alert(res.msg || '操作成功');
+                if(res.url) location.href = res.url; else location.reload();
+            } else {
+                alert(res.msg || '操作失败');
+            }
+        })
+        .catch(function(){
+            if(btn) btn.disabled = false;
+            alert('网络错误，请重试');
+        });
+    return false;
+}
+
+// ajax 请求
+function ajaxPost(url, data, cb, errMsg){
+    fetch(url, {method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body:new URLSearchParams(data)})
+        .then(function(r){ return r.json(); })
+        .then(function(res){ cb(res); })
+        .catch(function(){ alert(errMsg || '网络错误，请重试'); });
+}
+</script>
+
+<div id="think_page_trace" style="position: fixed;bottom:0;right:0;font-size:14px;width:100%;z-index: 999999;color: #000;text-align:left;font-family:'微软雅黑';">
+    <div id="think_page_trace_tab" style="display: none;background:white;margin:0;height: 250px;">
+        <div id="think_page_trace_tab_tit" style="height:30px;padding: 6px 12px 0;border-bottom:1px solid #ececec;border-top:1px solid #ececec;font-size:16px">
+                        <span style="color:#000;padding-right:12px;height:30px;line-height:30px;display:inline-block;margin-right:3px;cursor:pointer;font-weight:700">基本</span>
+                        <span style="color:#000;padding-right:12px;height:30px;line-height:30px;display:inline-block;margin-right:3px;cursor:pointer;font-weight:700">文件</span>
+                        <span style="color:#000;padding-right:12px;height:30px;line-height:30px;display:inline-block;margin-right:3px;cursor:pointer;font-weight:700">流程</span>
+                        <span style="color:#000;padding-right:12px;height:30px;line-height:30px;display:inline-block;margin-right:3px;cursor:pointer;font-weight:700">错误</span>
+                        <span style="color:#000;padding-right:12px;height:30px;line-height:30px;display:inline-block;margin-right:3px;cursor:pointer;font-weight:700">SQL</span>
+                        <span style="color:#000;padding-right:12px;height:30px;line-height:30px;display:inline-block;margin-right:3px;cursor:pointer;font-weight:700">调试</span>
+                    </div>
+        <div id="think_page_trace_tab_cont" style="overflow:auto;height:212px;padding:0;line-height: 24px">
+                        <div style="display:none;">
+                <ol style="padding: 0; margin:0">
+                    <li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">请求信息 : 2026-08-17 21:50:43 HTTP/1.1 GET : http://127.0.0.1:8000/admin/index/index</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">运行时间 : 0.091650s [ 吞吐率：10.91req/s ] 内存消耗：4,166.04kb 文件加载：132</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">查询信息 : 0 queries</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">缓存信息 : 0 reads,0 writes</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">会话信息 : SESSION_ID=f0d90157419083086fb62e6b9e6ef2f4</li>                </ol>
+            </div>
+                        <div style="display:none;">
+                <ol style="padding: 0; margin:0">
+                    <li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\public\router.php ( 0.79 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\public\index.php ( 0.81 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\vendor\autoload.php ( 0.73 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\vendor\composer\autoload_real.php ( 1.63 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\vendor\composer\platform_check.php ( 0.90 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\vendor\composer\ClassLoader.php ( 15.99 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\vendor\composer\autoload_static.php ( 33.70 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\vendor\topthink\think-helper\src\helper.php ( 8.34 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\vendor\topthink\think-orm\stubs\load_stubs.php ( 0.16 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\vendor\topthink\framework\src\think\Exception.php ( 1.69 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\vendor\topthink\framework\src\think\Facade.php ( 2.71 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\vendor\topthink\framework\src\think\App.php ( 14.17 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\vendor\topthink\framework\src\think\Container.php ( 15.38 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\vendor\psr\container\src\ContainerInterface.php ( 1.02 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\app\provider.php ( 0.63 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\vendor\topthink\framework\src\think\Http.php ( 6.12 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\vendor\topthink\think-helper\src\helper\Str.php ( 7.29 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\vendor\topthink\framework\src\think\Env.php ( 4.64 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\app\common.php ( 0.90 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\vendor\topthink\framework\src\helper.php ( 18.44 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\vendor\topthink\framework\src\think\Config.php ( 5.03 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\config\app.php ( 1.30 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\vendor\topthink\framework\src\think\facade\Env.php ( 1.67 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\config\cache.php ( 0.69 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\config\console.php ( 0.24 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\config\cookie.php ( 0.58 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\config\database.php ( 2.69 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\config\filesystem.php ( 0.68 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\config\lang.php ( 0.85 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\config\log.php ( 1.25 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\config\middleware.php ( 0.26 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\config\route.php ( 1.20 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\config\session.php ( 0.58 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\config\trace.php ( 0.14 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\config\view.php ( 0.84 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\app\service.php ( 0.71 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\app\AppService.php ( 0.28 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\vendor\topthink\framework\src\think\Service.php ( 1.67 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\vendor\topthink\framework\src\think\Lang.php ( 7.60 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\vendor\topthink\framework\src\lang\zh-cn.php ( 12.88 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\vendor\topthink\framework\src\think\Event.php ( 6.96 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\vendor\topthink\framework\src\think\initializer\Error.php ( 3.27 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\vendor\topthink\framework\src\think\initializer\RegisterService.php ( 1.33 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\vendor\services.php ( 0.18 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\vendor\topthink\framework\src\think\service\PaginatorService.php ( 1.52 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\vendor\topthink\framework\src\think\service\ValidateService.php ( 0.99 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\vendor\topthink\framework\src\think\service\ModelService.php ( 1.76 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\vendor\topthink\think-multi-app\src\Service.php ( 1.08 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\vendor\topthink\think-trace\src\Service.php ( 0.77 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\vendor\topthink\framework\src\think\Middleware.php ( 6.78 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\vendor\topthink\framework\src\think\initializer\BootService.php ( 0.77 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\vendor\topthink\think-orm\src\Paginator.php ( 11.71 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\vendor\topthink\framework\src\think\Validate.php ( 46.10 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\vendor\topthink\think-orm\src\Model.php ( 26.86 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\vendor\topthink\think-orm\src\model\concern\Attribute.php ( 19.19 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\vendor\topthink\think-orm\src\model\concern\RelationShip.php ( 26.44 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\vendor\topthink\think-orm\src\model\concern\ModelEvent.php ( 2.58 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\vendor\topthink\think-orm\src\model\concern\TimeStamp.php ( 5.69 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\vendor\topthink\think-orm\src\model\concern\AutoWriteId.php ( 1.44 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\vendor\topthink\think-orm\src\model\concern\Conversion.php ( 10.85 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\vendor\topthink\think-helper\src\contract\Arrayable.php ( 0.09 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\vendor\topthink\think-helper\src\contract\Jsonable.php ( 0.13 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\vendor\topthink\framework\src\think\Db.php ( 2.87 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\vendor\topthink\think-orm\src\DbManager.php ( 8.33 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\vendor\topthink\framework\src\think\Log.php ( 8.50 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\vendor\topthink\framework\src\think\Manager.php ( 3.98 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\vendor\psr\log\Psr\Log\LoggerInterface.php ( 3.04 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\vendor\topthink\framework\src\think\Cache.php ( 4.79 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\vendor\psr\simple-cache\src\CacheInterface.php ( 4.50 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\vendor\topthink\think-helper\src\helper\Arr.php ( 16.63 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\vendor\topthink\framework\src\think\cache\driver\File.php ( 7.42 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\vendor\topthink\framework\src\think\cache\Driver.php ( 8.06 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\vendor\topthink\framework\src\think\contract\CacheHandlerInterface.php ( 2.25 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\vendor\topthink\framework\src\think\Console.php ( 22.65 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\vendor\topthink\framework\src\think\Request.php ( 54.04 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\app\middleware.php ( 0.12 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\vendor\topthink\framework\src\think\Pipeline.php ( 2.61 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\vendor\topthink\think-trace\src\TraceDebug.php ( 2.94 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\vendor\topthink\framework\src\think\middleware\SessionInit.php ( 2.06 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\vendor\topthink\framework\src\think\Session.php ( 1.80 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\vendor\topthink\framework\src\think\session\driver\File.php ( 6.28 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\vendor\topthink\framework\src\think\contract\SessionHandlerInterface.php ( 0.87 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\vendor\topthink\framework\src\think\session\Store.php ( 7.26 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\vendor\topthink\think-multi-app\src\MultiApp.php ( 7.06 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\vendor\topthink\framework\src\think\Route.php ( 23.96 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\vendor\topthink\framework\src\think\route\RuleName.php ( 5.33 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\vendor\topthink\framework\src\think\route\Domain.php ( 5.55 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\vendor\topthink\framework\src\think\route\RuleGroup.php ( 13.61 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\vendor\topthink\framework\src\think\route\Rule.php ( 22.85 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\vendor\topthink\framework\src\think\route\RuleItem.php ( 8.81 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\vendor\topthink\framework\src\think\route\dispatch\Url.php ( 3.42 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\vendor\topthink\framework\src\think\route\dispatch\Controller.php ( 6.61 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\vendor\topthink\framework\src\think\route\Dispatch.php ( 6.49 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\app\admin\controller\Index.php ( 2.88 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\app\admin\controller\Base.php ( 4.61 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\app\BaseController.php ( 2.12 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\vendor\topthink\framework\src\think\facade\Session.php ( 1.15 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\vendor\topthink\framework\src\think\facade\View.php ( 1.71 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\vendor\topthink\framework\src\think\View.php ( 4.41 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\vendor\topthink\think-orm\src\facade\Db.php ( 0.93 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\vendor\topthink\think-orm\src\db\connector\Mysql.php ( 4.33 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\vendor\topthink\think-orm\src\db\PDOConnection.php ( 51.60 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\vendor\topthink\think-orm\src\db\Connection.php ( 8.81 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\vendor\topthink\think-orm\src\db\ConnectionInterface.php ( 4.86 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\vendor\topthink\think-orm\src\db\builder\Mysql.php ( 16.56 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\vendor\topthink\think-orm\src\db\Builder.php ( 22.26 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\vendor\topthink\think-orm\src\db\BaseBuilder.php ( 27.29 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\vendor\topthink\think-orm\src\db\Query.php ( 15.21 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\vendor\topthink\think-orm\src\db\BaseQuery.php ( 41.60 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\vendor\topthink\think-orm\src\db\concern\TimeFieldQuery.php ( 7.43 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\vendor\topthink\think-orm\src\db\concern\AggregateQuery.php ( 3.26 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\vendor\topthink\think-orm\src\db\concern\ModelRelationQuery.php ( 19.29 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\vendor\topthink\think-orm\src\db\concern\ParamsBind.php ( 3.66 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\vendor\topthink\think-orm\src\db\concern\ResultOperation.php ( 6.98 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\vendor\topthink\think-orm\src\db\concern\Transaction.php ( 2.77 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\vendor\topthink\think-orm\src\db\concern\WhereQuery.php ( 18.79 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\vendor\topthink\think-orm\src\db\concern\JoinAndViewQuery.php ( 6.96 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\vendor\topthink\think-orm\src\db\concern\TableFieldInfo.php ( 2.46 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\vendor\topthink\framework\src\think\log\driver\File.php ( 6.17 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\vendor\topthink\framework\src\think\contract\LogHandlerInterface.php ( 0.86 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\vendor\topthink\framework\src\think\log\Channel.php ( 6.54 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\vendor\topthink\framework\src\think\event\LogRecord.php ( 0.86 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\vendor\topthink\think-helper\src\Collection.php ( 16.47 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\vendor\topthink\think-view\src\Think.php ( 8.00 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\vendor\topthink\think-template\src\Template.php ( 46.61 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\vendor\topthink\think-template\src\template\driver\File.php ( 2.41 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\vendor\topthink\think-template\src\template\contract\DriverInterface.php ( 0.86 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\runtime\admin\temp\a85235cbe4ccf000ca8ec7a66684be49.php ( 21.48 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\vendor\topthink\framework\src\think\Response.php ( 8.60 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\vendor\topthink\framework\src\think\response\Html.php ( 0.98 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\vendor\topthink\framework\src\think\Cookie.php ( 6.28 KB )</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">D:\work\08\17_3\vendor\topthink\think-trace\src\Html.php ( 4.49 KB )</li>                </ol>
+            </div>
+                        <div style="display:none;">
+                <ol style="padding: 0; margin:0">
+                                    </ol>
+            </div>
+                        <div style="display:none;">
+                <ol style="padding: 0; margin:0">
+                                    </ol>
+            </div>
+                        <div style="display:none;">
+                <ol style="padding: 0; margin:0">
+                    <li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">CONNECT:[ UseTime:0.020644s ] mysql:host=127.0.0.1;port=3306;dbname=auction;charset=utf8mb4</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">SHOW FULL COLUMNS FROM `user` [ RunTime:0.001181s ]</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">SELECT COUNT(*) AS think_count FROM `user` [ RunTime:0.000492s ]</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">SELECT COUNT(*) AS think_count FROM `user` WHERE  `is_seller` = 1 [ RunTime:0.000489s ]</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">SHOW FULL COLUMNS FROM `goods` [ RunTime:0.002096s ]</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">SELECT COUNT(*) AS think_count FROM `goods` [ RunTime:0.000460s ]</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">SELECT COUNT(*) AS think_count FROM `goods` WHERE  `status` = 1  AND `end_time` &gt; 1786974643 [ RunTime:0.000469s ]</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">SHOW FULL COLUMNS FROM `order` [ RunTime:0.001975s ]</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">SELECT COUNT(*) AS think_count FROM `order` [ RunTime:0.000350s ]</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">SELECT COUNT(*) AS think_count FROM `order` WHERE  `pay_status` = 0  AND `order_status` = 0 [ RunTime:0.000352s ]</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">SELECT COUNT(*) AS think_count FROM `goods` WHERE  `status` = 0 [ RunTime:0.000319s ]</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">SELECT COUNT(*) AS think_count FROM `user` WHERE  `seller_check` = 0 [ RunTime:0.000295s ]</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">SHOW FULL COLUMNS FROM `withdraw` [ RunTime:0.000646s ]</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">SELECT COUNT(*) AS think_count FROM `withdraw` WHERE  `status` = 0 [ RunTime:0.000311s ]</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">SELECT SUM(`price`) AS think_sum FROM `order` WHERE  `pay_status` = 1 [ RunTime:0.000312s ]</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">SELECT SUM(`commission`) AS think_sum FROM `order` WHERE  `pay_status` = 1 [ RunTime:0.000278s ]</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">SELECT SUM(`price`) AS think_sum FROM `order` WHERE  `pay_status` = 1  AND `pay_time` &gt; 1786896000 [ RunTime:0.000288s ]</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">SELECT * FROM `order` ORDER BY `id` DESC LIMIT 8 [ RunTime:0.000317s ]</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">SHOW FULL COLUMNS FROM `bid_record` [ RunTime:0.002018s ]</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">SELECT `b`.*,g.title as goods_title,`u`.`nickname`,`u`.`mobile` FROM `bid_record` `b` LEFT JOIN `goods` `g` ON `b`.`goods_id`=`g`.`id` LEFT JOIN `user` `u` ON `b`.`user_id`=`u`.`id` ORDER BY `b`.`id` DESC LIMIT 8 [ RunTime:0.000730s ]</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">SELECT SUM(`price`) AS think_sum FROM `order` WHERE  `pay_time` &gt;= 1786377600  AND `pay_time` &lt; 1786464000 [ RunTime:0.000429s ]</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">SELECT COUNT(*) AS think_count FROM `order` WHERE  `pay_time` &gt;= 1786377600  AND `pay_time` &lt; 1786464000 [ RunTime:0.000381s ]</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">SELECT SUM(`price`) AS think_sum FROM `order` WHERE  `pay_time` &gt;= 1786464000  AND `pay_time` &lt; 1786550400 [ RunTime:0.000347s ]</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">SELECT COUNT(*) AS think_count FROM `order` WHERE  `pay_time` &gt;= 1786464000  AND `pay_time` &lt; 1786550400 [ RunTime:0.000321s ]</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">SELECT SUM(`price`) AS think_sum FROM `order` WHERE  `pay_time` &gt;= 1786550400  AND `pay_time` &lt; 1786636800 [ RunTime:0.000327s ]</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">SELECT COUNT(*) AS think_count FROM `order` WHERE  `pay_time` &gt;= 1786550400  AND `pay_time` &lt; 1786636800 [ RunTime:0.000306s ]</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">SELECT SUM(`price`) AS think_sum FROM `order` WHERE  `pay_time` &gt;= 1786636800  AND `pay_time` &lt; 1786723200 [ RunTime:0.000321s ]</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">SELECT COUNT(*) AS think_count FROM `order` WHERE  `pay_time` &gt;= 1786636800  AND `pay_time` &lt; 1786723200 [ RunTime:0.000316s ]</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">SELECT SUM(`price`) AS think_sum FROM `order` WHERE  `pay_time` &gt;= 1786723200  AND `pay_time` &lt; 1786809600 [ RunTime:0.000320s ]</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">SELECT COUNT(*) AS think_count FROM `order` WHERE  `pay_time` &gt;= 1786723200  AND `pay_time` &lt; 1786809600 [ RunTime:0.000314s ]</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">SELECT SUM(`price`) AS think_sum FROM `order` WHERE  `pay_time` &gt;= 1786809600  AND `pay_time` &lt; 1786896000 [ RunTime:0.000313s ]</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">SELECT COUNT(*) AS think_count FROM `order` WHERE  `pay_time` &gt;= 1786809600  AND `pay_time` &lt; 1786896000 [ RunTime:0.000316s ]</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">SELECT SUM(`price`) AS think_sum FROM `order` WHERE  `pay_time` &gt;= 1786896000  AND `pay_time` &lt; 1786982400 [ RunTime:0.000323s ]</li><li style="border-bottom:1px solid #EEE;font-size:14px;padding:0 12px">SELECT COUNT(*) AS think_count FROM `order` WHERE  `pay_time` &gt;= 1786896000  AND `pay_time` &lt; 1786982400 [ RunTime:0.000325s ]</li>                </ol>
+            </div>
+                        <div style="display:none;">
+                <ol style="padding: 0; margin:0">
+                                    </ol>
+            </div>
+                    </div>
+    </div>
+    <div id="think_page_trace_close" style="display:none;text-align:right;height:15px;position:absolute;top:10px;right:12px;cursor:pointer;"><img style="vertical-align:top;" src="data:image/gif;base64,R0lGODlhDwAPAJEAAAAAAAMDA////wAAACH/C1hNUCBEYXRhWE1QPD94cGFja2V0IGJlZ2luPSLvu78iIGlkPSJXNU0wTXBDZWhpSHpyZVN6TlRjemtjOWQiPz4gPHg6eG1wbWV0YSB4bWxuczp4PSJhZG9iZTpuczptZXRhLyIgeDp4bXB0az0iQWRvYmUgWE1QIENvcmUgNS4wLWMwNjAgNjEuMTM0Nzc3LCAyMDEwLzAyLzEyLTE3OjMyOjAwICAgICAgICAiPiA8cmRmOlJERiB4bWxuczpyZGY9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkvMDIvMjItcmRmLXN5bnRheC1ucyMiPiA8cmRmOkRlc2NyaXB0aW9uIHJkZjphYm91dD0iIiB4bWxuczp4bXA9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC8iIHhtbG5zOnhtcE1NPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvbW0vIiB4bWxuczpzdFJlZj0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wL3NUeXBlL1Jlc291cmNlUmVmIyIgeG1wOkNyZWF0b3JUb29sPSJBZG9iZSBQaG90b3Nob3AgQ1M1IFdpbmRvd3MiIHhtcE1NOkluc3RhbmNlSUQ9InhtcC5paWQ6MUQxMjc1MUJCQUJDMTFFMTk0OUVGRjc3QzU4RURFNkEiIHhtcE1NOkRvY3VtZW50SUQ9InhtcC5kaWQ6MUQxMjc1MUNCQUJDMTFFMTk0OUVGRjc3QzU4RURFNkEiPiA8eG1wTU06RGVyaXZlZEZyb20gc3RSZWY6aW5zdGFuY2VJRD0ieG1wLmlpZDoxRDEyNzUxOUJBQkMxMUUxOTQ5RUZGNzdDNThFREU2QSIgc3RSZWY6ZG9jdW1lbnRJRD0ieG1wLmRpZDoxRDEyNzUxQUJBQkMxMUUxOTQ5RUZGNzdDNThFREU2QSIvPiA8L3JkZjpEZXNjcmlwdGlvbj4gPC9yZGY6UkRGPiA8L3g6eG1wbWV0YT4gPD94cGFja2V0IGVuZD0iciI/PgH//v38+/r5+Pf29fTz8vHw7+7t7Ovq6ejn5uXk4+Lh4N/e3dzb2tnY19bV1NPS0dDPzs3My8rJyMfGxcTDwsHAv769vLu6ubi3trW0s7KxsK+urayrqqmop6alpKOioaCfnp2cm5qZmJeWlZSTkpGQj46NjIuKiYiHhoWEg4KBgH9+fXx7enl4d3Z1dHNycXBvbm1sa2ppaGdmZWRjYmFgX15dXFtaWVhXVlVUU1JRUE9OTUxLSklIR0ZFRENCQUA/Pj08Ozo5ODc2NTQzMjEwLy4tLCsqKSgnJiUkIyIhIB8eHRwbGhkYFxYVFBMSERAPDg0MCwoJCAcGBQQDAgEAACH5BAAAAAAALAAAAAAPAA8AAAIdjI6JZqotoJPR1fnsgRR3C2jZl3Ai9aWZZooV+RQAOw==" /></div>
+</div>
+<div id="think_page_trace_open" style="height:30px;float:right;text-align:right;overflow:hidden;position:fixed;bottom:0;right:0;color:#000;line-height:30px;cursor:pointer;">
+    <div style="background:#232323;color:#FFF;padding:0 6px;float:right;line-height:30px;font-size:14px">0.096796s </div>
+    <img width="30" style="" title="ShowPageTrace" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAYAAABXAvmHAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAyBpVFh0WE1MOmNvbS5hZG9iZS54bXAAAAAAADw/eHBhY2tldCBiZWdpbj0i77u/IiBpZD0iVzVNME1wQ2VoaUh6cmVTek5UY3prYzlkIj8+IDx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1wdGs9IkFkb2JlIFhNUCBDb3JlIDUuMC1jMDYwIDYxLjEzNDc3NywgMjAxMC8wMi8xMi0xNzozMjowMCAgICAgICAgIj4gPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4gPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIgeG1sbnM6eG1wPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvIiB4bWxuczp4bXBNTT0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wL21tLyIgeG1sbnM6c3RSZWY9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9zVHlwZS9SZXNvdXJjZVJlZiMiIHhtcDpDcmVhdG9yVG9vbD0iQWRvYmUgUGhvdG9zaG9wIENTNSBXaW5kb3dzIiB4bXBNTTpJbnN0YW5jZUlEPSJ4bXAuaWlkOjVERDVENkZGQjkyNDExRTE5REY3RDQ5RTQ2RTRDQUJCIiB4bXBNTTpEb2N1bWVudElEPSJ4bXAuZGlkOjVERDVENzAwQjkyNDExRTE5REY3RDQ5RTQ2RTRDQUJCIj4gPHhtcE1NOkRlcml2ZWRGcm9tIHN0UmVmOmluc3RhbmNlSUQ9InhtcC5paWQ6NURENUQ2RkRCOTI0MTFFMTlERjdENDlFNDZFNENBQkIiIHN0UmVmOmRvY3VtZW50SUQ9InhtcC5kaWQ6NURENUQ2RkVCOTI0MTFFMTlERjdENDlFNDZFNENBQkIiLz4gPC9yZGY6RGVzY3JpcHRpb24+IDwvcmRmOlJERj4gPC94OnhtcG1ldGE+IDw/eHBhY2tldCBlbmQ9InIiPz5fx6IRAAAMCElEQVR42sxae3BU1Rk/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">
+</div>
+
+<script type="text/javascript">
+    (function(){
+        var tab_tit  = document.getElementById('think_page_trace_tab_tit').getElementsByTagName('span');
+        var tab_cont = document.getElementById('think_page_trace_tab_cont').getElementsByTagName('div');
+        var open     = document.getElementById('think_page_trace_open');
+        var close    = document.getElementById('think_page_trace_close').children[0];
+        var trace    = document.getElementById('think_page_trace_tab');
+        var cookie   = document.cookie.match(/thinkphp_show_page_trace=(\d\|\d)/);
+        var history  = (cookie && typeof cookie[1] != 'undefined' && cookie[1].split('|')) || [0,0];
+        open.onclick = function(){
+            trace.style.display = 'block';
+            this.style.display = 'none';
+            close.parentNode.style.display = 'block';
+            history[0] = 1;
+            document.cookie = 'thinkphp_show_page_trace='+history.join('|')
+        }
+        close.onclick = function(){
+            trace.style.display = 'none';
+            this.parentNode.style.display = 'none';
+            open.style.display = 'block';
+            history[0] = 0;
+            document.cookie = 'thinkphp_show_page_trace='+history.join('|')
+        }
+        for(var i = 0; i < tab_tit.length; i++){
+            tab_tit[i].onclick = (function(i){
+                return function(){
+                    for(var j = 0; j < tab_cont.length; j++){
+                        tab_cont[j].style.display = 'none';
+                        tab_tit[j].style.color = '#999';
+                    }
+                    tab_cont[i].style.display = 'block';
+                    tab_tit[i].style.color = '#000';
+                    history[1] = i;
+                    document.cookie = 'thinkphp_show_page_trace='+history.join('|')
+                }
+            })(i)
+        }
+        parseInt(history[0]) && open.click();
+        tab_tit[history[1]].click();
+    })();
+</script>
+</body>
+</html>

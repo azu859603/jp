@@ -1,0 +1,101 @@
+{extend name="layout" /}
+
+{block name="title"}余额流水{/block}
+{block name="crumb"}财务管理 / <b>余额流水</b>{/block}
+
+{block name="content"}
+<div class="search-bar">
+    <input type="text" class="form-control" id="keyword" placeholder="会员ID/手机号">
+    <select class="form-control" id="type">
+        <option value="">全部类型</option>
+        <option value="recharge">充值</option>
+        <option value="deposit">保证金</option>
+        <option value="buy">支付货款</option>
+        <option value="income">卖出收入</option>
+        <option value="refund">退回</option>
+        <option value="withdraw">提现</option>
+        <option value="reward">奖励</option>
+    </select>
+    <button class="btn btn-primary" onclick="loadList(1)">查询</button>
+    <button class="btn" onclick="resetSearch()">重置</button>
+</div>
+
+<div class="card">
+    <div class="table-wrap">
+        <table class="table">
+            <thead>
+            <tr>
+                <th>ID</th><th>会员</th><th>类型</th><th>变动金额</th><th>变动后余额</th><th>备注</th><th>时间</th>
+            </tr>
+            </thead>
+            <tbody id="tbody"></tbody>
+        </table>
+    </div>
+    <div class="pagination" id="pagination"></div>
+</div>
+
+<script>
+var typeMap = {
+    recharge: ['充值','tag-green'], deposit: ['保证金','tag-blue'], buy: ['支付货款','tag-orange'],
+    income: ['卖出收入','tag-green'], refund: ['退回','tag-gray'], withdraw: ['提现','tag-red'], reward: ['奖励','tag-purple']
+};
+
+function loadList(page){
+    fetch('/admin1314/balance/index?page=' + page + '&limit=15'
+        + '&keyword=' + encodeURIComponent(document.getElementById('keyword').value)
+        + '&type=' + document.getElementById('type').value, {headers:{'X-Requested-With':'XMLHttpRequest'}})
+        .then(function(r){ return r.json(); })
+        .then(function(res){
+            var html = '';
+            if(!res.data || !res.data.length){
+                html = '<tr><td colspan="7" class="empty">暂无数据</td></tr>';
+            } else {
+                res.data.forEach(function(l){
+                    var t = typeMap[l.type] || [l.type, 'tag-gray'];
+                    var amountHtml = l.amount > 0
+                        ? '<span class="price">+' + l.amount + '</span>'
+                        : '<span style="color:#dc2626;font-weight:bold;">' + l.amount + '</span>';
+                    html += '<tr>'
+                        + '<td>' + l.id + '</td>'
+                        + '<td><a href="/admin1314/member/detail?id=' + l.user_id + '">' + (l.nickname || l.mobile || l.user_id) + '</a></td>'
+                        + '<td><span class="tag ' + t[1] + '">' + t[0] + '</span></td>'
+                        + '<td>' + amountHtml + '</td>'
+                        + '<td>￥' + l.balance + '</td>'
+                        + '<td>' + l.remark + '</td>'
+                        + '<td>' + fmtTime(l.create_time) + '</td></tr>';
+                });
+            }
+            document.getElementById('tbody').innerHTML = html;
+            renderPagination(res.count, page);
+        });
+}
+
+function renderPagination(total, page){
+    var pages = Math.ceil(total / 15) || 1;
+    var html = '<span class="info">共 ' + total + ' 条，第 ' + page + '/' + pages + ' 页</span> ';
+    html += '<a class="' + (page <= 1 ? 'disabled' : '') + '" href="javascript:;" onclick="loadList(1)">首页</a>';
+    html += '<a class="' + (page <= 1 ? 'disabled' : '') + '" href="javascript:;" onclick="loadList(' + (page - 1) + ')">上一页</a>';
+    var start = Math.max(1, page - 2), end = Math.min(pages, page + 2);
+    for(var i = start; i <= end; i++){
+        html += i == page ? '<span class="current">' + i + '</span>' : '<a href="javascript:;" onclick="loadList(' + i + ')">' + i + '</a>';
+    }
+    html += '<a class="' + (page >= pages ? 'disabled' : '') + '" href="javascript:;" onclick="loadList(' + (page + 1) + ')">下一页</a>';
+    html += '<a class="' + (page >= pages ? 'disabled' : '') + '" href="javascript:;" onclick="loadList(' + pages + ')">末页</a>';
+    document.getElementById('pagination').innerHTML = html;
+}
+
+function resetSearch(){
+    document.getElementById('keyword').value = '';
+    document.getElementById('type').value = '';
+    loadList(1);
+}
+
+function fmtTime(ts){
+    var d = new Date(ts * 1000);
+    function p(n){ return n < 10 ? '0' + n : n; }
+    return d.getFullYear() + '-' + p(d.getMonth()+1) + '-' + p(d.getDate()) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes()) + ':' + p(d.getSeconds());
+}
+
+loadList(1);
+</script>
+{/block}

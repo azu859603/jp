@@ -1,0 +1,15 @@
+{extend name="layout" /}
+{block name="title"}{$page_title}{/block}
+{block name="content"}
+<style>
+.news-detail{background:#fff;padding:16px 14px 20px;}
+.news-detail h1{font-size:18px;font-weight:600;color:#333;line-height:1.5;}
+.news-detail .nd-meta{font-size:12px;color:#bbb;margin-top:8px;padding-bottom:14px;border-bottom:1px solid #f5f5f5;}
+.news-detail .nd-content{margin-top:14px;font-size:14px;color:#444;line-height:1.9;word-break:break-word;}
+</style>
+<div class="news-detail">
+    <h1>{$news.title}</h1>
+    <div class="nd-meta">发布于 {$news.create_time|date='Y-m-d H:i'}</div>
+    <div class="nd-content">{$news.content|nl2br}</div>
+</div>
+{/block}

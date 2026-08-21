@@ -1,0 +1,119 @@
+{extend name="layout" /}
+
+{block name="title"}实名认证{/block}
+{block name="crumb"}会员管理 / <b>实名认证</b>{/block}
+
+{block name="content"}
+<div class="search-bar">
+    <select class="form-control" id="status" onchange="loadList(1)">
+        <option value="" selected>全部</option>
+        <option value="1">待审核</option>
+        <option value="2">已通过</option>
+        <option value="3">已拒绝</option>
+    </select>
+</div>
+
+<div class="card">
+    <div class="table-wrap">
+        <table class="table">
+            <thead>
+            <tr>
+                <th>ID</th><th>会员</th><th>手机号</th><th>真实姓名</th><th>身份证号</th><th>证件照片</th><th>提交时间</th><th>状态</th><th>操作</th>
+            </tr>
+            </thead>
+            <tbody id="tbody"></tbody>
+        </table>
+    </div>
+    <div class="pagination" id="pagination"></div>
+</div>
+
+<!-- 证件大图预览 -->
+<div class="mask" id="imgMask" onclick="document.getElementById('imgMask').classList.remove('show');document.getElementById('imgViewer').style.display='none'"></div>
+<div class="img-viewer" id="imgViewer">
+    <img id="imgViewerSrc" src="">
+</div>
+
+<style>
+.img-viewer{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:1000;display:none;max-width:90%;}
+.img-viewer img{max-width:100%;max-height:80vh;border-radius:8px;box-shadow:0 8px 30px rgba(0,0,0,.5);}
+</style>
+
+<script>
+var currentPage = 1;
+
+function loadList(page){
+    currentPage = page;
+    fetch('/admin1314/member/auth?page=' + page + '&limit=15&status=' + document.getElementById('status').value, {headers:{'X-Requested-With':'XMLHttpRequest'}})
+        .then(function(r){ return r.json(); })
+        .then(function(res){
+            var html = '';
+            if(!res.data || !res.data.length){
+                html = '<tr><td colspan="9" class="empty">暂无数据</td></tr>';
+            } else {
+                res.data.forEach(function(u){
+                    var st = u.auth_status;
+                    var stHtml = st == 1 ? '<span class="tag tag-orange">待审核</span>'
+                        : (st == 2 ? '<span class="tag tag-green">已通过</span>' : '<span class="tag tag-red">已拒绝</span>');
+                    var card = (u.id_card || '') === '' ? '-' : u.id_card.substring(0, 4) + '**********' + u.id_card.substring(14);
+                    var reasonHtml = st == 3 && u.auth_reason ? '<div style="font-size:12px;color:#999;margin-top:2px;">' + u.auth_reason + '</div>' : '';
+                    html += '<tr>'
+                        + '<td>' + u.id + '</td>'
+                        + '<td>' + (u.nickname || '-') + '</td>'
+                        + '<td>' + u.mobile + '</td>'
+                        + '<td>' + (u.real_name || '-') + '</td>'
+                        + '<td>' + card + reasonHtml + '</td>'
+                        + '<td>'
+                        + (u.id_card_front ? '<img src="' + u.id_card_front + '" style="width:38px;height:24px;object-fit:cover;border-radius:3px;cursor:pointer;margin-right:4px;" onclick="viewImg(\'' + u.id_card_front + '\')">' : '-')
+                        + (u.id_card_back ? '<img src="' + u.id_card_back + '" style="width:38px;height:24px;object-fit:cover;border-radius:3px;cursor:pointer;" onclick="viewImg(\'' + u.id_card_back + '\')">' : '')
+                        + '</td>'
+                        + '<td>' + (u.create_time ? fmtTime(u.create_time) : '-') + '</td>'
+                        + '<td>' + stHtml + '</td>'
+                        + '<td style="white-space:nowrap;">'
+                        + (st == 1 ? '<a class="btn btn-sm btn-green" href="javascript:;" onclick="audit(' + u.id + ',\'pass\')">通过</a> '
+                            + '<a class="btn btn-sm btn-danger" href="javascript:;" onclick="audit(' + u.id + ',\'reject\')">拒绝</a>' : '-')
+                        + '</td></tr>';
+                });
+            }
+            document.getElementById('tbody').innerHTML = html;
+            var pages = Math.ceil(res.count / 15) || 1;
+            var ph = '<span class="info">共 ' + res.count + ' 条，第 ' + page + '/' + pages + ' 页</span> ';
+            ph += '<a class="' + (page <= 1 ? 'disabled' : '') + '" href="javascript:;" onclick="loadList(' + (page - 1) + ')">上一页</a>';
+            ph += '<a class="' + (page >= pages ? 'disabled' : '') + '" href="javascript:;" onclick="loadList(' + (page + 1) + ')">下一页</a>';
+            document.getElementById('pagination').innerHTML = ph;
+        });
+}
+
+function viewImg(src){
+    document.getElementById('imgViewerSrc').src = src;
+    document.getElementById('imgMask').classList.add('show');
+    document.getElementById('imgViewer').style.display = 'block';
+}
+
+function audit(id, action){
+    if(action == 'pass'){
+        confirmDialog('通过后该会员可申请成为卖家，确定通过吗？', function(){
+            ajaxPost('/admin1314/member/authAudit', {id:id, action:action}, function(res){
+                alert(res.msg); if(res.code == 1) loadList(currentPage);
+            });
+        });
+    } else {
+        var reason = prompt('请填写拒绝原因：');
+        if(reason === null) return;
+        if(!reason.trim()){ alert('拒绝原因不能为空'); return; }
+        confirmDialog('确定拒绝该会员的实名认证吗？', function(){
+            ajaxPost('/admin1314/member/authAudit', {id:id, action:action, reason:reason}, function(res){
+                alert(res.msg); if(res.code == 1) loadList(currentPage);
+            });
+        });
+    }
+}
+
+function fmtTime(ts){
+    var d = new Date(ts * 1000);
+    function p(n){ return n < 10 ? '0' + n : n; }
+    return d.getFullYear() + '-' + p(d.getMonth()+1) + '-' + p(d.getDate()) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
+}
+
+loadList(1);
+</script>
+{/block}

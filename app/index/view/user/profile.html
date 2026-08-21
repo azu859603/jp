@@ -1,0 +1,111 @@
+{extend name="layout" /}
+{block name="content"}
+<div class="form-card" style="margin-top:12px;">
+    <div class="form-row" onclick="document.getElementById('avatarFile').click();" style="cursor:pointer;">
+        <span class="fl">头像</span>
+        <div class="fr" style="justify-content:flex-end;">
+            <span style="width:44px;height:44px;border-radius:50%;background:#f0f0f0;overflow:hidden;display:flex;align-items:center;justify-content:center;">
+                {if !empty($user.avatar)}<img id="avatarImg" src="{$user.avatar}" style="width:100%;height:100%;object-fit:cover;">{else}<span style="font-size:20px;">👤</span>{/if}
+            </span>
+            <input type="file" id="avatarFile" accept="image/*" style="display:none;" onchange="uploadAvatar(this)">
+            <span style="font-size:11px;color:#999;margin:0 8px 0 10px;">点击修改</span>
+            <span class="arrow">›</span>
+        </div>
+    </div>
+    <div class="form-row">
+        <span class="fl">昵称</span>
+        <div class="fr">
+            <input type="text" id="nickname" value="{$user.nickname}" maxlength="20" placeholder="请输入昵称">
+        </div>
+    </div>
+    <div class="form-row">
+        <span class="fl">姓名</span>
+        <div class="fr">
+            <input type="text" id="real_name" value="{$user.real_name|default=''}" maxlength="20" placeholder="请输入真实姓名">
+        </div>
+    </div>
+    <div class="form-row">
+        <span class="fl">手机号码</span>
+        <div class="fr">
+            <span class="ph">{$user.mobile}</span>
+        </div>
+    </div>
+    <div class="form-row">
+        <span class="fl">实名认证</span>
+        <div class="fr" style="justify-content:flex-end;">
+            {if $user.auth_status==2}
+            <span class="tag tag-green">已认证</span>
+            {elseif $user.auth_status==1}
+            <span class="tag tag-orange">审核中</span>
+            {elseif $user.auth_status==3}
+            <a class="tag tag-red" href="/user/auth">未通过 ›</a>
+            {else}
+            <a class="tag tag-red" href="/user/auth">未认证 ›</a>
+            {/if}
+        </div>
+    </div>
+    {if $user.is_seller==1}
+    <div class="form-row">
+        <span class="fl">店铺名称</span>
+        <div class="fr">
+            <input type="text" id="shop_name" value="{$user.shop_name|default=''}" maxlength="30" placeholder="请输入店铺名称">
+        </div>
+    </div>
+    <div class="form-row">
+        <span class="fl">企业名称</span>
+        <div class="fr">
+            <input type="text" id="company_name" value="{$user.company_name|default=''}" maxlength="50" placeholder="请输入企业名称">
+        </div>
+    </div>
+    <div class="form-row">
+        <span class="fl">店铺头像</span>
+        <div class="fr" style="justify-content:flex-end;">
+            <span style="width:36px;height:36px;border-radius:50%;background:#f0f0f0;overflow:hidden;display:flex;align-items:center;justify-content:center;">
+                {if !empty($user.avatar)}<img src="{$user.avatar}" style="width:100%;height:100%;object-fit:cover;">{else}<span style="font-size:16px;">👤</span>{/if}
+            </span>
+            <span style="font-size:11px;color:#999;margin-left:8px;">与头像一致</span>
+        </div>
+    </div>
+    {/if}
+</div>
+<div class="form-submit">
+    <button class="btn btn-red" onclick="saveProfile()">提交</button>
+</div>
+{/block}
+{block name="script"}
+<script>
+function uploadAvatar(input){
+    var f = input.files && input.files[0];
+    if(!f) return;
+    if(f.size > 5*1024*1024){ toast('图片不能超过5M'); return; }
+    var fd = new FormData();
+    fd.append('file', f);
+    fetch('/upload/image', {method:'POST', body: fd})
+        .then(function(r){ return r.json(); })
+        .then(function(res){
+            if(res.code === 1){
+                ajaxPost('/user/profile', {nickname: document.getElementById('nickname').value.trim(), avatar: res.url}, function(r2){
+                    toast(r2.msg);
+                    if(r2.code == 1) setTimeout(function(){ location.reload(); }, 600);
+                });
+            } else {
+                toast(res.msg);
+            }
+        })
+        .catch(function(){ toast('上传失败，请重试'); });
+}
+function saveProfile(){
+    var nickname = document.getElementById('nickname').value.trim();
+    if(!nickname){ toast('请输入昵称'); return; }
+    var params = {nickname: nickname};
+    var shopName = document.getElementById('shop_name');
+    var companyName = document.getElementById('company_name');
+    if(shopName) params.shop_name = shopName.value.trim();
+    if(companyName) params.company_name = companyName.value.trim();
+    ajaxPost('/user/profile', params, function(res){
+        toast(res.msg);
+        if(res.code == 1) setTimeout(function(){ location.href='/user/center'; }, 600);
+    });
+}
+</script>
+{/block}

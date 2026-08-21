@@ -1,0 +1,91 @@
+{extend name="layout" /}
+{block name="title"}我的消息{/block}
+{block name="content"}
+<!-- Tab 切换 -->
+<div class="chat-tabs">
+    <a href="/chat/list?tab=buyer" class="{if $tab=='buyer'}on{/if}">买家消息</a>
+    <a href="/chat/list?tab=seller" class="{if $tab=='seller'}on{/if}">卖家消息</a>
+</div>
+
+{if $tab == 'buyer'}
+    {if empty($buyer_messages)}
+    <div class="empty"><div class="e-ico">💬</div><div>暂无买家消息</div></div>
+    {else}
+    <div class="msg-list">
+        {foreach $buyer_messages as $m}
+        <a class="msg-card" href="/chat/detail?goods_id={$m.goods_id}&seller_id={$m.to_uid}">
+            <div class="mc-avatar">
+                {if !empty($m.other_avatar)}
+                <img src="{$m.other_avatar}" alt="">
+                {else}
+                <span class="mc-noa">🏪</span>
+                {/if}
+            </div>
+            <div class="mc-body">
+                <div class="mc-top">
+                    <span class="mc-name">{$m.other_display}</span>
+                    <span class="mc-time">{$m.time_str}</span>
+                </div>
+                <div class="mc-goods">{$m.goods_title}</div>
+                <div class="mc-preview">
+                    <span class="mc-txt">{$m.content|mb_substr=0,40}</span>
+                    {if $m.unread > 0}<span class="mc-badge">{$m.unread}</span>{/if}
+                </div>
+            </div>
+        </a>
+        {/foreach}
+    </div>
+    {/if}
+{else}
+    {if empty($seller_messages)}
+    <div class="empty"><div class="e-ico">💬</div><div>暂无卖家消息</div></div>
+    {else}
+    <div class="msg-list">
+        {foreach $seller_messages as $m}
+        <a class="msg-card" href="/chat/detail?goods_id={$m.goods_id}&seller_id={$m.from_uid}">
+            <div class="mc-avatar">
+                {if !empty($m.other_avatar)}
+                <img src="{$m.other_avatar}" alt="">
+                {else}
+                <span class="mc-noa">🏪</span>
+                {/if}
+            </div>
+            <div class="mc-body">
+                <div class="mc-top">
+                    <span class="mc-name">{$m.other_display}</span>
+                    <span class="mc-time">{$m.time_str}</span>
+                </div>
+                <div class="mc-goods">{$m.goods_title}</div>
+                <div class="mc-preview">
+                    <span class="mc-txt">{$m.content|mb_substr=0,40}</span>
+                    {if $m.unread > 0}<span class="mc-badge">{$m.unread}</span>{/if}
+                </div>
+            </div>
+        </a>
+        {/foreach}
+    </div>
+    {/if}
+{/if}
+
+<style>
+.chat-tabs{display:flex;background:#fff;border-bottom:1px solid #eee;}
+.chat-tabs a{flex:1;text-align:center;padding:12px 0;font-size:14px;color:#666;text-decoration:none;}
+.chat-tabs a.on{color:#e4393c;border-bottom:2px solid #e4393c;}
+.msg-list{padding:0;}
+.msg-card{display:flex;padding:12px 14px;background:#fff;border-bottom:1px solid #f0f0f0;text-decoration:none;color:#333;}
+.mc-avatar{width:40px;height:40px;border-radius:50%;overflow:hidden;margin-right:10px;flex-shrink:0;}
+.mc-avatar img{width:100%;height:100%;object-fit:cover;}
+.mc-noa{width:40px;height:40px;border-radius:50%;background:#f4f4f4;display:flex;align-items:center;justify-content:center;font-size:18px;}
+.mc-body{flex:1;min-width:0;}
+.mc-top{display:flex;justify-content:space-between;align-items:center;}
+.mc-name{font-size:14px;font-weight:500;color:#333;}
+.mc-time{font-size:11px;color:#bbb;}
+.mc-goods{font-size:12px;color:#999;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.mc-preview{display:flex;align-items:center;margin-top:4px;}
+.mc-txt{font-size:13px;color:#666;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;}
+.mc-badge{background:#e4393c;color:#fff;font-size:11px;padding:1px 6px;border-radius:10px;margin-left:6px;flex-shrink:0;}
+</style>
+{/block}
+{block name="script"}
+<script>initCountdowns();</script>
+{/block}

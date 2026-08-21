@@ -1,0 +1,182 @@
+{extend name="layout" /}
+
+{block name="title"}基础设置{/block}
+{block name="crumb"}系统设置 / <b>基础设置</b>{/block}
+
+{block name="content"}
+<div class="card" style="max-width:760px;">
+    <div class="card-title">站点设置</div>
+    <form id="settingForm" onsubmit="return false;">
+        <div class="form-row">
+            <div class="form-group">
+                <label>站点名称</label>
+                <input type="text" class="form-control" name="site_name" value="{$settings.site_name}">
+            </div>
+            <div class="form-group">
+                <label>站点网址</label>
+                <input type="text" class="form-control" name="site_url" value="{$settings.site_url}" placeholder="https://example.com">
+            </div>
+        </div>
+        <div class="form-group">
+            <label>站点 Logo（首页左上角展示）</label>
+            <div class="upload-box">
+                <div class="up-item" id="logoBox" {if empty($settings.site_logo)}style="display:none;"{/if} onclick="uploadLogo()">
+                    {if !empty($settings.site_logo)}<img src="{$settings.site_logo}" style="height:32px;object-fit:contain;"><span class="del" onclick="event.stopPropagation();removeLogo()">×</span>{/if}
+                </div>
+                <div class="up-item add" id="logoAdd" {if !empty($settings.site_logo)}style="display:none;"{/if} onclick="uploadLogo()">+</div>
+            </div>
+            <div class="tip">建议透明底 PNG，宽高比 4:1 左右；不传则首页显示站点文字</div>
+            <input type="hidden" name="site_logo" id="site_logo" value="{$settings.site_logo}">
+        </div>
+        <div class="form-group">
+            <label>客服电话</label>
+            <input type="text" class="form-control" name="service_phone" value="{$settings.service_phone}">
+        </div>
+        <div class="form-group">
+            <label>客服QQ</label>
+            <input type="text" class="form-control" name="service_qq" value="{$settings.service_qq}">
+        </div>
+        <div class="form-group">
+            <label>客服链接</label>
+            <input type="text" class="form-control" name="service_link" value="{$settings.service_link}" placeholder="如 https://work.weixin.qq.com/kf/xxxx">
+            <div class="tip">充值页“联系客服”按钮跳转的链接（如企业微信客服/在线客服）</div>
+        </div>
+    </form>
+</div>
+
+<div class="card" style="max-width:760px;">
+    <div class="card-title">拍卖规则</div>
+    <form id="settingForm2" onsubmit="return false;">
+        <div class="form-row">
+            <div class="form-group">
+                <label>平台佣金比例（%）</label>
+                <input type="number" step="0.1" min="0" max="100" class="form-control" name="commission_rate" value="{$settings.commission_rate}">
+                <div class="tip">卖家成交后按此比例向平台支付佣金，商品发布时可单独设置</div>
+            </div>
+            <div class="form-group">
+                <label>提现手续费（%）</label>
+                <input type="number" step="0.1" min="0" class="form-control" name="withdraw_fee" value="{$settings.withdraw_fee}">
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label>提现单笔最低金额（元）</label>
+                <input type="number" step="0.01" min="0" class="form-control" name="withdraw_min" value="{$settings.withdraw_min}" placeholder="0 为不限制">
+            </div>
+            <div class="form-group">
+                <label>提现单笔最高金额（元）</label>
+                <input type="number" step="0.01" min="0" class="form-control" name="withdraw_max" value="{$settings.withdraw_max}" placeholder="0 为不限制">
+                <div class="tip">用户每次提现必须在此区间内，0 表示不限制</div>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label>虚拟会员默认永存金额（元）</label>
+                <input type="number" step="0.01" min="0" class="form-control" name="virtual_balance" value="{$settings.virtual_balance}">
+                <div class="tip">后台添加的虚拟会员初始余额，扣减后自动回补，不产生账单流水，不支持充值/提现</div>
+            </div>
+            <div class="form-group">
+                <label>卖家开通审核</label>
+                <select class="form-control" name="seller_check">
+                    <option value="1" {if $settings.seller_check == '1'}selected{/if}>需要审核</option>
+                    <option value="0" {if $settings.seller_check == '0'}selected{/if}>自动开通</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>发布商品审核</label>
+                <select class="form-control" name="goods_check">
+                    <option value="1" {if $settings.goods_check == '1'}selected{/if}>需要审核</option>
+                    <option value="0" {if $settings.goods_check == '0'}selected{/if}>无需审核</option>
+                </select>
+                <div class="tip">设为无需审核，卖家发布商品后直接上架展示</div>
+            </div>
+        </div>
+        <div class="form-group">
+            <label>注册邀请码</label>
+            <input type="text" class="form-control" name="invite_code" value="{$settings.invite_code}">
+            <div class="tip">注册时需填写的邀请码</div>
+        </div>
+        <div class="form-group">
+            <label>竞拍默认延时（秒）</label>
+            <input type="number" min="0" class="form-control" name="auction_delay" value="{$settings.auction_delay}">
+            <div class="tip">竞拍结束前N秒内出价自动延长竞拍时间，0为不延时（商品发布时可单独设置）</div>
+        </div>
+    </form>
+</div>
+
+<div class="card" style="max-width:760px;">
+    <div class="card-title">协议与政策</div>
+    <form id="settingForm3" onsubmit="return false;">
+        <div class="form-group">
+            <label>用户协议</label>
+            <textarea class="form-control" name="user_protocol" style="min-height:160px;" placeholder="用户注册协议内容">{$settings.user_protocol}</textarea>
+        </div>
+        <div class="form-group">
+            <label>隐私政策</label>
+            <textarea class="form-control" name="privacy_policy" style="min-height:160px;" placeholder="隐私政策内容">{$settings.privacy_policy}</textarea>
+            <div class="tip">登录/注册页《用户协议》《隐私政策》点击后展示的内容</div>
+        </div>
+        <div class="form-group">
+            <label>发布协议</label>
+            <textarea class="form-control" name="publish_protocol" style="min-height:160px;" placeholder="商品发布页《发布协议》弹窗展示的内容">{$settings.publish_protocol}</textarea>
+            <div class="tip">前端发布商品页《发布协议》点击弹窗展示的内容</div>
+        </div>
+    </form>
+</div>
+
+<div style="max-width:760px;text-align:center;margin-bottom:30px;">
+    <button class="btn btn-primary btn-block" style="padding:11px;" onclick="saveAll()">保存全部设置</button>
+</div>
+
+<script>
+function saveAll(){
+    var fd = new FormData();
+    ['site_name','site_url','site_logo','service_phone','service_qq','service_link','commission_rate','withdraw_fee','seller_check','goods_check','invite_code','auction_delay','user_protocol','privacy_policy','publish_protocol','withdraw_min','withdraw_max','virtual_balance'].forEach(function(name){
+        var el = document.querySelector('[name="' + name + '"]');
+        if(el) fd.append(name, el.value);
+    });
+    fetch('/admin1314/setting/index', {method:'POST', headers:{'X-Requested-With':'XMLHttpRequest'}, body:fd})
+        .then(function(r){ return r.json(); })
+        .then(function(res){
+            alert(res.msg);
+            if(res.code == 1) location.reload();
+        })
+        .catch(function(){ alert('网络错误，请重试'); });
+}
+
+/* Logo 上传 */
+function uploadLogo(){
+    var input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = function(e){
+        var file = e.target.files[0];
+        if(!file) return;
+        var fd = new FormData();
+        fd.append('file', file);
+        fetch('/admin1314/setting/upload', {method:'POST', headers:{'X-Requested-With':'XMLHttpRequest'}, body:fd})
+            .then(function(r){ return r.json(); })
+            .then(function(res){
+                if(res.code == 1){
+                    var box = document.getElementById('logoBox');
+                    box.style.display = '';
+                    box.innerHTML = '<img src="' + res.url + '" style="height:32px;object-fit:contain;"><span class="del" onclick="event.stopPropagation();removeLogo()">×</span>';
+                    document.getElementById('logoAdd').style.display = 'none';
+                    document.getElementById('site_logo').value = res.url;
+                } else {
+                    alert(res.msg || '上传失败');
+                }
+            })
+            .catch(function(){ alert('网络错误，请重试'); });
+    };
+    input.click();
+}
+
+function removeLogo(){
+    document.getElementById('logoBox').style.display = 'none';
+    document.getElementById('logoBox').innerHTML = '';
+    document.getElementById('logoAdd').style.display = '';
+    document.getElementById('site_logo').value = '';
+}
+</script>
+{/block}

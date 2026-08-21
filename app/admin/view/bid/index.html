@@ -1,0 +1,155 @@
+{extend name="layout" /}
+
+{block name="title"}出价记录{/block}
+{block name="crumb"}竞拍管理 / <b>出价记录</b>{/block}
+
+{block name="content"}
+<div class="search-bar">
+    <input type="text" class="form-control" id="keyword" placeholder="商品标题/会员手机号">
+    <button class="btn btn-primary" onclick="loadList(1)">查询</button>
+    <button class="btn" onclick="resetSearch()">重置</button>
+    <button class="btn btn-primary" onclick="openBidAdd()">添加出价</button>
+</div>
+
+<div class="card">
+    <div class="table-wrap">
+        <table class="table">
+            <thead>
+            <tr>
+                <th>ID</th><th>商品</th><th>出价人</th><th>出价金额</th><th>状态</th><th>是否得标</th><th>时间</th>
+            </tr>
+            </thead>
+            <tbody id="tbody"></tbody>
+        </table>
+    </div>
+    <div class="pagination" id="pagination"></div>
+</div>
+
+<!-- 手动添加出价弹窗 -->
+<div class="mask" id="bidAddMask">
+    <div class="dialog">
+        <div class="dialog-title">手动添加出价</div>
+        <div class="dialog-body">
+            <div class="form-group" style="margin-bottom:12px;">
+                <label>拍品</label>
+                <select class="form-control" id="addGoods" onchange="onGoodsChange()">
+                    <option value="">请选择拍品</option>
+                    {foreach $goods_list as $g}
+                    <option value="{$g.id}" data-top="{$g.top_price}" data-raise="{$g.raise_price}">{$g.title}（ID:{$g.id}）</option>
+                    {/foreach}
+                </select>
+            </div>
+            <div class="form-group" style="margin-bottom:12px;">
+                <label>买家</label>
+                <select class="form-control" id="addUser">
+                    <option value="">请选择买家</option>
+                    {foreach $user_list as $u}
+                    <option value="{$u.id}">{$u.nickname ?: $u.mobile}（{$u.mobile}）</option>
+                    {/foreach}
+                </select>
+            </div>
+            <div class="form-group" style="margin-bottom:12px;">
+                <label>出价金额（元）</label>
+                <input class="form-control" type="number" id="addPrice" min="0.01" step="0.01" placeholder="须高于当前最高价且按加价幅度递增">
+            </div>
+            <div id="addTip" style="font-size:12px;color:#999;"></div>
+        </div>
+        <div class="dialog-footer">
+            <button class="btn" onclick="closeBidAdd()">取消</button>
+            <button class="btn btn-primary" onclick="doBidAdd()">确定添加</button>
+        </div>
+    </div>
+</div>
+
+<script>
+function loadList(page){
+    fetch('/admin1314/bid/index?page=' + page + '&limit=15&keyword=' + encodeURIComponent(document.getElementById('keyword').value), {headers:{'X-Requested-With':'XMLHttpRequest'}})
+        .then(function(r){ return r.json(); })
+        .then(function(res){
+            var html = '';
+            if(!res.data || !res.data.length){
+                html = '<tr><td colspan="7" class="empty">暂无数据</td></tr>';
+            } else {
+                res.data.forEach(function(b){
+                    var stHtml = b.status == 1 ? '<span class="tag tag-green">成交</span>'
+                        : (b.status == 2 ? '<span class="tag tag-gray">流拍退回</span>' : '<span class="tag tag-blue">竞拍中</span>');
+                    var winHtml = b.is_winner == 1 ? '<span class="tag tag-green">得标</span>' : '<span class="tag tag-gray">-</span>';
+                    html += '<tr>'
+                        + '<td>' + b.id + '</td>'
+                        + '<td style="max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + b.goods_title + '">' + (b.goods_title || '商品#' + b.goods_id) + '</td>'
+                        + '<td>' + (b.nickname || b.mobile || ('ID:' + b.user_id)) + '</td>'
+                        + '<td class="price">￥' + b.price + '</td>'
+                        + '<td>' + stHtml + '</td>'
+                        + '<td>' + winHtml + '</td>'
+                        + '<td>' + fmtTime(b.create_time) + '</td></tr>';
+                });
+            }
+            document.getElementById('tbody').innerHTML = html;
+            renderPagination(res.count, page);
+        });
+}
+
+function renderPagination(total, page){
+    var pages = Math.ceil(total / 15) || 1;
+    var html = '<span class="info">共 ' + total + ' 条，第 ' + page + '/' + pages + ' 页</span> ';
+    html += '<a class="' + (page <= 1 ? 'disabled' : '') + '" href="javascript:;" onclick="loadList(1)">首页</a>';
+    html += '<a class="' + (page <= 1 ? 'disabled' : '') + '" href="javascript:;" onclick="loadList(' + (page - 1) + ')">上一页</a>';
+    var start = Math.max(1, page - 2), end = Math.min(pages, page + 2);
+    for(var i = start; i <= end; i++){
+        html += i == page ? '<span class="current">' + i + '</span>' : '<a href="javascript:;" onclick="loadList(' + i + ')">' + i + '</a>';
+    }
+    html += '<a class="' + (page >= pages ? 'disabled' : '') + '" href="javascript:;" onclick="loadList(' + (page + 1) + ')">下一页</a>';
+    html += '<a class="' + (page >= pages ? 'disabled' : '') + '" href="javascript:;" onclick="loadList(' + pages + ')">末页</a>';
+    document.getElementById('pagination').innerHTML = html;
+}
+
+function resetSearch(){
+    document.getElementById('keyword').value = '';
+    loadList(1);
+}
+
+function openBidAdd(){
+    document.getElementById('addGoods').value = '';
+    document.getElementById('addUser').value = '';
+    document.getElementById('addPrice').value = '';
+    document.getElementById('addTip').innerHTML = '';
+    document.getElementById('bidAddMask').classList.add('show');
+}
+function closeBidAdd(){
+    document.getElementById('bidAddMask').classList.remove('show');
+}
+function onGoodsChange(){
+    var sel = document.getElementById('addGoods');
+    var opt = sel.options[sel.selectedIndex];
+    var tip = document.getElementById('addTip');
+    var price = document.getElementById('addPrice');
+    if(!opt || !opt.value){ tip.innerHTML = ''; price.value = ''; return; }
+    var top = parseFloat(opt.getAttribute('data-top')) || 0;
+    var raise = parseFloat(opt.getAttribute('data-raise')) || 1;
+    if(raise <= 0) raise = 1;
+    var min = top + raise;
+    tip.innerHTML = '当前最高价 ¥' + top.toFixed(2) + '，加价幅度 ¥' + raise.toFixed(2) + '，最低可出 ¥' + min.toFixed(2);
+    price.value = min.toFixed(2);
+}
+function doBidAdd(){
+    var goodsId = document.getElementById('addGoods').value;
+    var userId = document.getElementById('addUser').value;
+    var price = document.getElementById('addPrice').value;
+    if(!goodsId){ alert('请选择拍品'); return; }
+    if(!userId){ alert('请选择买家'); return; }
+    if(!price || parseFloat(price) <= 0){ alert('请填写出价金额'); return; }
+    ajaxPost('/admin1314/bid/add', {goods_id: goodsId, user_id: userId, price: price}, function(res){
+        alert(res.msg);
+        if(res.code == 1){ closeBidAdd(); loadList(1); }
+    });
+}
+
+function fmtTime(ts){
+    var d = new Date(ts * 1000);
+    function p(n){ return n < 10 ? '0' + n : n; }
+    return d.getFullYear() + '-' + p(d.getMonth()+1) + '-' + p(d.getDate()) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes()) + ':' + p(d.getSeconds());
+}
+
+loadList(1);
+</script>
+{/block}

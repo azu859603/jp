@@ -1,0 +1,191 @@
+
+{extend name="layout" /}
+{block name="header"}
+<div class="home-header">
+    <div class="top-row">
+        <div class="brand">
+            {if !empty($site_logo)}
+            <img class="logo-img" src="{$site_logo}" alt="logo">
+            {/if}
+            <span class="logo">{$site_name}</span>
+        </div>
+        <a class="search-capsule" href="/search">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/></svg>
+            <input type="text" placeholder="搜索拍品" readonly>
+        </a>
+    </div>
+</div>
+{/block}
+{block name="content"}
+<!-- 首页顶部图 -->
+<div class="home-banner">
+    <img src="/static/index.png" alt="" style="width:100%;display:block;">
+</div>
+
+<!-- 拍卖头条 -->
+<div class="home-head">
+    <div class="hh1">
+        <span class="t">拍卖</span>
+        <span class="sub">头条</span>
+        <span style="flex:1;font-size:12px;color:#898989;margin-left:8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{$site_name} · 每日精选</span>
+        <!-- <a class="rec" href="/?sort=end">成交记录 ></a> -->
+    </div>
+    <!-- <div class="hh2">
+        <span class="date">{$now|date='Y-m-d'}</span>
+        <span class="r">
+            <a href="/?sort=new" {if $sort=='new'}style="font-weight:600;"{/if}>最新</a>
+            <a href="/?sort=price" {if $sort=='price'}style="font-weight:600;"{/if}>高价</a>
+        </span>
+    </div> -->
+</div>
+
+<!-- 拍卖头条（最新3条新闻） -->
+{if !empty($headlines)}
+<div style="background:#fff;padding:4px 14px 10px;border-bottom:8px solid #f5f5f5;">
+    {foreach $headlines as $h}
+    <a href="/news/detail?id={$h.id}" style="display:flex;align-items:center;padding:6px 0;border-bottom:1px solid #f7f7f7;font-size:13px;color:#333;">
+        <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{$h.title}</span>
+        <span style="color:#898989;font-size:12px;flex-shrink:0;">{$h.create_time|date='m-d H:i'}</span>
+    </a>
+    {/foreach}
+</div>
+{/if}
+
+<!-- 成交记录：标题 + 向上循环滚动 -->
+{if !empty($deals)}
+<div class="deal-wrap">
+    <div class="deal-title">成交记录<a class="deal-more" href="/deals">更多 ›</a></div>
+    <div class="deal-bar" id="dealBar">
+        <div class="deal-track" id="dealTrack">
+            {foreach $deals as $d}<div class="deal-item"><span class="deal-txt">恭喜 {$d.display_name} 以 ¥{$d.price|number_format=2} 成交「{$d.title}」</span><span class="deal-time">{$d.create_time|date='m-d H:i'}</span></div>{/foreach}
+        </div>
+    </div>
+</div>
+{/if}
+
+<!-- 分类 tab -->
+<div class="cate-tabs">
+    <a href="/" {if $category_id==0}class="on"{/if}>全部</a>
+    {foreach $categories as $c}
+    <a href="/?category_id={$c.id}" {if $category_id==$c.id}class="on"{/if}>{$c.name}</a>
+    {/foreach}
+    <a class="more" href="/category">
+        更多
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+    </a>
+</div>
+
+<!-- 瀑布流商品 -->
+{if empty($list)}
+<div class="empty">
+    <div class="e-ico">🏺</div>
+    <div>暂无可参与竞拍的拍品</div>
+    <a class="e-btn" href="/">刷新看看</a>
+</div>
+{else}
+<div class="goods-grid">
+    {foreach $list as $g}
+    <a class="grid-item" href="/goods/detail?id={$g.id}">
+        <div class="g-thumb">
+            {if !empty($g.cover)}
+            <img src="{$g.cover}" alt="{$g.title}">
+            {else}
+            <span class="noimg">🏺</span>
+            {/if}
+        </div>
+        <div class="g-body">
+            <div class="g-title">{$g.title}</div>
+            <div class="g-price"><small>¥ </small>{$g.price_str}</div>
+            <div class="g-meta">
+                <span class="time">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 13.5"/></svg>
+                    <b data-countdown="{$g.end_time}" data-format="short">--</b>
+                </span>
+                <span class="bid-btn">去出价</span>
+            </div>
+        </div>
+    </a>
+    {/foreach}
+</div>
+{if $page*$limit < $total}
+<a class="load-more" href="/?page={$page+1}&category_id={$category_id}&seller_id={$seller_id}&keyword={$keyword|urlencode=###}&sort={$sort}">加载更多</a>
+{else}
+<div class="no-more">—— 没有更多数据了 ——</div>
+{/if}
+{/if}
+{/block}
+{block name="script"}
+<script>
+function switchSort(s) {
+    location.href = '/?sort=' + s + '&category_id={$category_id}';
+}
+
+// 成交记录：向上无缝循环滚动
+(function () {
+    var bar = document.getElementById('dealBar');
+    if (!bar) return;
+    var track = document.getElementById('dealTrack');
+    var content = track.innerHTML;
+    // 复制内容直到轨道高度超过容器 2 倍，保证无缝循环
+    var guard = 0;
+    while (track.offsetHeight < bar.offsetHeight * 2 && guard < 50) {
+        track.innerHTML += content;
+        guard++;
+    }
+    var duration = (track.offsetHeight / 2) / 28; // 28px/s（每秒约 1 条）
+    track.style.animationDuration = duration + 's';
+    bar.classList.add('scrolling');
+})();
+initCountdowns();
+
+// 首页轮播：自动播放 + 指示点切换 + 触摸滑动
+(function () {
+    var slider = document.getElementById('bannerSlider');
+    if (!slider) return;
+    var items = slider.querySelectorAll('a');
+    var dots = document.querySelectorAll('.home-banner .dots i');
+    var idx = 0, total = items.length, timer = null;
+    var startX = 0, curX = 0, dragging = false;
+    if (total <= 1) return;
+    function show(n) {
+        idx = (n + total) % total;
+        slider.style.transform = 'translateX(-' + idx * 100 + '%)';
+        dots.forEach(function (d, i) { d.className = i === idx ? 'on' : ''; });
+    }
+    // 触摸滑动
+    slider.addEventListener('touchstart', function (e) {
+        dragging = true;
+        startX = e.touches[0].clientX;
+        curX = startX;
+        slider.style.transition = 'none';
+        clearInterval(timer);
+    }, { passive: true });
+    slider.addEventListener('touchmove', function (e) {
+        if (!dragging) return;
+        curX = e.touches[0].clientX;
+        var dx = curX - startX;
+        slider.style.transform = 'translateX(calc(-' + idx * 100 + '% + ' + dx + 'px))';
+    }, { passive: true });
+    slider.addEventListener('touchend', function () {
+        if (!dragging) return;
+        dragging = false;
+        var dx = curX - startX;
+        slider.style.transition = 'transform .3s ease';
+        if (dx < -50) show(idx + 1);
+        else if (dx > 50) show(idx - 1);
+        else show(idx);
+        restart();
+    });
+    // 指示点切换
+    dots.forEach(function (d, i) {
+        d.onclick = function () { show(i); restart(); };
+    });
+    function restart() {
+        clearInterval(timer);
+        timer = setInterval(function () { show(idx + 1); }, 3500);
+    }
+    show(0);
+    restart();
+})();
+</script>
+{/block}

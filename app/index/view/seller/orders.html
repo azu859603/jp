@@ -1,0 +1,57 @@
+{extend name="layout" /}
+{block name="content"}
+<div class="order-tabs">
+    <a href="/seller/orders" {if $status==''}class="on"{/if}>全部</a>
+    <a href="/seller/orders?order_status=0" {if $order_status=='0'}class="on"{/if}>待付款</a>
+    <a href="/seller/orders?order_status=1" {if $order_status=='1'}class="on"{/if}>待发货</a>
+    <a href="/seller/orders?order_status=2" {if $order_status=='2'}class="on"{/if}>待收货</a>
+    <a href="/seller/orders?order_status=5" {if $order_status=='5'}class="on"{/if}>已完成</a>
+</div>
+{if empty($list)}
+<div class="empty"><div class="e-ico">📦</div><div>暂无订单</div></div>
+{else}
+{foreach $list as $o}
+<div class="order-card">
+    <div class="o-head">
+        <span>订单号：{$o.order_no}</span>
+        <span class="st">{$o.status_name}</span>
+    </div>
+    <div class="o-body">
+        <div class="thumb">
+            {if !empty($o.goods_cover)}
+            <img src="{$o.goods_cover}" alt="">
+            {else}
+            <span class="noimg">🏺</span>
+            {/if}
+        </div>
+        <div class="oinfo">
+            <div class="oname">{$o.goods_title}</div>
+            <div class="oprice"><small>¥ </small>{$o.price|number_format=2}</div>
+            <div class="osub">买家：{$o.buyer_name|default='匿名'} · {$o.create_time|date='Y-m-d H:i'}</div>
+        </div>
+    </div>
+    <div class="o-foot">
+        {if $o.order_status==1}
+        <a class="btn-sm solid-red" href="javascript:void(0)" onclick="shipOrder({$o.id})">发货</a>
+        {/if}
+    </div>
+</div>
+{/foreach}
+{if $page*$limit < $total}
+<a class="load-more" href="/seller/orders?order_status={$order_status}&page={$page+1}">加载更多</a>
+{else}
+<div class="no-more">—— 没有更多数据了 ——</div>
+{/if}
+{/if}
+{/block}
+{block name="script"}
+<script>
+function shipOrder(id) {
+    confirmBox('确定已发货？', '提示', function(){
+        ajaxPost('/seller/ship', {id: id}, function(res){
+            if(res.code==1){ toast('已标记发货'); location.reload(); } else { toast(res.msg); }
+        });
+    });
+}
+</script>
+{/block}

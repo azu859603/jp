@@ -1,0 +1,20 @@
+{extend name="layout" /}
+{block name="title"}{$page_title}{/block}
+{block name="content"}
+<style>
+.agree-detail{background:#fff;padding:18px 14px 24px;}
+.agree-detail h1{font-size:18px;font-weight:600;color:#333;line-height:1.5;}
+.agree-detail .ad-line{height:1px;background:#f5f5f5;margin:12px 0 14px;}
+.agree-detail .ad-content{font-size:14px;color:#444;line-height:1.9;word-break:break-word;white-space:pre-wrap;}
+.agree-detail .ad-empty{text-align:center;color:#bbb;padding:60px 0;font-size:13px;}
+</style>
+<div class="agree-detail">
+    <h1>{$title}</h1>
+    <div class="ad-line"></div>
+    {if !empty($content)}
+    <div class="ad-content">{$content}</div>
+    {else}
+    <div class="ad-empty">内容暂未发布，请稍后再查看</div>
+    {/if}
+</div>
+{/block}

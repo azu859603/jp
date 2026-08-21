@@ -1,0 +1,133 @@
+{extend name="layout" /}
+
+{block name="title"}提现审核{/block}
+{block name="crumb"}财务管理 / <b>提现审核</b>{/block}
+
+{block name="content"}
+<div class="search-bar">
+    <select class="form-control" id="status" onchange="loadList(1)">
+        <option value="" selected>全部状态</option>
+        <option value="0">待审核</option>
+        <option value="1">已打款</option>
+        <option value="2">已拒绝</option>
+    </select>
+</div>
+
+<div class="card">
+    <div class="table-wrap">
+        <table class="table">
+            <thead>
+            <tr>
+                <th>ID</th><th>会员</th><th>提现金额</th><th>收款方式</th><th>收款账号</th>
+                <th>收款人</th><th>银行/收款码</th><th>状态</th><th>申请时间</th><th>操作</th>
+            </tr>
+            </thead>
+            <tbody id="tbody"></tbody>
+        </table>
+    </div>
+    <div class="pagination" id="pagination"></div>
+</div>
+
+<!-- 拒绝弹层 -->
+<div class="mask" id="rejectMask">
+    <div class="dialog">
+        <div class="dialog-title">填写拒绝原因</div>
+        <div class="dialog-body">
+            <textarea class="form-control" id="rejectReason" placeholder="请输入拒绝原因"></textarea>
+        </div>
+        <div class="dialog-footer">
+            <button class="btn" onclick="document.getElementById('rejectMask').classList.remove('show')">取消</button>
+            <button class="btn btn-primary" onclick="doReject()">确定拒绝</button>
+        </div>
+    </div>
+</div>
+
+<script>
+var currentPage = 1;
+var currentId = 0;
+var typeMap = {1: '支付宝', 2: '微信', 3: '银行卡', 4: '虚拟货币'};
+
+function loadList(page){
+    currentPage = page;
+    fetch('/admin1314/withdraw/index?page=' + page + '&limit=15&status=' + document.getElementById('status').value, {headers:{'X-Requested-With':'XMLHttpRequest'}})
+        .then(function(r){ return r.json(); })
+        .then(function(res){
+            var html = '';
+            if(!res.data || !res.data.length){
+                html = '<tr><td colspan="10" class="empty">暂无数据</td></tr>';
+            } else {
+                res.data.forEach(function(w){
+                    var stHtml = w.status == 0 ? '<span class="tag tag-orange">待审核</span>'
+                        : (w.status == 1 ? '<span class="tag tag-green">已打款</span>' : '<span class="tag tag-red">已拒绝</span>');
+                    var ops = '<a class="btn btn-sm" href="/admin1314/member/detail?id=' + w.user_id + '">会员</a> ';
+                    if(w.status == 0){
+                        ops += '<a class="btn btn-sm btn-green" href="javascript:;" onclick="audit(' + w.id + ',\'pass\')">打款</a> '
+                            + '<a class="btn btn-sm btn-danger" href="javascript:;" onclick="openReject(' + w.id + ')">拒绝</a>';
+                    }
+                    html += '<tr>'
+                        + '<td>' + w.id + '</td>'
+                        + '<td>' + (w.nickname || w.mobile || w.user_id) + '</td>'
+                        + '<td class="price">￥' + w.amount + '</td>'
+                        + '<td>' + (typeMap[w.account_type] || w.account_type) + '</td>'
+                        + '<td>' + w.account + '</td>'
+                        + '<td>' + w.account_name + '</td>'
+                        + '<td>' + (w.bank_name ? w.bank_name : (w.qr_code ? '<img src="' + w.qr_code + '" style="width:34px;height:34px;object-fit:cover;border-radius:4px;cursor:zoom-in;" onclick="window.open(this.src)">' : '-')) + '</td>'
+                        + '<td>' + stHtml + (w.refuse_reason ? '<br><span class="tip">' + w.refuse_reason + '</span>' : '') + '</td>'
+                        + '<td>' + (w.create_time ? fmtTime(w.create_time) : '-') + '</td>'
+                        + '<td style="white-space:nowrap;">' + ops + '</td></tr>';
+                });
+            }
+            document.getElementById('tbody').innerHTML = html;
+            renderPagination(res.count, page);
+        });
+}
+
+function renderPagination(total, page){
+    var pages = Math.ceil(total / 15) || 1;
+    var html = '<span class="info">共 ' + total + ' 条，第 ' + page + '/' + pages + ' 页</span> ';
+    html += '<a class="' + (page <= 1 ? 'disabled' : '') + '" href="javascript:;" onclick="loadList(1)">首页</a>';
+    html += '<a class="' + (page <= 1 ? 'disabled' : '') + '" href="javascript:;" onclick="loadList(' + (page - 1) + ')">上一页</a>';
+    var start = Math.max(1, page - 2), end = Math.min(pages, page + 2);
+    for(var i = start; i <= end; i++){
+        html += i == page ? '<span class="current">' + i + '</span>' : '<a href="javascript:;" onclick="loadList(' + i + ')">' + i + '</a>';
+    }
+    html += '<a class="' + (page >= pages ? 'disabled' : '') + '" href="javascript:;" onclick="loadList(' + (page + 1) + ')">下一页</a>';
+    html += '<a class="' + (page >= pages ? 'disabled' : '') + '" href="javascript:;" onclick="loadList(' + pages + ')">末页</a>';
+    document.getElementById('pagination').innerHTML = html;
+}
+
+function audit(id, action){
+    confirmDialog('打款后将扣减会员余额，请确认已线下打款给会员。确定打款吗？', function(){
+        ajaxPost('/admin1314/withdraw/audit', {id:id, action:action}, function(res){
+            alert(res.msg); if(res.code == 1) loadList(currentPage);
+        });
+    });
+}
+
+function openReject(id){
+    currentId = id;
+    document.getElementById('rejectReason').value = '';
+    document.getElementById('rejectMask').classList.add('show');
+}
+
+function doReject(){
+    var reason = document.getElementById('rejectReason').value.trim();
+    if(!reason){ alert('请填写拒绝原因'); return; }
+    ajaxPost('/admin1314/withdraw/audit', {id:currentId, action:'reject', reason:reason}, function(res){
+        alert(res.msg);
+        if(res.code == 1){
+            document.getElementById('rejectMask').classList.remove('show');
+            loadList(currentPage);
+        }
+    });
+}
+
+function fmtTime(ts){
+    var d = new Date(ts * 1000);
+    function p(n){ return n < 10 ? '0' + n : n; }
+    return d.getFullYear() + '-' + p(d.getMonth()+1) + '-' + p(d.getDate()) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
+}
+
+loadList(1);
+</script>
+{/block}

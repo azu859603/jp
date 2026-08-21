@@ -1,0 +1,86 @@
+{extend name="layout" /}
+
+{block name="title"}操作日志{/block}
+{block name="crumb"}系统设置 / <b>操作日志</b>{/block}
+
+{block name="content"}
+<div class="page-title">
+    <span>管理员操作日志</span>
+    <div class="tools">
+        <button class="btn btn-danger" onclick="clearLog()">清空日志</button>
+    </div>
+</div>
+
+<div class="search-bar">
+    <input type="text" class="form-control" id="keyword" placeholder="搜索操作内容">
+    <button class="btn btn-primary" onclick="loadList(1)">查询</button>
+</div>
+
+<div class="card">
+    <div class="table-wrap">
+        <table class="table">
+            <thead>
+            <tr>
+                <th>ID</th><th>管理员</th><th>操作内容</th><th>IP</th><th>时间</th>
+            </tr>
+            </thead>
+            <tbody id="tbody"></tbody>
+        </table>
+    </div>
+    <div class="pagination" id="pagination"></div>
+</div>
+
+<script>
+function loadList(page){
+    fetch('/admin1314/log/index?page=' + page + '&limit=15&keyword=' + encodeURIComponent(document.getElementById('keyword').value), {headers:{'X-Requested-With':'XMLHttpRequest'}})
+        .then(function(r){ return r.json(); })
+        .then(function(res){
+            var html = '';
+            if(!res.data || !res.data.length){
+                html = '<tr><td colspan="5" class="empty">暂无数据</td></tr>';
+            } else {
+                res.data.forEach(function(l){
+                    html += '<tr>'
+                        + '<td>' + l.id + '</td>'
+                        + '<td>' + (l.real_name || l.username || ('ID:' + l.admin_id)) + '</td>'
+                        + '<td>' + l.action + '</td>'
+                        + '<td>' + l.ip + '</td>'
+                        + '<td>' + fmtTime(l.create_time) + '</td></tr>';
+                });
+            }
+            document.getElementById('tbody').innerHTML = html;
+            renderPagination(res.count, page);
+        });
+}
+
+function renderPagination(total, page){
+    var pages = Math.ceil(total / 15) || 1;
+    var html = '<span class="info">共 ' + total + ' 条，第 ' + page + '/' + pages + ' 页</span> ';
+    html += '<a class="' + (page <= 1 ? 'disabled' : '') + '" href="javascript:;" onclick="loadList(1)">首页</a>';
+    html += '<a class="' + (page <= 1 ? 'disabled' : '') + '" href="javascript:;" onclick="loadList(' + (page - 1) + ')">上一页</a>';
+    var start = Math.max(1, page - 2), end = Math.min(pages, page + 2);
+    for(var i = start; i <= end; i++){
+        html += i == page ? '<span class="current">' + i + '</span>' : '<a href="javascript:;" onclick="loadList(' + i + ')">' + i + '</a>';
+    }
+    html += '<a class="' + (page >= pages ? 'disabled' : '') + '" href="javascript:;" onclick="loadList(' + (page + 1) + ')">下一页</a>';
+    html += '<a class="' + (page >= pages ? 'disabled' : '') + '" href="javascript:;" onclick="loadList(' + pages + ')">末页</a>';
+    document.getElementById('pagination').innerHTML = html;
+}
+
+function clearLog(){
+    confirmDialog('确定清空所有操作日志吗？清空后不可恢复！', function(){
+        ajaxPost('/admin1314/log/clear', {}, function(res){
+            alert(res.msg); if(res.code == 1) loadList(1);
+        });
+    });
+}
+
+function fmtTime(ts){
+    var d = new Date(ts * 1000);
+    function p(n){ return n < 10 ? '0' + n : n; }
+    return d.getFullYear() + '-' + p(d.getMonth()+1) + '-' + p(d.getDate()) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes()) + ':' + p(d.getSeconds());
+}
+
+loadList(1);
+</script>
+{/block}
