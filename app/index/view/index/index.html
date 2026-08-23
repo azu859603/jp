@@ -11,7 +11,7 @@
         </div>
         <a class="search-capsule" href="/search">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/></svg>
-            <input type="text" placeholder="搜索拍品" readonly>
+            <input type="text" placeholder="{:lang('搜索拍品')}" readonly>
         </a>
     </div>
 </div>
@@ -25,7 +25,7 @@
 <!-- 拍卖头条 -->
 <div class="home-head">
     <div class="hh1">
-        <span class="t">关于我们</span>
+        <span class="t">{:lang('关于我们')}</span>
 <!--        <span class="sub">我们</span>-->
 <!--        <span style="flex:1;font-size:12px;color:#898989;margin-left:8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{$site_name} · 每日精选</span>-->
         <!-- <a class="rec" href="/?sort=end">成交记录 ></a> -->
@@ -54,10 +54,10 @@
 <!-- 成交记录：标题 + 向上循环滚动 -->
 {if !empty($deals)}
 <div class="deal-wrap">
-    <div class="deal-title">成交记录<a class="deal-more" href="/deals">更多 ›</a></div>
+    <div class="deal-title">{:lang('成交记录')}<a class="deal-more" href="/deals">{:lang('更多')} ›</a></div>
     <div class="deal-bar" id="dealBar">
         <div class="deal-track" id="dealTrack">
-            {foreach $deals as $d}<div class="deal-item"><span class="deal-txt">恭喜 {$d.display_name} 以 ¥{$d.price|number_format=2} 成交「{$d.title}」</span><span class="deal-time">{$d.create_time|date='m-d H:i'}</span></div>{/foreach}
+            {foreach $deals as $d}<div class="deal-item"><span class="deal-txt">{:lang('恭喜 %s 以 ¥%s 成交「%s」', [$d.display_name, number_format($d.price, 2), $d.title])}</span><span class="deal-time">{$d.create_time|date='m-d H:i'}</span></div>{/foreach}
         </div>
     </div>
 </div>
@@ -65,12 +65,12 @@
 
 <!-- 分类 tab -->
 <div class="cate-tabs">
-    <a href="/" {if $category_id==0}class="on"{/if}>全部</a>
+    <a href="/" {if $category_id==0}class="on"{/if}>{:lang('全部')}</a>
     {foreach $categories as $c}
     <a href="/?category_id={$c.id}" {if $category_id==$c.id}class="on"{/if}>{$c.name}</a>
     {/foreach}
     <a class="more" href="/category">
-        更多
+        {:lang('更多')}
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
     </a>
 </div>
@@ -79,8 +79,8 @@
 {if empty($list)}
 <div class="empty">
     <div class="e-ico">🏺</div>
-    <div>暂无可参与竞拍的拍品</div>
-    <a class="e-btn" href="/">刷新看看</a>
+    <div>{:lang('暂无可参与竞拍的拍品')}</div>
+    <a class="e-btn" href="/">{:lang('刷新看看')}</a>
 </div>
 {else}
 <div class="goods-grid">
@@ -101,16 +101,16 @@
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 13.5"/></svg>
                     <b data-countdown="{$g.end_time}" data-format="short">--</b>
                 </span>
-                <span class="bid-btn">去出价</span>
+                <span class="bid-btn">{:lang('去出价')}</span>
             </div>
         </div>
     </a>
     {/foreach}
 </div>
 {if $page*$limit < $total}
-<a class="load-more" href="/?page={$page+1}&category_id={$category_id}&seller_id={$seller_id}&keyword={$keyword|urlencode=###}&sort={$sort}">加载更多</a>
+<a class="load-more" href="/?page={$page+1}&category_id={$category_id}&seller_id={$seller_id}&keyword={$keyword|urlencode=###}&sort={$sort}">{:lang('加载更多')}</a>
 {else}
-<div class="no-more">—— 没有更多数据了 ——</div>
+<div class="no-more">{:lang('—— 没有更多数据了 ——')}</div>
 {/if}
 {/if}
 {/block}

@@ -1,15 +1,15 @@
 {extend name="layout" /}
-{block name="title"}我的消息{/block}
+{block name="title"}{:lang('我的消息')}{/block}
 {block name="content"}
 <!-- Tab 切换 -->
 <div class="chat-tabs">
-    <a href="/chat/list?tab=buyer" class="{if $tab=='buyer'}on{/if}">买家消息</a>
-    <a href="/chat/list?tab=seller" class="{if $tab=='seller'}on{/if}">卖家消息</a>
+    <a href="/chat/list?tab=buyer" class="{if $tab=='buyer'}on{/if}">{:lang('买家消息')}</a>
+    <a href="/chat/list?tab=seller" class="{if $tab=='seller'}on{/if}">{:lang('卖家消息')}</a>
 </div>
 
 {if $tab == 'buyer'}
     {if empty($buyer_messages)}
-    <div class="empty"><div class="e-ico">💬</div><div>暂无买家消息</div></div>
+    <div class="empty"><div class="e-ico">💬</div><div>{:lang('暂无买家消息')}</div></div>
     {else}
     <div class="msg-list">
         {foreach $buyer_messages as $m}
@@ -38,7 +38,7 @@
     {/if}
 {else}
     {if empty($seller_messages)}
-    <div class="empty"><div class="e-ico">💬</div><div>暂无卖家消息</div></div>
+    <div class="empty"><div class="e-ico">💬</div><div>{:lang('暂无卖家消息')}</div></div>
     {else}
     <div class="msg-list">
         {foreach $seller_messages as $m}

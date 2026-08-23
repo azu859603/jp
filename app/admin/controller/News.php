@@ -45,7 +45,11 @@ class News extends Base
         }
         $id = (int)$this->request->post('id', 0);
         $title = trim($this->request->post('title', ''));
+        $titleTw = trim($this->request->post('title_tw', ''));
+        $titleEn = trim($this->request->post('title_en', ''));
         $content = trim($this->request->post('content', ''));
+        $contentTw = trim($this->request->post('content_tw', ''));
+        $contentEn = trim($this->request->post('content_en', ''));
         $status = (int)$this->request->post('status', 1);
 
         if (empty($title)) {
@@ -54,13 +58,17 @@ class News extends Base
         if (empty($content)) {
             return json(['code' => 0, 'msg' => '请输入新闻内容']);
         }
-        if (mb_strlen($title) > 100) {
+        if (mb_strlen($title) > 100 || mb_strlen($titleTw) > 100 || mb_strlen($titleEn) > 100) {
             return json(['code' => 0, 'msg' => '标题不能超过100字']);
         }
 
         $data = [
             'title'       => $title,
+            'title_tw'    => $titleTw,
+            'title_en'    => $titleEn,
             'content'     => $content,
+            'content_tw'  => $contentTw,
+            'content_en'  => $contentEn,
             'status'      => $status ? 1 : 0,
         ];
 

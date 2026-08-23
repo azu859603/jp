@@ -1,49 +1,49 @@
 {extend name="layout" /}
 {block name="content"}
 <div class="wallet-top">
-    <div class="w-label">当前余额(元)</div>
+    <div class="w-label">{:lang('当前余额(元)')}</div>
     <div class="w-amount" style="font-size:28px;">{$user.balance|number_format=2}</div>
 </div>
 <div class="form-card" style="margin-top:-50px;position:relative;z-index:2;">
     <div class="form-row">
-        <span class="fl">充值金额</span>
+        <span class="fl">{:lang('充值金额')}</span>
         <div class="fr">
-            <input type="number" id="amount" placeholder="请输入充值金额" {if $has_pending}disabled style="background:#f5f5f5;color:#999;"{/if}>
+            <input type="number" id="amount" placeholder="{:lang('请输入充值金额')}" {if $has_pending}disabled style="background:#f5f5f5;color:#999;"{/if}>
         </div>
     </div>
     <div class="form-row">
-        <span class="fl">充值方式</span>
-        <div class="fr" style="color:#666;">在线充值（人工审核到账）</div>
+        <span class="fl">{:lang('充值方式')}</span>
+        <div class="fr" style="color:#666;">{:lang('在线充值（人工审核到账）')}</div>
     </div>
 </div>
 {if $has_pending}
-<div class="form-tip" style="color:#e6a23c;padding:0 16px;">您有一笔充值申请正在审核中，审核完成后可再次提交</div>
+<div class="form-tip" style="color:#e6a23c;padding:0 16px;">{:lang('您有一笔充值申请正在审核中，审核完成后可再次提交')}</div>
 {else}
-<div class="form-tip">提交充值申请后，请联系客服完成转账，平台审核通过后金额自动到账</div>
+<div class="form-tip">{:lang('提交充值申请后，请联系客服完成转账，平台审核通过后金额自动到账')}</div>
 {/if}
 <div class="form-submit">
-    <button class="btn btn-red" id="submitBtn" onclick="doRecharge()" {if $has_pending}disabled style="background:#ccc;"{/if}>{if $has_pending}审核中，暂不可提交{else}提交充值申请{/if}</button>
+    <button class="btn btn-red" id="submitBtn" onclick="doRecharge()" {if $has_pending}disabled style="background:#ccc;"{/if}>{if $has_pending}{:lang('审核中，暂不可提交')}{else}{:lang('提交充值申请')}{/if}</button>
 </div>
 
 {if !empty($records)}
 <div class="wallet-log">
     <div class="w-head">
-        <span class="t">充值记录</span>
-        <a class="more" href="/user/recharge_log">更多</a>
+        <span class="t">{:lang('充值记录')}</span>
+        <a class="more" href="/user/recharge_log">{:lang('更多')}</a>
     </div>
     {foreach $records as $r}
     <div class="log-item">
         <div class="l-ico">💳</div>
         <div class="l-info">
-            <div class="l-name">充值申请 #{if $r.id}{$r.id}{/if}</div>
+            <div class="l-name">{:lang('充值申请')} #{if $r.id}{$r.id}{/if}</div>
             <div class="l-time">{$r.create_time|date='Y-m-d H:i'}</div>
             {if $r.status==2 && !empty($r.refuse_reason)}
-            <div class="l-reason">拒绝理由：{$r.refuse_reason}</div>
+            <div class="l-reason">{:lang('拒绝理由：')}{$r.refuse_reason}</div>
             {/if}
         </div>
         <div style="text-align:right;">
             <div class="l-amount in">+¥{$r.amount|number_format=2}</div>
-            <div class="l-status s{$r.status}">{if $r.status==0}审核中{elseif $r.status==1}已到账{else}未通过{/if}</div>
+            <div class="l-status s{$r.status}">{if $r.status==0}{:lang('审核中')}{elseif $r.status==1}{:lang('已到账')}{else}{:lang('未通过')}{/if}</div>
         </div>
     </div>
     {/foreach}

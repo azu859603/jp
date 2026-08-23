@@ -108,17 +108,41 @@
     <div class="card-title">协议与政策</div>
     <form id="settingForm3" onsubmit="return false;">
         <div class="form-group">
-            <label>用户协议</label>
+            <label>用户协议（简体）</label>
             <textarea class="form-control" name="user_protocol" style="min-height:160px;" placeholder="用户注册协议内容">{$settings.user_protocol}</textarea>
         </div>
         <div class="form-group">
-            <label>隐私政策</label>
+            <label>用户协议（繁体）</label>
+            <textarea class="form-control" name="user_protocol_tw" style="min-height:120px;" placeholder="不填则默认使用简体内容">{$settings.user_protocol_tw}</textarea>
+        </div>
+        <div class="form-group">
+            <label>用户协议（英文）</label>
+            <textarea class="form-control" name="user_protocol_en" style="min-height:120px;" placeholder="不填则默认使用简体内容">{$settings.user_protocol_en}</textarea>
+        </div>
+        <div class="form-group">
+            <label>隐私政策（简体）</label>
             <textarea class="form-control" name="privacy_policy" style="min-height:160px;" placeholder="隐私政策内容">{$settings.privacy_policy}</textarea>
+        </div>
+        <div class="form-group">
+            <label>隐私政策（繁体）</label>
+            <textarea class="form-control" name="privacy_policy_tw" style="min-height:120px;" placeholder="不填则默认使用简体内容">{$settings.privacy_policy_tw}</textarea>
+        </div>
+        <div class="form-group">
+            <label>隐私政策（英文）</label>
+            <textarea class="form-control" name="privacy_policy_en" style="min-height:120px;" placeholder="不填则默认使用简体内容">{$settings.privacy_policy_en}</textarea>
             <div class="tip">登录/注册页《用户协议》《隐私政策》点击后展示的内容</div>
         </div>
         <div class="form-group">
-            <label>发布协议</label>
+            <label>发布协议（简体）</label>
             <textarea class="form-control" name="publish_protocol" style="min-height:160px;" placeholder="商品发布页《发布协议》弹窗展示的内容">{$settings.publish_protocol}</textarea>
+        </div>
+        <div class="form-group">
+            <label>发布协议（繁体）</label>
+            <textarea class="form-control" name="publish_protocol_tw" style="min-height:120px;" placeholder="不填则默认使用简体内容">{$settings.publish_protocol_tw}</textarea>
+        </div>
+        <div class="form-group">
+            <label>发布协议（英文）</label>
+            <textarea class="form-control" name="publish_protocol_en" style="min-height:120px;" placeholder="不填则默认使用简体内容">{$settings.publish_protocol_en}</textarea>
             <div class="tip">前端发布商品页《发布协议》点击弹窗展示的内容</div>
         </div>
     </form>
@@ -131,7 +155,7 @@
 <script>
 function saveAll(){
     var fd = new FormData();
-    ['site_name','site_url','site_logo','service_phone','service_qq','service_link','commission_rate','withdraw_fee','seller_check','goods_check','invite_code','auction_delay','user_protocol','privacy_policy','publish_protocol','withdraw_min','withdraw_max','virtual_balance'].forEach(function(name){
+    ['site_name','site_url','site_logo','service_phone','service_qq','service_link','commission_rate','withdraw_fee','seller_check','goods_check','invite_code','auction_delay','user_protocol','privacy_policy','publish_protocol','user_protocol_tw','user_protocol_en','privacy_policy_tw','privacy_policy_en','publish_protocol_tw','publish_protocol_en','withdraw_min','withdraw_max','virtual_balance'].forEach(function(name){
         var el = document.querySelector('[name="' + name + '"]');
         if(el) fd.append(name, el.value);
     });

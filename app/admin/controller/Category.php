@@ -34,6 +34,8 @@ class Category extends Base
         }
         $id = (int)$this->request->post('id', 0);
         $name = trim($this->request->post('name', ''));
+        $nameTw = trim($this->request->post('name_tw', ''));
+        $nameEn = trim($this->request->post('name_en', ''));
         $icon = trim($this->request->post('icon', ''));
         $image = trim($this->request->post('image', ''));
         $sort = (int)$this->request->post('sort', 0);
@@ -45,6 +47,8 @@ class Category extends Base
 
         $data = [
             'name'   => $name,
+            'name_tw' => $nameTw ?: $name,
+            'name_en' => $nameEn ?: $name,
             'icon'   => $icon,
             'image'  => $image,
             'sort'   => $sort,

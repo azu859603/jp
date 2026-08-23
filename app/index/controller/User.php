@@ -2,6 +2,7 @@
 namespace app\index\controller;
 
 use think\facade\Db;
+use think\facade\Lang;
 use think\facade\View;
 
 class User extends Base
@@ -14,7 +15,7 @@ class User extends Base
         if (!empty($this->user)) {
             return redirect('/user/center');
         }
-        View::assign('page_title', '会员登录');
+        View::assign('page_title', lang('会员登录'));
         return View::fetch();
     }
 
@@ -24,21 +25,21 @@ class User extends Base
     public function doLogin()
     {
         if (!$this->request->isPost()) {
-            return json(['code' => 0, 'msg' => '请求方式错误']);
+            return json(['code' => 0, 'msg' => lang('请求方式错误')]);
         }
         $mobile = trim($this->request->post('mobile', ''));
         $password = trim($this->request->post('password', ''));
 
         if (empty($mobile) || empty($password)) {
-            return json(['code' => 0, 'msg' => '请输入手机号和密码']);
+            return json(['code' => 0, 'msg' => lang('请输入手机号和密码')]);
         }
 
         $user = Db::name('user')->where('mobile', $mobile)->find();
         if (!$user || $user['password'] !== encrypt_password($password)) {
-            return json(['code' => 0, 'msg' => '手机号或密码错误']);
+            return json(['code' => 0, 'msg' => lang('手机号或密码错误')]);
         }
         if ($user['status'] != 1) {
-            return json(['code' => 0, 'msg' => '账号已被禁用']);
+            return json(['code' => 0, 'msg' => lang('账号已被禁用')]);
         }
 
         Db::name('user')->where('id', $user['id'])->update([
@@ -48,7 +49,7 @@ class User extends Base
         unset($user['password']);
         session('user', $user);
 
-        return json(['code' => 1, 'msg' => '登录成功', 'url' => '/user/center']);
+        return json(['code' => 1, 'msg' => lang('登录成功'), 'url' => '/user/center']);
     }
 
     /**
@@ -59,7 +60,7 @@ class User extends Base
         if (!empty($this->user)) {
             return redirect('/user/center');
         }
-        View::assign('page_title', '会员注册');
+        View::assign('page_title', lang('会员注册'));
         return View::fetch();
     }
 
@@ -69,7 +70,7 @@ class User extends Base
     public function doRegister()
     {
         if (!$this->request->isPost()) {
-            return json(['code' => 0, 'msg' => '请求方式错误']);
+            return json(['code' => 0, 'msg' => lang('请求方式错误')]);
         }
         $mobile = trim($this->request->post('mobile', ''));
         $password = trim($this->request->post('password', ''));
@@ -78,19 +79,19 @@ class User extends Base
         $inviteCode = trim($this->request->post('invite_code', ''));
 
         if (!preg_match('/^1\d{10}$/', $mobile)) {
-            return json(['code' => 0, 'msg' => '手机号格式不正确']);
+            return json(['code' => 0, 'msg' => lang('手机号格式不正确')]);
         }
         if (strlen($password) < 6) {
-            return json(['code' => 0, 'msg' => '密码至少6位']);
+            return json(['code' => 0, 'msg' => lang('密码至少6位')]);
         }
         if ($password !== $password2) {
-            return json(['code' => 0, 'msg' => '两次密码不一致']);
+            return json(['code' => 0, 'msg' => lang('两次密码不一致')]);
         }
         if ($nickname === '') {
             $nickname = '用户' . substr($mobile, -4);
         }
         if (Db::name('user')->where('mobile', $mobile)->find()) {
-            return json(['code' => 0, 'msg' => '该手机号已注册']);
+            return json(['code' => 0, 'msg' => lang('该手机号已注册')]);
         }
 
         // 邀请码
@@ -98,7 +99,7 @@ class User extends Base
         if ($inviteCode !== '') {
             $inviter = Db::name('user')->where('invite_code', $inviteCode)->find();
             if (!$inviter) {
-                return json(['code' => 0, 'msg' => '邀请码不存在']);
+                return json(['code' => 0, 'msg' => lang('邀请码不存在')]);
             }
             $pid = $inviter['id'];
         }
@@ -126,7 +127,7 @@ class User extends Base
         unset($user['password']);
         session('user', $user);
 
-        return json(['code' => 1, 'msg' => '注册成功', 'url' => '/user/center']);
+        return json(['code' => 1, 'msg' => lang('注册成功'), 'url' => '/user/center']);
     }
 
     /**
@@ -137,12 +138,21 @@ class User extends Base
         $type = $this->request->param('type', 'protocol');
         if ($type === 'privacy') {
             $name = 'privacy_policy';
-            $title = '隐私政策';
+            $title = lang('隐私政策');
         } else {
             $name = 'user_protocol';
-            $title = '用户协议';
+            $title = lang('用户协议');
         }
         $content = (string)Db::name('setting')->where('name', $name)->value('value');
+        // 多语言协议内容（未填则回退简体）
+        $langSet = Lang::getLangSet();
+        if ($langSet !== 'zh-cn') {
+            $altName = $name . ($langSet === 'zh-tw' ? '_tw' : '_en');
+            $alt = (string)Db::name('setting')->where('name', $altName)->value('value');
+            if ($alt !== '') {
+                $content = $alt;
+            }
+        }
         View::assign([
             'title'      => $title,
             'content'    => $content,
@@ -193,22 +203,27 @@ class User extends Base
         ];
 
         // 等级
-        $level = '白丁';
+        $level = lang('白丁');
         $points = (int)$this->user['points'];
         if ($points >= 10000) {
-            $level = '至尊';
+            $level = lang('至尊');
         } elseif ($points >= 5000) {
-            $level = '黄金';
+            $level = lang('黄金');
         } elseif ($points >= 2000) {
-            $level = '白银';
+            $level = lang('白银');
         } elseif ($points >= 500) {
-            $level = '青铜';
+            $level = lang('青铜');
         } elseif ($points >= 100) {
-            $level = '学徒';
+            $level = lang('学徒');
         }
 
         // 最近流水
         $logs = Db::name('balance_log')->where('user_id', $id)->order('id', 'desc')->limit(5)->select()->toArray();
+        // 流水备注多语言
+        foreach ($logs as &$log) {
+            $log['remark'] = translate_remark($log['remark']);
+        }
+        unset($log);
 
         // 参与的竞拍
         $bids = Db::name('bid_record')->alias('b')
@@ -237,7 +252,7 @@ class User extends Base
             'share_users'  => $shareUsers,
             'service_link' => $serviceLink,
             'is_virtual'   => $isVirtual,
-            'page_title'   => '个人中心',
+            'page_title'   => lang('个人中心'),
             'tab_active'   => 'mine',
             'hide_header'  => true,
         ]);
@@ -261,12 +276,12 @@ class User extends Base
         foreach ($list as &$v) {
             $top = Db::name('bid_record')->where('goods_id', $v['goods_id'])->where('status', 0)->max('price');
             $v['cur_price'] = $top > 0 ? (float)$top : (float)$v['start_price'];
-            $v['status_txt'] = $v['goods_status'] == 1 ? '竞拍中' : ($v['goods_status'] == 2 ? '已成交' : ($v['goods_status'] == 3 ? '已流拍' : '已下架'));
+            $v['status_txt'] = $v['goods_status'] == 1 ? lang('竞拍中') : ($v['goods_status'] == 2 ? lang('已成交') : ($v['goods_status'] == 3 ? lang('已流拍') : lang('已下架')));
         }
         unset($v);
         View::assign([
             'list'       => $list,
-            'page_title' => '关注的拍品',
+            'page_title' => lang('关注的拍品'),
             'tab_active' => 'mine',
             'hide_tabbar' => true,
         ]);
@@ -295,7 +310,7 @@ class User extends Base
         unset($v);
         View::assign([
             'list'       => $list,
-            'page_title' => '关注的店铺',
+            'page_title' => lang('关注的店铺'),
             'tab_active' => 'mine',
             'hide_tabbar' => true,
         ]);
@@ -320,12 +335,12 @@ class User extends Base
         foreach ($list as &$v) {
             $top = Db::name('bid_record')->where('goods_id', $v['goods_id'])->where('status', 0)->max('price');
             $v['cur_price'] = $top > 0 ? (float)$top : (float)$v['start_price'];
-            $v['status_txt'] = $v['goods_status'] == 1 ? '竞拍中' : ($v['goods_status'] == 2 ? '已成交' : ($v['goods_status'] == 3 ? '已流拍' : '已下架'));
+            $v['status_txt'] = $v['goods_status'] == 1 ? lang('竞拍中') : ($v['goods_status'] == 2 ? lang('已成交') : ($v['goods_status'] == 3 ? lang('已流拍') : lang('已下架')));
         }
         unset($v);
         View::assign([
             'list'       => $list,
-            'page_title' => '我的足迹',
+            'page_title' => lang('我的足迹'),
             'tab_active' => 'mine',
             'hide_tabbar' => true,
         ]);
@@ -353,6 +368,11 @@ class User extends Base
 
         // 最近流水
         $logs = Db::name('balance_log')->where('user_id', $id)->order('id', 'desc')->limit(8)->select()->toArray();
+        // 流水备注多语言
+        foreach ($logs as &$log) {
+            $log['remark'] = translate_remark($log['remark']);
+        }
+        unset($log);
         // 虚拟会员：余额展示永存金额，不展示流水（不审计）
         if ($isVirtual) {
             $user['balance'] = (float)get_setting('virtual_balance', 0);
@@ -367,7 +387,7 @@ class User extends Base
             'finished'     => $finished,
             'deal_count'   => $dealCount,
             'logs'         => $logs,
-            'page_title'   => '我的钱包',
+            'page_title'   => lang('我的钱包'),
             'tab_active'   => 'mine',
         ]);
         return View::fetch();
@@ -382,11 +402,11 @@ class User extends Base
         if ($this->request->isPost()) {
             $nickname = trim($this->request->post('nickname', ''));
             if ($nickname === '') {
-                return json(['code' => 0, 'msg' => '请输入昵称']);
+                return json(['code' => 0, 'msg' => lang('请输入昵称')]);
             }
             $avatar = trim($this->request->post('avatar', ''));
             if ($avatar !== '' && !preg_match('~^/uploads/[\w\-./]+\.(jpg|jpeg|png|gif|webp)$~i', $avatar)) {
-                return json(['code' => 0, 'msg' => '头像地址不合法']);
+                return json(['code' => 0, 'msg' => lang('头像地址不合法')]);
             }
             $data = [
                 'nickname'    => $nickname,
@@ -407,9 +427,9 @@ class User extends Base
                 }
             }
             Db::name('user')->where('id', $this->user['id'])->update($data);
-            return json(['code' => 1, 'msg' => '资料已更新']);
+            return json(['code' => 1, 'msg' => lang('资料已更新')]);
         }
-        View::assign(['page_title' => '修改资料', 'center_tab' => 'profile', 'tab_active' => 'mine']);
+        View::assign(['page_title' => lang('修改资料'), 'center_tab' => 'profile', 'tab_active' => 'mine']);
         return View::fetch();
     }
 
@@ -425,21 +445,21 @@ class User extends Base
             $newPwd2 = trim($this->request->post('new_password2', ''));
 
             if ($this->user['password'] !== encrypt_password($oldPwd)) {
-                return json(['code' => 0, 'msg' => '原密码错误']);
+                return json(['code' => 0, 'msg' => lang('原密码错误')]);
             }
             if (strlen($newPwd) < 6) {
-                return json(['code' => 0, 'msg' => '新密码至少6位']);
+                return json(['code' => 0, 'msg' => lang('新密码至少6位')]);
             }
             if ($newPwd !== $newPwd2) {
-                return json(['code' => 0, 'msg' => '两次密码不一致']);
+                return json(['code' => 0, 'msg' => lang('两次密码不一致')]);
             }
             Db::name('user')->where('id', $this->user['id'])->update([
                 'password'    => encrypt_password($newPwd),
                 'update_time' => time(),
             ]);
-            return json(['code' => 1, 'msg' => '密码已修改']);
+            return json(['code' => 1, 'msg' => lang('密码已修改')]);
         }
-        View::assign(['page_title' => '修改密码', 'center_tab' => 'password', 'tab_active' => 'mine']);
+        View::assign(['page_title' => lang('修改密码'), 'center_tab' => 'password', 'tab_active' => 'mine']);
         return View::fetch();
     }
 
@@ -452,20 +472,20 @@ class User extends Base
         // 虚拟会员无出入款操作
         if (Db::name('user')->where('id', $this->user['id'])->value('is_virtual')) {
             if ($this->request->isPost()) {
-                return json(['code' => 0, 'msg' => '虚拟会员不支持充值']);
+                return json(['code' => 0, 'msg' => lang('虚拟会员不支持充值')]);
             }
-            return $this->error('虚拟会员不支持充值操作', '/user/wallet');
+            return $this->error(lang('虚拟会员不支持充值操作'), '/user/wallet');
         }
         if ($this->request->isPost()) {
             $amount = round((float)$this->request->post('amount', 0), 2);
             $payType = (int)$this->request->post('pay_type', 1);
             if ($amount <= 0 || $amount > 100000) {
-                return json(['code' => 0, 'msg' => '请输入正确的充值金额']);
+                return json(['code' => 0, 'msg' => lang('请输入正确的充值金额')]);
             }
             // 未处理完成的申请只能提交一次
             $pending = Db::name('recharge')->where('user_id', $this->user['id'])->where('status', 0)->find();
             if ($pending) {
-                return json(['code' => 0, 'msg' => '您有一笔充值申请正在审核中，请等待审核结果']);
+                return json(['code' => 0, 'msg' => lang('您有一笔充值申请正在审核中，请等待审核结果')]);
             }
             $now = time();
             Db::name('recharge')->insert([
@@ -476,7 +496,7 @@ class User extends Base
                 'create_time' => $now,
                 'update_time' => $now,
             ]);
-            return json(['code' => 1, 'msg' => '充值申请已提交，请等待平台审核']);
+            return json(['code' => 1, 'msg' => lang('充值申请已提交，请等待平台审核')]);
         }
 
         // 充值记录（含状态）
@@ -487,7 +507,7 @@ class User extends Base
         View::assign([
             'records'      => $records,
             'has_pending'  => $hasPending,
-            'page_title'   => '余额充值',
+            'page_title'   => lang('余额充值'),
             'center_tab'   => 'recharge',
             'tab_active'   => 'mine',
             'service_link' => $serviceLink,
@@ -511,7 +531,7 @@ class User extends Base
             'total'       => $total,
             'page'        => $page,
             'limit'       => $limit,
-            'page_title'  => '充值记录',
+            'page_title'  => lang('充值记录'),
             'center_tab'  => 'recharge',
             'tab_active'  => 'mine',
         ]);
@@ -529,8 +549,9 @@ class User extends Base
         $query = Db::name('withdraw')->where('user_id', $this->user['id']);
         $total = $query->count();
         $records = $query->order('id', 'desc')->page($page, $limit)->select()->toArray();
+        $typeNames = ['支付宝', '微信', '银行卡', '虚拟货币'];
         foreach ($records as &$r) {
-            $r['account_type_name'] = isset($r['account_type']) ? ['支付宝', '微信', '银行卡', '虚拟货币'][$r['account_type'] - 1] ?? '未知' : '';
+            $r['account_type_name'] = isset($r['account_type']) ? lang($typeNames[$r['account_type'] - 1] ?? '未知') : '';
         }
         unset($r);
         View::assign([
@@ -538,7 +559,7 @@ class User extends Base
             'total'       => $total,
             'page'        => $page,
             'limit'       => $limit,
-            'page_title'  => '提现记录',
+            'page_title'  => lang('提现记录'),
             'center_tab'  => 'withdraw',
             'tab_active'  => 'mine',
         ]);
@@ -559,6 +580,7 @@ class User extends Base
         $total = $query->count();
         $list = $query->order('id', 'desc')->page($page, $limit)->select()->toArray();
         foreach ($list as &$m) {
+            translate_sys_message($m);
             $m['summary'] = mb_substr(preg_replace('/\s+/', ' ', trim($m['content'])), 0, 60);
         }
         unset($m);
@@ -568,7 +590,7 @@ class User extends Base
             'total'      => $total,
             'page'       => $page,
             'limit'      => $limit,
-            'page_title' => '站内信',
+            'page_title' => lang('站内信'),
             'center_tab' => 'messages',
             'tab_active' => 'mine',
         ]);
@@ -584,15 +606,16 @@ class User extends Base
         $id = (int)$this->request->param('id', 0);
         $msg = Db::name('sys_message')->where('id', $id)->where('user_id', $this->user['id'])->find();
         if (!$msg) {
-            return $this->error('消息不存在');
+            return $this->error(lang('消息不存在'));
         }
         if ($msg['is_read'] == 0) {
             Db::name('sys_message')->where('id', $id)->update(['is_read' => 1]);
             $msg['is_read'] = 1;
         }
+        translate_sys_message($msg);
         View::assign([
             'msg'        => $msg,
-            'page_title' => '消息详情',
+            'page_title' => lang('消息详情'),
             'center_tab' => 'messages',
             'tab_active' => 'mine',
         ]);
@@ -612,13 +635,18 @@ class User extends Base
         $query = Db::name('balance_log')->where('user_id', $id);
         $total = $query->count();
         $logs = $query->order('id', 'desc')->page($page, $limit)->select()->toArray();
+        // 流水备注多语言
+        foreach ($logs as &$log) {
+            $log['remark'] = translate_remark($log['remark']);
+        }
+        unset($log);
 
         View::assign([
             'logs'       => $logs,
             'total'      => $total,
             'page'       => $page,
             'limit'      => $limit,
-            'page_title' => '余额明细',
+            'page_title' => lang('余额明细'),
             'center_tab' => 'balance',
             'tab_active' => 'mine',
         ]);
@@ -633,7 +661,7 @@ class User extends Base
         $this->checkLogin();
         // 虚拟会员无出入款操作，不允许绑定提现账户
         if ($this->request->isPost() && Db::name('user')->where('id', $this->user['id'])->value('is_virtual')) {
-            return json(['code' => 0, 'msg' => '虚拟会员不支持绑定提现账户']);
+            return json(['code' => 0, 'msg' => lang('虚拟会员不支持绑定提现账户')]);
         }
         if ($this->request->isPost()) {
             $type = (int)$this->request->post('type', 0);
@@ -643,30 +671,30 @@ class User extends Base
             $qrCode = trim($this->request->post('qr_code', ''));
 
             if (!in_array($type, [1, 2, 3, 4])) {
-                return json(['code' => 0, 'msg' => '请选择提现方式']);
+                return json(['code' => 0, 'msg' => lang('请选择提现方式')]);
             }
             if ($type == 4) {
                 // 虚拟货币：钱包地址必填，网络（链）选填，无需姓名和收款码
                 if ($account === '') {
-                    return json(['code' => 0, 'msg' => '请填写钱包地址']);
+                    return json(['code' => 0, 'msg' => lang('请填写钱包地址')]);
                 }
                 $realName = '';
                 $qrCode = '';
             } else {
                 if ($realName === '') {
-                    return json(['code' => 0, 'msg' => '请填写姓名']);
+                    return json(['code' => 0, 'msg' => lang('请填写姓名')]);
                 }
                 if ($account === '') {
-                    return json(['code' => 0, 'msg' => '请填写账号']);
+                    return json(['code' => 0, 'msg' => lang('请填写账号')]);
                 }
                 if ($type === 3) {
                     if ($bankName === '') {
-                        return json(['code' => 0, 'msg' => '请填写银行名称']);
+                        return json(['code' => 0, 'msg' => lang('请填写银行名称')]);
                     }
                     $qrCode = '';
                 } else {
                     if ($qrCode === '' || !preg_match('~^/uploads/[\w\-./]+\.(jpg|jpeg|png|gif|webp)$~i', $qrCode)) {
-                        return json(['code' => 0, 'msg' => '请上传收款码图片']);
+                        return json(['code' => 0, 'msg' => lang('请上传收款码图片')]);
                     }
                     $bankName = '';
                 }
@@ -689,7 +717,7 @@ class User extends Base
                 $data['create_time'] = $now;
                 Db::name('pay_account')->insert($data);
             }
-            return json(['code' => 1, 'msg' => '绑定成功']);
+            return json(['code' => 1, 'msg' => lang('绑定成功')]);
         }
 
         $accounts = Db::name('pay_account')->where('user_id', $this->user['id'])->select()->toArray();
@@ -700,7 +728,7 @@ class User extends Base
         View::assign([
             'accounts'   => $map,
             'pa_json'    => json_encode($map, JSON_UNESCAPED_UNICODE),
-            'page_title' => '提现账户',
+            'page_title' => lang('提现账户'),
             'center_tab' => 'withdraw',
             'tab_active' => 'mine',
         ]);
@@ -716,9 +744,9 @@ class User extends Base
         // 虚拟会员无出入款操作
         if (Db::name('user')->where('id', $this->user['id'])->value('is_virtual')) {
             if ($this->request->isPost()) {
-                return json(['code' => 0, 'msg' => '虚拟会员不支持提现']);
+                return json(['code' => 0, 'msg' => lang('虚拟会员不支持提现')]);
             }
-            return $this->error('虚拟会员不支持提现操作', '/user/wallet');
+            return $this->error(lang('虚拟会员不支持提现操作'), '/user/wallet');
         }
         if ($this->request->isPost()) {
             $amount = round((float)$this->request->post('amount', 0), 2);
@@ -727,25 +755,25 @@ class User extends Base
             $type = isset($typeMap[$payType]) ? $typeMap[$payType] : 0;
 
             if ($amount <= 0) {
-                return json(['code' => 0, 'msg' => '请输入提现金额']);
+                return json(['code' => 0, 'msg' => lang('请输入提现金额')]);
             }
             if (!$type) {
-                return json(['code' => 0, 'msg' => '请选择提现方式']);
+                return json(['code' => 0, 'msg' => lang('请选择提现方式')]);
             }
 
             // 单笔限额（后台设置）
             $min = (float)get_setting('withdraw_min', 0);
             $max = (float)get_setting('withdraw_max', 0);
             if ($min > 0 && $amount < $min) {
-                return json(['code' => 0, 'msg' => '单笔提现金额不能低于 ' . number_format($min, 2) . ' 元']);
+                return json(['code' => 0, 'msg' => lang('单笔提现金额不能低于 ') . number_format($min, 2) . lang(' 元')]);
             }
             if ($max > 0 && $amount > $max) {
-                return json(['code' => 0, 'msg' => '单笔提现金额不能超过 ' . number_format($max, 2) . ' 元']);
+                return json(['code' => 0, 'msg' => lang('单笔提现金额不能超过 ') . number_format($max, 2) . lang(' 元')]);
             }
 
             $pa = Db::name('pay_account')->where('user_id', $this->user['id'])->where('type', $type)->find();
             if (!$pa) {
-                return json(['code' => 0, 'msg' => '请先绑定该提现方式']);
+                return json(['code' => 0, 'msg' => lang('请先绑定该提现方式')]);
             }
 
             // 手续费（百分比）
@@ -761,11 +789,11 @@ class User extends Base
                 $pending = Db::name('withdraw')->where('user_id', $user['id'])->where('status', 0)->find();
                 if ($pending) {
                     Db::rollback();
-                    return json(['code' => 0, 'msg' => '您有一笔提现正在审核中，审核通过后方可提交下一笔']);
+                    return json(['code' => 0, 'msg' => lang('您有一笔提现正在审核中，审核通过后方可提交下一笔')]);
                 }
                 if ($user['balance'] < $amount) {
                     Db::rollback();
-                    return json(['code' => 0, 'msg' => '提现金额超过可用余额']);
+                    return json(['code' => 0, 'msg' => lang('提现金额超过可用余额')]);
                 }
                 $newBalance = round($user['balance'] - $amount, 2);
                 Db::name('user')->where('id', $user['id'])->update([
@@ -789,10 +817,10 @@ class User extends Base
                 Db::commit();
             } catch (\Throwable $e) {
                 Db::rollback();
-                return json(['code' => 0, 'msg' => '提交失败，请重试']);
+                return json(['code' => 0, 'msg' => lang('提交失败，请重试')]);
             }
 
-            return json(['code' => 1, 'msg' => '提现申请已提交，等待平台审核']);
+            return json(['code' => 1, 'msg' => lang('提现申请已提交，等待平台审核')]);
         }
 
         // 提现记录
@@ -813,7 +841,7 @@ class User extends Base
             'pending'      => $pending ? 1 : 0,
             'withdraw_min' => (float)get_setting('withdraw_min', 0),
             'withdraw_max' => (float)get_setting('withdraw_max', 0),
-            'page_title'   => '申请提现',
+            'page_title'   => lang('申请提现'),
             'center_tab'   => 'withdraw',
             'tab_active'   => 'mine',
         ]);
@@ -864,7 +892,7 @@ class User extends Base
             'total'      => $total,
             'page'       => $page,
             'limit'      => $limit,
-            'page_title' => '我的出价',
+            'page_title' => lang('我的出价记录'),
             'center_tab' => 'bids',
             'tab_active' => 'mine',
         ]);
@@ -884,7 +912,7 @@ class User extends Base
             if ($act === 'delete') {
                 $addrId = (int)$this->request->post('id');
                 Db::name('user_address')->where('id', $addrId)->where('user_id', $id)->delete();
-                return json(['code' => 1, 'msg' => '已删除']);
+                return json(['code' => 1, 'msg' => lang('已删除')]);
             }
             return $this->saveAddress();
         }
@@ -892,7 +920,7 @@ class User extends Base
         $addresses = Db::name('user_address')->where('user_id', $id)->order('is_default', 'desc')->order('id', 'desc')->select()->toArray();
         View::assign([
             'addresses'  => $addresses,
-            'page_title' => '收货地址',
+            'page_title' => lang('收货地址'),
             'tab_active' => 'mine',
         ]);
         return View::fetch();
@@ -917,7 +945,7 @@ class User extends Base
         }
         View::assign([
             'addr'       => $addr,
-            'page_title' => $addr ? '编辑地址' : '添加地址',
+            'page_title' => $addr ? lang('编辑地址') : lang('添加地址'),
             'tab_active' => 'mine',
         ]);
         return View::fetch();
@@ -939,10 +967,10 @@ class User extends Base
         $isDefault = (int)$this->request->post('is_default', 0);
 
         if ($name === '' || $mobile === '' || $address === '') {
-            return json(['code' => 0, 'msg' => '请填写完整收货信息']);
+            return json(['code' => 0, 'msg' => lang('请填写完整收货信息')]);
         }
         if (!preg_match('/^1\d{10}$/', $mobile)) {
-            return json(['code' => 0, 'msg' => '联系电话格式不正确']);
+            return json(['code' => 0, 'msg' => lang('联系电话格式不正确')]);
         }
 
         $fullAddress = trim($province . ' ' . $city . ' ' . $district . ' ' . $address);
@@ -950,7 +978,7 @@ class User extends Base
             // 该地址是否属于当前用户
             $exists = Db::name('user_address')->where('id', $addrId)->where('user_id', $id)->find();
             if (!$exists) {
-                return json(['code' => 0, 'msg' => '地址不存在']);
+                return json(['code' => 0, 'msg' => lang('地址不存在')]);
             }
             Db::name('user_address')->where('id', $addrId)->update([
                 'name' => $name, 'mobile' => $mobile, 'province' => $province,
@@ -973,7 +1001,7 @@ class User extends Base
                 Db::name('user_address')->where('id', $newId)->update(['is_default' => 1]);
             }
         }
-        return json(['code' => 1, 'msg' => '保存成功']);
+        return json(['code' => 1, 'msg' => lang('保存成功')]);
     }
 
     /**
@@ -991,16 +1019,16 @@ class User extends Base
             $back     = trim($this->request->post('id_card_back', ''));
 
             if ($realName === '') {
-                return json(['code' => 0, 'msg' => '请输入真实姓名']);
+                return json(['code' => 0, 'msg' => lang('请输入真实姓名')]);
             }
             if (!preg_match('/^\d{17}[\dX]$/', $idCard)) {
-                return json(['code' => 0, 'msg' => '身份证号格式不正确']);
+                return json(['code' => 0, 'msg' => lang('身份证号格式不正确')]);
             }
             if ($front === '' || $back === '') {
-                return json(['code' => 0, 'msg' => '请上传身份证正反面照片']);
+                return json(['code' => 0, 'msg' => lang('请上传身份证正反面照片')]);
             }
             if ($this->user['auth_status'] == 1) {
-                return json(['code' => 0, 'msg' => '实名认证审核中，请勿重复提交']);
+                return json(['code' => 0, 'msg' => lang('实名认证审核中，请勿重复提交')]);
             }
 
             Db::name('user')->where('id', $id)->update([
@@ -1018,14 +1046,14 @@ class User extends Base
             unset($user['password']);
             session('user', $user);
 
-            return json(['code' => 1, 'msg' => '认证资料已提交，请等待平台审核']);
+            return json(['code' => 1, 'msg' => lang('认证资料已提交，请等待平台审核')]);
         }
 
         $user = Db::name('user')->find($id);
         unset($user['password']);
         View::assign([
             'user'       => $user,
-            'page_title' => '实名认证',
+            'page_title' => lang('实名认证'),
             'center_tab' => 'seller',
             'tab_active' => 'mine',
             'hide_tabbar'=> true,

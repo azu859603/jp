@@ -4,67 +4,67 @@
     <div class="withdraw-card">
         <div class="w-balance">
             <div class="num">{$user.balance|number_format=2}</div>
-            <div class="lbl">可提现金额(元)</div>
+            <div class="lbl">{:lang('可提现金额(元)')}</div>
         </div>
         <div class="w-form">
             <div class="w-row">
-                <span class="lbl">提现金额</span>
-                <input type="number" id="amount" placeholder="请输入提现金额">
-                <span class="all-btn" onclick="document.getElementById('amount').value='{$user.balance}'">全部</span>
+                <span class="lbl">{:lang('提现金额')}</span>
+                <input type="number" id="amount" placeholder="{:lang('请输入提现金额')}">
+                <span class="all-btn" onclick="document.getElementById('amount').value='{$user.balance}'">{:lang('全部')}</span>
             </div>
             <div class="w-row">
-                <span class="lbl">提现方式</span>
+                <span class="lbl">{:lang('提现方式')}</span>
             </div>
         </div>
         <!-- 提现方式选项 -->
         <div class="w-types">
             <div class="w-type" data-type="wechat" onclick="selectPay('wechat')">
-                <span class="w-tname">微信</span>
-                <span class="w-tstate" id="st_wechat">未绑定</span>
+                <span class="w-tname">{:lang('微信')}</span>
+                <span class="w-tstate" id="st_wechat">{:lang('未绑定')}</span>
             </div>
             <div class="w-type" data-type="alipay" onclick="selectPay('alipay')">
-                <span class="w-tname">支付宝</span>
-                <span class="w-tstate" id="st_alipay">未绑定</span>
+                <span class="w-tname">{:lang('支付宝')}</span>
+                <span class="w-tstate" id="st_alipay">{:lang('未绑定')}</span>
             </div>
             <div class="w-type" data-type="bank" onclick="selectPay('bank')">
-                <span class="w-tname">银行卡</span>
-                <span class="w-tstate" id="st_bank">未绑定</span>
+                <span class="w-tname">{:lang('银行卡')}</span>
+                <span class="w-tstate" id="st_bank">{:lang('未绑定')}</span>
             </div>
             <div class="w-type" data-type="usdt" onclick="selectPay('usdt')">
-                <span class="w-tname">虚拟货币</span>
-                <span class="w-tstate" id="st_usdt">未绑定</span>
+                <span class="w-tname">{:lang('虚拟货币')}</span>
+                <span class="w-tstate" id="st_usdt">{:lang('未绑定')}</span>
             </div>
         </div>
         <!-- 绑定状态提示区 -->
         <div class="w-bindtip" id="bindTip">
             <div class="w-bindinfo" id="bindInfo" style="display:none;"></div>
             <div class="w-unbind" id="unbindBox" style="display:none;">
-                <span>该提现方式未绑定，请先绑定</span>
-                <span class="w-bindbtn" onclick="goBind()">去绑定</span>
+                <span>{:lang('该提现方式未绑定，请先绑定')}</span>
+                <span class="w-bindbtn" onclick="goBind()">{:lang('去绑定')}</span>
             </div>
         </div>
     </div>
     <div class="withdraw-btn">
-        <button class="btn btn-red" id="submitBtn" onclick="doWithdraw()">提交提现申请</button>
+        <button class="btn btn-red" id="submitBtn" onclick="doWithdraw()">{:lang('提交提现申请')}</button>
     </div>
     {if $pending == 1}
     <div style="margin:0 14px 12px;background:#fff7e6;border:1px solid #ffd591;border-radius:8px;padding:10px 12px;font-size:12px;color:#ad6800;line-height:1.6;">
-        您有一笔提现正在审核中，审核通过后方可提交下一笔申请。
+        {:lang('您有一笔提现正在审核中，审核通过后方可提交下一笔申请。')}
     </div>
     {/if}
-    <div class="form-tip" style="color:#888;padding:0 16px;">提现手续费：{if $fee_rate>0}{$fee_rate}%{else}免费{/if}，到账时间1-3个工作日{if $withdraw_min>0 || $withdraw_max>0}，单笔限额：{if $withdraw_min>0}¥{$withdraw_min|number_format=2}{else}不限{/if} ~ {if $withdraw_max>0}¥{$withdraw_max|number_format=2}{else}不限{/if}{/if}</div>
+    <div class="form-tip" style="color:#888;padding:0 16px;">{:lang('提现手续费：')}{if $fee_rate>0}{$fee_rate}%{else}{:lang('免费')}{/if}{:lang('，到账时间1-3个工作日')}{if $withdraw_min>0 || $withdraw_max>0}{:lang('，单笔限额：')}{if $withdraw_min>0}¥{$withdraw_min|number_format=2}{else}{:lang('不限')}{/if} ~ {if $withdraw_max>0}¥{$withdraw_max|number_format=2}{else}{:lang('不限')}{/if}{/if}</div>
 
     {if !empty($records)}
     <div class="w-records">
-        <div class="r-head">提现记录</div>
+        <div class="r-head">{:lang('提现记录')}</div>
         {foreach $records as $r}
         <div class="w-record">
             <div class="r-amount">-¥{$r.amount|number_format=2}</div>
             <div style="text-align:right;">
-                <div class="r-status s{$r.status}">{if $r.status==0}审核中{elseif $r.status==1}已到账{else}已拒绝{/if}</div>
+                <div class="r-status s{$r.status}">{if $r.status==0}{:lang('审核中')}{elseif $r.status==1}{:lang('已到账')}{else}{:lang('已拒绝')}{/if}</div>
                 <div class="r-info">{$r.create_time|date='Y-m-d H:i'}</div>
                 {if $r.status==2 && !empty($r.refuse_reason)}
-                <div class="r-reason">拒绝原因：{$r.refuse_reason}</div>
+                <div class="r-reason">{:lang('拒绝原因：')}{$r.refuse_reason}</div>
                 {/if}
             </div>
         </div>
@@ -92,7 +92,7 @@
 var accounts = {$pa_json|raw};
 var curPay = 'wechat';
 var typeKey = {'wechat':2, 'alipay':1, 'bank':3, 'usdt':4};
-var typeName = {'wechat':'微信', 'alipay':'支付宝', 'bank':'银行卡', 'usdt':'虚拟货币'};
+var typeName = {'wechat':t('微信'), 'alipay':t('支付宝'), 'bank':t('银行卡'), 'usdt':t('虚拟货币')};
 var hasPending = {$pending|default=0};
 
 (function(){
@@ -100,7 +100,7 @@ var hasPending = {$pending|default=0};
     var keys = ['wechat','alipay','bank','usdt'];
     for (var i = 0; i < keys.length; i++) {
         var a = accounts[typeKey[keys[i]]];
-        if (a) { document.getElementById('st_' + keys[i]).textContent = '已绑定'; }
+        if (a) { document.getElementById('st_' + keys[i]).textContent = t('已绑定'); }
     }
     selectPay('wechat');
 })();
@@ -115,17 +115,20 @@ function selectPay(p) {
     var unbindBox = document.getElementById('unbindBox');
     var btn = document.getElementById('submitBtn');
     if (a) {
-        var txt = '已绑定' + typeName[p] + '：' + (a.real_name ? a.real_name + '（' + maskAccount(p, a) + '）' : maskAccount(p, a));
-        if (p === 'bank') { txt += '<br>银行：' + a.bank_name; }
-        if (p === 'usdt' && a.bank_name) { txt += '<br>网络：' + a.bank_name; }
+        var colon = getLang() === 'en-us' ? ': ' : '：';
+        var lb = getLang() === 'en-us' ? ' (' : '（';
+        var rb = getLang() === 'en-us' ? ')' : '）';
+        var txt = t('已绑定') + typeName[p] + colon + (a.real_name ? a.real_name + lb + maskAccount(p, a) + rb : maskAccount(p, a));
+        if (p === 'bank') { txt += '<br>' + t('银行：') + a.bank_name; }
+        if (p === 'usdt' && a.bank_name) { txt += '<br>' + t('网络：') + a.bank_name; }
         bindInfo.innerHTML = txt;
         bindInfo.style.display = '';
         unbindBox.style.display = 'none';
-        btn.textContent = hasPending ? '审核中，暂不可申请' : '提交提现申请';
+        btn.textContent = hasPending ? t('审核中，暂不可申请') : t('提交提现申请');
     } else {
         bindInfo.style.display = 'none';
         unbindBox.style.display = '';
-        btn.textContent = '去绑定' + typeName[p];
+        btn.textContent = t('去绑定') + typeName[p];
     }
     btn.disabled = hasPending;
 }

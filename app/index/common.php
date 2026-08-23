@@ -1,6 +1,7 @@
 <?php
 // index应用公共函数
 use think\facade\Db;
+use think\facade\Lang;
 
 /**
  * 读取系统设置（内存缓存）
@@ -172,4 +173,76 @@ function refund_deposit($userId, $amount, $remark)
         'remark'      => $remark,
         'create_time' => time(),
     ]);
+}
+
+/**
+ * 余额流水备注翻译（展示层：翻译中文前缀，保留动态内容）
+ * 示例："提现申请冻结：100.00元" → "Withdrawal freeze: 100.00元"
+ */
+function translate_remark($remark)
+{
+    if ($remark === '' || $remark === null) {
+        return $remark;
+    }
+    // 前缀按长度降序匹配（含标点的完整前缀优先）
+    $prefixes = [
+        '拍卖流拍，保证金退回（',
+        '未拍中，保证金退回（',
+        '拍卖成交收入：',
+        '拍卖订单支付：',
+        '拍卖保证金（',
+        '提现申请冻结',
+        '提现拒绝退回',
+        '订单取消退款',
+        '售后退款',
+        '售后扣回成交收入',
+        '拍卖订单支付',
+        '拍卖成交收入',
+        '充值到账',
+        '后台添加会员赠送余额',
+        '余额充值',
+    ];
+    foreach ($prefixes as $zh) {
+        if (mb_strpos($remark, $zh) === 0) {
+            $translated = lang($zh) . mb_substr($remark, mb_strlen($zh));
+            // 全角标点转半角，英文环境金额单位“元”转 “yuan”
+            $translated = str_replace(['：', '（', '）'], [': ', '(', ')'], $translated);
+            $translated = str_replace('平台佣金', lang('平台佣金'), $translated);
+            if (Lang::getLangSet() === 'en-us') {
+                $translated = str_replace('元', 'yuan', $translated);
+            }
+            return $translated;
+        }
+    }
+    return $remark;
+}
+
+/**
+ * 站内信展示层翻译（标题翻译 + 竞拍出局通知内容分段翻译）
+ */
+function translate_sys_message(&$msg)
+{
+    if (empty($msg['title'])) {
+        return;
+    }
+    $msg['title'] = lang($msg['title']);
+    if (empty($msg['content'])) {
+        return;
+    }
+    // 竞拍出局通知内容模板分段替换（键按长度降序，避免误伤动态内容）
+    $segs = [
+        '您出价竞拍的「',
+        '」已出局：您的出价 ',
+        '。如需继续竞拍，请再次出价。',
+        ' 超过，当前最高价 ',
+        ' 于 ',
+        ' 被 ',
+    ];
+    $content = $msg['content'];
+    foreach ($segs as $zh) {
+        if (mb_strpos($content, $zh) !== false) {
+            $content = str_replace($zh, lang($zh), $content);
+        }
+    }
+    $msg['content'] = $content;
 }

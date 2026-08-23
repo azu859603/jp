@@ -35,30 +35,30 @@
             {/if}
         </div>
         <div class="sh-name">
-            <div class="nm">{$shop_name}<span class="badge">钻石店铺</span></div>
+            <div class="nm">{$shop_name}<span class="badge">{:lang('钻石店铺')}</span></div>
             {if $enterprise_auth}
             <div class="auth">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                企业认证
+                {:lang('企业认证')}
             </div>
             {/if}
         </div>
-        <a class="follow-btn {if $followed}on{/if}" href="javascript:;" onclick="toggleFollow();">{if $followed}已关注{else}关注{/if}</a>
+        <a class="follow-btn {if $followed}on{/if}" href="javascript:;" onclick="toggleFollow();">{if $followed}{:lang('已关注')}{else}{:lang('关注')}{/if}</a>
     </div>
     {if !empty($seller.seller_intro)}
     <div class="sh-intro">{$seller.seller_intro}</div>
     {/if}
     <div class="sh-stats">
-        <div class="st"><div class="v">{$seller.deposit|number_format=2}</div><div class="k">消保金</div></div>
-        <div class="st"><div class="v">{$seller.shop_score|number_format=2}</div><div class="k">店铺评分</div></div>
-        <div class="st"><div class="v">{$fans}</div><div class="k">粉丝</div></div>
+        <div class="st"><div class="v">{$seller.deposit|number_format=2}</div><div class="k">{:lang('消保金')}</div></div>
+        <div class="st"><div class="v">{$seller.shop_score|number_format=2}</div><div class="k">{:lang('店铺评分')}</div></div>
+        <div class="st"><div class="v">{$fans}</div><div class="k">{:lang('粉丝')}</div></div>
     </div>
 </div>
 
 <!-- 店铺拍品 -->
-<div class="shop-goods-t">店铺拍品{if !empty($goods)}<span class="more">共 {$goods|count} 件</span>{/if}</div>
+<div class="shop-goods-t">{:lang('店铺拍品')}{if !empty($goods)}<span class="more">{:lang('共 ')}{$goods|count}{:lang(' 件')}</span>{/if}</div>
 {if empty($goods)}
-<div class="empty"><div class="e-ico">🏺</div><div>该店铺暂无拍卖中的拍品</div></div>
+<div class="empty"><div class="e-ico">🏺</div><div>{:lang('该店铺暂无拍卖中的拍品')}</div></div>
 {else}
 <div class="goods-grid" style="background:#fff;padding-bottom:10px;">
     {foreach $goods as $g}
@@ -75,7 +75,7 @@
             <div class="g-price"><small>¥ </small>{$g.price_str}</div>
             <div class="g-meta">
                 <span class="time" data-countdown="{$g.end_time}" data-format="short">--</span>
-                <span class="bid-btn">去出价</span>
+                <span class="bid-btn">{:lang('去出价')}</span>
             </div>
         </div>
     </a>
@@ -92,14 +92,14 @@ function toggleFollow() {
             var btn = document.querySelector('.follow-btn');
             if (res.followed == 1) {
                 btn.classList.add('on');
-                btn.textContent = '已关注';
+                btn.textContent = t('已关注');
             } else {
                 btn.classList.remove('on');
-                btn.textContent = '关注';
+                btn.textContent = t('关注');
             }
             toast(res.msg);
         } else {
-            if (res.code == -1) { toast('请先登录'); setTimeout(function(){ location.href = '/user/login'; }, 600); return; }
+            if (res.code == -1) { toast(t('请先登录')); setTimeout(function(){ location.href = '/user/login'; }, 600); return; }
             toast(res.msg);
         }
     });

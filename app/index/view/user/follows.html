@@ -9,7 +9,7 @@
 .fol-item .go{font-size:12px;color:#fff;background:#E4393C;border-radius:14px;padding:5px 12px;flex-shrink:0;}
 </style>
 <div class="bid-list">
-    <div class="b-head">关注的店铺（{$list|count}）</div>
+    <div class="b-head">{:lang('关注的店铺（')}{$list|count}{:lang('）')}</div>
     {foreach $list as $v}
     <div class="fol-item">
         {if !empty($v.avatar)}
@@ -17,16 +17,16 @@
         {/if}
         <div class="info">
             <div class="n">{$v.shop_name}</div>
-            <div class="s">在售 {$v.saling_count} 件 · 共 {$v.goods_count} 件 · 关注于 {$v.create_time|date='Y-m-d'}</div>
+            <div class="s">{:lang('在售 ')}{$v.saling_count} {:lang('件 · 共 ')}{$v.goods_count} {:lang('件 · 关注于 ')}{$v.create_time|date='Y-m-d'}</div>
         </div>
-        <a class="go" href="/search?type=shop&keyword={$v.shop_name|urlencode=###}">进店看看</a>
+        <a class="go" href="/search?type=shop&keyword={$v.shop_name|urlencode=###}">{:lang('进店看看')}</a>
     </div>
     {/foreach}
     {if empty($list)}
     <div class="empty" style="padding:60px 0;">
         <div class="e-ico">🏪</div>
-        <div>还没有关注的店铺</div>
-        <a class="e-btn" href="/">去逛逛</a>
+        <div>{:lang('还没有关注的店铺')}</div>
+        <a class="e-btn" href="/">{:lang('去逛逛')}</a>
     </div>
     {/if}
 </div>

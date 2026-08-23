@@ -2,6 +2,7 @@
 namespace app\index\controller;
 
 use think\facade\Db;
+use think\facade\Lang;
 use think\facade\View;
 
 class Seller extends Base
@@ -26,7 +27,7 @@ class Seller extends Base
             'apply'      => $apply,
             'user'       => $this->user,
             'lic_list'   => !empty($this->user['license_img']) ? explode(',', $this->user['license_img']) : [],
-            'page_title' => '卖家入驻',
+            'page_title' => lang('卖家入驻'),
             'center_tab' => 'seller',
             'tab_active' => 'mine',
         ]);
@@ -40,11 +41,11 @@ class Seller extends Base
     {
         $this->checkLogin();
         if (!$this->request->isPost()) {
-            return json(['code' => 0, 'msg' => '请求方式错误']);
+            return json(['code' => 0, 'msg' => lang('请求方式错误')]);
         }
         // 实名认证拦截：只有认证通过才能申请成为卖家
         if ($this->user['auth_status'] != 2) {
-            return json(['code' => 0, 'msg' => '请先完成实名认证后再申请入驻']);
+            return json(['code' => 0, 'msg' => lang('请先完成实名认证后再申请入驻')]);
         }
         $id = $this->user['id'];
 
@@ -59,11 +60,11 @@ class Seller extends Base
         }
         $licenseImgs = trim($licenseImgs, ',');
         if ($shopName === '' || $companyName === '') {
-            return json(['code' => 0, 'msg' => '请填写完整信息']);
+            return json(['code' => 0, 'msg' => lang('请填写完整信息')]);
         }
         $licArr = $licenseImgs === '' ? [] : explode(',', $licenseImgs);
         if (count($licArr) > 5) {
-            return json(['code' => 0, 'msg' => '企业资料最多上传5张图片']);
+            return json(['code' => 0, 'msg' => lang('企业资料最多上传5张图片')]);
         }
         // 姓名/手机号以实名认证信息为准（实名已通过，姓名不可更改）
         $realName = $this->user['real_name'];
@@ -87,7 +88,7 @@ class Seller extends Base
         }
         Db::name('user')->where('id', $id)->update($data);
 
-        $msg = $needCheck ? '入驻申请已提交，请等待平台审核' : '已开通卖家权限';
+        $msg = $needCheck ? lang('入驻申请已提交，请等待平台审核') : lang('已开通卖家权限');
         return json(['code' => 1, 'msg' => $msg]);
     }
 
@@ -115,35 +116,35 @@ class Seller extends Base
             }
 
             if ($title === '') {
-                return json(['code' => 0, 'msg' => '请输入商品标题']);
+                return json(['code' => 0, 'msg' => lang('请输入商品标题')]);
             }
             if ($categoryId <= 0) {
-                return json(['code' => 0, 'msg' => '请选择分类']);
+                return json(['code' => 0, 'msg' => lang('请选择分类')]);
             }
             if ($startPrice <= 0) {
-                return json(['code' => 0, 'msg' => '起拍价必须大于0']);
+                return json(['code' => 0, 'msg' => lang('起拍价必须大于0')]);
             }
             if ($raisePrice <= 0) {
-                return json(['code' => 0, 'msg' => '加价幅度必须大于0']);
+                return json(['code' => 0, 'msg' => lang('加价幅度必须大于0')]);
             }
             if ($reservePrice > 0 && $reservePrice < $startPrice) {
-                return json(['code' => 0, 'msg' => '保留价不能低于起拍价']);
+                return json(['code' => 0, 'msg' => lang('保留价不能低于起拍价')]);
             }
             if ($endTime === '') {
-                return json(['code' => 0, 'msg' => '请选择截拍时间']);
+                return json(['code' => 0, 'msg' => lang('请选择截拍时间')]);
             }
             $st = time(); // 默认提交即开拍
             $et = strtotime($endTime);
             if (!$et || $et <= $st) {
-                return json(['code' => 0, 'msg' => '截拍时间必须晚于当前时间']);
+                return json(['code' => 0, 'msg' => lang('截拍时间必须晚于当前时间')]);
             }
             if ($et - time() < 60) {
-                return json(['code' => 0, 'msg' => '截拍时间必须晚于当前时间1分钟以上']);
+                return json(['code' => 0, 'msg' => lang('截拍时间必须晚于当前时间1分钟以上')]);
             }
 
             $images = is_array($images) ? array_values(array_filter($images)) : [];
             if (count($images) < 4) {
-                return json(['code' => 0, 'msg' => '请至少上传4张不同角度的商品照片']);
+                return json(['code' => 0, 'msg' => lang('请至少上传4张不同角度的商品照片')]);
             }
             if (empty($cover) && !empty($images)) {
                 $cover = $images[0];
@@ -174,15 +175,29 @@ class Seller extends Base
                 'update_time'     => $now,
             ]);
 
-            return json(['code' => 1, 'msg' => $goodsStatus === 0 ? '发布成功，等待平台审核' : '发布成功']);
+            return json(['code' => 1, 'msg' => $goodsStatus === 0 ? lang('发布成功，等待平台审核') : lang('发布成功')]);
         }
 
         $categories = Db::name('category')->where('status', 1)->order('sort', 'asc')->select()->toArray();
+        // 多语言映射分类名
+        $langField = Lang::getLangSet() === 'zh-tw' ? 'name_tw' : (Lang::getLangSet() === 'en-us' ? 'name_en' : 'name');
+        foreach ($categories as &$c) {
+            $c['name'] = !empty($c[$langField]) ? $c[$langField] : $c['name'];
+        }
+        unset($c);
         $publishProtocol = (string)Db::name('setting')->where('name', 'publish_protocol')->value('value');
+        // 多语言发布协议（未填则回退简体）
+        $langSet = Lang::getLangSet();
+        if ($langSet !== 'zh-cn') {
+            $alt = (string)Db::name('setting')->where('name', 'publish_protocol' . ($langSet === 'zh-tw' ? '_tw' : '_en'))->value('value');
+            if ($alt !== '') {
+                $publishProtocol = $alt;
+            }
+        }
         View::assign([
             'categories'  => $categories,
             'publish_protocol' => $publishProtocol,
-            'page_title'  => '发布商品',
+            'page_title'  => lang('发布商品'),
             'center_tab'  => 'seller',
             'tab_active'  => 'mine',
         ]);
@@ -226,7 +241,7 @@ class Seller extends Base
             'limit'      => $limit,
             'status'     => $status,
             'now'        => time(),
-            'page_title' => '我的商品',
+            'page_title' => lang('我的商品'),
             'center_tab' => 'seller',
             'tab_active' => 'mine',
         ]);
@@ -240,7 +255,7 @@ class Seller extends Base
     {
         $this->checkSeller();
         if (!$this->request->isPost()) {
-            return json(['code' => 0, 'msg' => '请求方式错误']);
+            return json(['code' => 0, 'msg' => lang('请求方式错误')]);
         }
         $goodsId = (int)$this->request->post('id', 0);
         $status = (int)$this->request->post('status', 1);
@@ -248,23 +263,23 @@ class Seller extends Base
 
         $goods = Db::name('goods')->where('id', $goodsId)->where('seller_id', $this->user['id'])->find();
         if (!$goods) {
-            return json(['code' => 0, 'msg' => '商品不存在']);
+            return json(['code' => 0, 'msg' => lang('商品不存在')]);
         }
         if (!in_array($status, [1, 4])) {
-            return json(['code' => 0, 'msg' => '参数错误']);
+            return json(['code' => 0, 'msg' => lang('参数错误')]);
         }
         if ($goods['status'] == 2) {
-            return json(['code' => 0, 'msg' => '已成交的商品不能操作']);
+            return json(['code' => 0, 'msg' => lang('已成交的商品不能操作')]);
         }
 
         // 流拍商品重新上架：重置拍卖时间、清理旧出价记录
         if ($goods['status'] == 3 && $status == 1) {
             if ($endTime === '') {
-                return json(['code' => 0, 'msg' => '请选择结束时间']);
+                return json(['code' => 0, 'msg' => lang('请选择结束时间')]);
             }
             $et = strtotime(str_replace('T', ' ', $endTime));
             if (!$et || $et <= time() + 60) {
-                return json(['code' => 0, 'msg' => '结束时间需晚于当前时间']);
+                return json(['code' => 0, 'msg' => lang('结束时间需晚于当前时间')]);
             }
             Db::name('bid_record')->where('goods_id', $goodsId)->delete();
             Db::name('goods')->where('id', $goodsId)->update([
@@ -276,14 +291,14 @@ class Seller extends Base
                 'final_price' => 0,
                 'update_time' => time(),
             ]);
-            return json(['code' => 1, 'msg' => '已重新上架']);
+            return json(['code' => 1, 'msg' => lang('已重新上架')]);
         }
 
         Db::name('goods')->where('id', $goodsId)->update([
             'status'      => $status,
             'update_time' => time(),
         ]);
-        return json(['code' => 1, 'msg' => $status == 1 ? '已上架' : '已下架']);
+        return json(['code' => 1, 'msg' => $status == 1 ? lang('已上架') : lang('已下架')]);
     }
 
     /**
@@ -293,18 +308,18 @@ class Seller extends Base
     {
         $this->checkSeller();
         if (!$this->request->isPost()) {
-            return json(['code' => 0, 'msg' => '请求方式错误']);
+            return json(['code' => 0, 'msg' => lang('请求方式错误')]);
         }
         $goodsId = (int)$this->request->post('id', 0);
         $goods = Db::name('goods')->where('id', $goodsId)->where('seller_id', $this->user['id'])->find();
         if (!$goods) {
-            return json(['code' => 0, 'msg' => '商品不存在']);
+            return json(['code' => 0, 'msg' => lang('商品不存在')]);
         }
         if (in_array($goods['status'], [1, 2])) {
-            return json(['code' => 0, 'msg' => '拍卖中/已成交商品不能删除']);
+            return json(['code' => 0, 'msg' => lang('拍卖中/已成交商品不能删除')]);
         }
         Db::name('goods')->where('id', $goodsId)->delete();
-        return json(['code' => 1, 'msg' => '已删除']);
+        return json(['code' => 1, 'msg' => lang('已删除')]);
     }
 
     /**
@@ -325,7 +340,7 @@ class Seller extends Base
         $total = $query->count();
         $list = $query->order('id', 'desc')->page($page, $limit)->select()->toArray();
         // 状态名 + 买家名
-        $statusMap = [0 => '待付款', 1 => '待发货', 2 => '待收货', 3 => '已完成', 4 => '已取消', 5 => '售后中'];
+        $statusMap = [0 => lang('待付款'), 1 => lang('待发货'), 2 => lang('待收货'), 3 => lang('已完成'), 4 => lang('已取消'), 5 => lang('售后中')];
         foreach ($list as &$o) {
             $o['status_name'] = $statusMap[$o['order_status']] ?? '未知';
             if (empty($o['buyer_name'])) {
@@ -341,7 +356,7 @@ class Seller extends Base
             'page'        => $page,
             'limit'       => $limit,
             'order_status'=> $orderStatus,
-            'page_title'  => '卖家订单',
+            'page_title'  => lang('卖家订单'),
             'center_tab'  => 'seller_orders',
             'tab_active'  => 'mine',
         ]);
@@ -355,7 +370,7 @@ class Seller extends Base
     {
         $this->checkSeller();
         if (!$this->request->isPost()) {
-            return json(['code' => 0, 'msg' => '请求方式错误']);
+            return json(['code' => 0, 'msg' => lang('请求方式错误')]);
         }
         $orderId = (int)$this->request->post('id', 0);
         $company = trim($this->request->post('ship_company', ''));
@@ -363,13 +378,13 @@ class Seller extends Base
 
         $order = Db::name('order')->where('id', $orderId)->where('seller_id', $this->user['id'])->find();
         if (!$order) {
-            return json(['code' => 0, 'msg' => '订单不存在']);
+            return json(['code' => 0, 'msg' => lang('订单不存在')]);
         }
         if ($order['order_status'] != 1) {
-            return json(['code' => 0, 'msg' => '订单状态不正确']);
+            return json(['code' => 0, 'msg' => lang('订单状态不正确')]);
         }
         if ($company === '' || $shipNo === '') {
-            return json(['code' => 0, 'msg' => '请填写快递公司和单号']);
+            return json(['code' => 0, 'msg' => lang('请填写快递公司和单号')]);
         }
 
         Db::name('order')->where('id', $orderId)->update([
@@ -379,6 +394,6 @@ class Seller extends Base
             'order_status' => 2,
             'update_time'  => time(),
         ]);
-        return json(['code' => 1, 'msg' => '发货成功']);
+        return json(['code' => 1, 'msg' => lang('发货成功')]);
     }
 }

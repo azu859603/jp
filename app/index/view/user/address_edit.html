@@ -2,38 +2,38 @@
 {block name="content"}
 <div class="form-card" style="margin-top:12px;">
     <div class="form-row">
-        <span class="fl">收货姓名</span>
+        <span class="fl">{:lang('收货姓名')}</span>
         <div class="fr">
-            <input type="text" id="name" value="{$addr.name|default=''}" placeholder="请输入姓名" maxlength="20">
+            <input type="text" id="name" value="{$addr.name|default=''}" placeholder="{:lang('请输入姓名')}" maxlength="20">
         </div>
     </div>
     <div class="form-row">
-        <span class="fl">手机号码</span>
+        <span class="fl">{:lang('手机号码')}</span>
         <div class="fr">
-            <input type="tel" id="mobile" value="{$addr.mobile|default=''}" placeholder="请输入手机号" maxlength="11">
+            <input type="tel" id="mobile" value="{$addr.mobile|default=''}" placeholder="{:lang('请输入手机号')}" maxlength="11">
         </div>
     </div>
     <div class="form-row">
-        <span class="fl">所在地区</span>
+        <span class="fl">{:lang('所在地区')}</span>
         <div class="fr">
-            <input type="text" id="region" value="{$addr.province|default=''} {$addr.city|default=''} {$addr.district|default=''}" placeholder="请填写所在地区，如：广东省 广州市 天河区" maxlength="60">
+            <input type="text" id="region" value="{$addr.province|default=''} {$addr.city|default=''} {$addr.district|default=''}" placeholder="{:lang('请填写所在地区，如：广东省 广州市 天河区')}" maxlength="60">
         </div>
     </div>
     <div class="form-row">
-        <span class="fl">详细地址</span>
+        <span class="fl">{:lang('详细地址')}</span>
         <div class="fr">
-            <input type="text" id="address" value="{$addr.address|default=''}" placeholder="请填写详细地址">
+            <input type="text" id="address" value="{$addr.address|default=''}" placeholder="{:lang('请填写详细地址')}">
         </div>
     </div>
 </div>
 <div class="form-row" style="background:#fff;margin:12px 14px 0;border-radius:10px;height:auto;padding:12px 14px;">
-    <span class="fl" style="width:auto;margin-right:10px;">设为默认地址</span>
+    <span class="fl" style="width:auto;margin-right:10px;">{:lang('设为默认地址')}</span>
     <div class="fr" style="justify-content:flex-end;">
         <input type="checkbox" id="is_default" {if !empty($addr) && $addr.is_default==1}checked{/if} style="width:20px;height:20px;">
     </div>
 </div>
 <div class="form-submit">
-    <button class="btn btn-red" onclick="saveAddr()">保存</button>
+    <button class="btn btn-red" onclick="saveAddr()">{:lang('保存')}</button>
 </div>
 {/block}
 {block name="script"}

@@ -3,17 +3,17 @@
 {block name="content"}
 <div class="login-hero">
     <div class="login-card">
-        <h2 class="lc-title">建立账户</h2>
+        <h2 class="lc-title">{:lang('建立账户')}</h2>
         <div class="lc-group">
-            <label class="lc-label" for="mobile">手机号码</label>
+            <label class="lc-label" for="mobile">{:lang('手机号码')}</label>
             <input class="lc-input" type="tel" id="mobile" maxlength="11" placeholder="" value="">
         </div>
         <div class="lc-group">
-            <label class="lc-label" for="invite">邀请码（选填）</label>
+            <label class="lc-label" for="invite">{:lang('邀请码（选填）')}</label>
             <input class="lc-input" type="text" id="invite" placeholder="" value="">
         </div>
         <div class="lc-group">
-            <label class="lc-label" for="password">设置密码（至少6位）</label>
+            <label class="lc-label" for="password">{:lang('设置密码（至少6位）')}</label>
             <div class="lc-pwd-wrap">
                 <input class="lc-input" type="password" id="password" placeholder="">
                 <span class="lc-eye" onclick="togglePwd('password')">
@@ -22,7 +22,7 @@
             </div>
         </div>
         <div class="lc-group">
-            <label class="lc-label" for="password2">确认密码</label>
+            <label class="lc-label" for="password2">{:lang('确认密码')}</label>
             <div class="lc-pwd-wrap">
                 <input class="lc-input" type="password" id="password2" placeholder="">
                 <span class="lc-eye" onclick="togglePwd('password2')">
@@ -30,10 +30,10 @@
                 </span>
             </div>
         </div>
-        <button class="lc-btn" onclick="doRegister()">注册</button>
-        <div class="lc-sub">已有账户？<a href="/user/login">前往登录</a></div>
+        <button class="lc-btn" onclick="doRegister()">{:lang('注册')}</button>
+        <div class="lc-sub">{:lang('已有账户？')}<a href="/user/login">{:lang('前往登录')}</a></div>
         <div class="lc-agree">
-            注册即代表同意<a href="/user/agreement?type=protocol">《用户协议》</a>和<a href="/user/agreement?type=privacy">《隐私政策》</a>
+            {:lang('注册即代表同意')}<a href="/user/agreement?type=protocol">{:lang('《用户协议》')}</a>{:lang('和')}<a href="/user/agreement?type=privacy">{:lang('《隐私政策》')}</a>
         </div>
     </div>
 </div>

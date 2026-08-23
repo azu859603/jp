@@ -28,7 +28,7 @@ class Order extends Base
         $total = $query->count();
         $list = $query->order('o.id', 'desc')->page($page, $limit)->select()->toArray();
         // 状态名
-        $statusMap = [0 => '待付款', 1 => '待发货', 2 => '待收货', 3 => '已完成', 4 => '已取消', 5 => '售后中'];
+            $statusMap = [0 => lang('待付款'), 1 => lang('待发货'), 2 => lang('待收货'), 3 => lang('已完成'), 4 => lang('已取消'), 5 => lang('售后中')];
         foreach ($list as &$o) {
             $o['status_name'] = $statusMap[$o['order_status']] ?? '未知';
         }
@@ -40,7 +40,7 @@ class Order extends Base
             'page'        => $page,
             'limit'       => $limit,
             'order_status'=> $orderStatus,
-            'page_title'  => '我的订单',
+            'page_title'  => lang('我的订单'),
             'center_tab'  => 'orders',
             'tab_active'  => 'mine',
         ]);
@@ -58,10 +58,10 @@ class Order extends Base
         if ($this->request->isPost()) {
             $order = Db::name('order')->where('id', $orderId)->where('buyer_id', $this->user['id'])->lock(true)->find();
             if (!$order) {
-                return json(['code' => 0, 'msg' => '订单不存在']);
+                return json(['code' => 0, 'msg' => lang('订单不存在')]);
             }
             if ($order['order_status'] != 0 || $order['pay_status'] != 0) {
-                return json(['code' => 0, 'msg' => '订单状态不正确，无需支付']);
+                return json(['code' => 0, 'msg' => lang('订单状态不正确，无需支付')]);
             }
 
             // 收货地址
@@ -79,7 +79,7 @@ class Order extends Base
                 }
             }
             if ($shipName === '' || $shipMobile === '' || $shipAddress === '') {
-                return json(['code' => 0, 'msg' => '请填写或选择收货地址']);
+                return json(['code' => 0, 'msg' => lang('请填写或选择收货地址')]);
             }
 
             // 应付 = 成交价 - 保证金（已冻结）
@@ -94,7 +94,7 @@ class Order extends Base
                 $freezeDeduct = min($order['deposit'], $user['freeze_balance']);
                 $balanceDeduct = round($payAmount + ($order['deposit'] - $freezeDeduct), 2);
                 if ($user['balance'] < $balanceDeduct) {
-                    return json(['code' => 0, 'msg' => '余额不足，还需支付 ¥' . number_format($balanceDeduct, 2) . '，请先充值']);
+                    return json(['code' => 0, 'msg' => lang('余额不足，还需支付 ¥') . number_format($balanceDeduct, 2) . lang('，请先充值')]);
                 }
             }
 
@@ -147,10 +147,10 @@ class Order extends Base
                 Db::commit();
             } catch (\Throwable $e) {
                 Db::rollback();
-                return json(['code' => 0, 'msg' => '支付失败：' . $e->getMessage()]);
+                return json(['code' => 0, 'msg' => lang('支付失败：') . $e->getMessage()]);
             }
 
-            return json(['code' => 1, 'msg' => '支付成功', 'url' => '/order/list']);
+            return json(['code' => 1, 'msg' => lang('支付成功'), 'url' => '/order/list']);
         }
 
         // 支付页
@@ -161,10 +161,10 @@ class Order extends Base
             ->where('o.buyer_id', $this->user['id'])
             ->find();
         if (!$order) {
-            return $this->error('订单不存在', '/order/list');
+            return $this->error(lang('订单不存在'), '/order/list');
         }
         if ($order['order_status'] != 0 || $order['pay_status'] != 0) {
-            return $this->error('该订单已处理', '/order/list');
+            return $this->error(lang('该订单已处理'), '/order/list');
         }
 
         $payAmount = round($order['price'] - $order['deposit'], 2);
@@ -177,7 +177,7 @@ class Order extends Base
             'pay_amount' => $payAmount,
             'addresses'  => $addresses,
             'address'    => $address,
-            'page_title' => '订单支付',
+            'page_title' => lang('订单支付'),
             'tab_active' => 'mine',
         ]);
         return View::fetch();
@@ -190,22 +190,22 @@ class Order extends Base
     {
         $this->checkLogin();
         if (!$this->request->isPost()) {
-            return json(['code' => 0, 'msg' => '请求方式错误']);
+            return json(['code' => 0, 'msg' => lang('请求方式错误')]);
         }
         $orderId = (int)$this->request->post('id', 0);
         $order = Db::name('order')->where('id', $orderId)->where('buyer_id', $this->user['id'])->find();
         if (!$order) {
-            return json(['code' => 0, 'msg' => '订单不存在']);
+            return json(['code' => 0, 'msg' => lang('订单不存在')]);
         }
         if ($order['order_status'] != 0) {
-            return json(['code' => 0, 'msg' => '订单状态不正确']);
+            return json(['code' => 0, 'msg' => lang('订单状态不正确')]);
         }
 
         Db::name('order')->where('id', $orderId)->update([
             'order_status' => 4,
             'update_time'  => time(),
         ]);
-        return json(['code' => 1, 'msg' => '订单已取消（已缴纳的保证金不予退还）']);
+        return json(['code' => 1, 'msg' => lang('订单已取消（已缴纳的保证金不予退还）')]);
     }
 
     /**
@@ -215,15 +215,15 @@ class Order extends Base
     {
         $this->checkLogin();
         if (!$this->request->isPost()) {
-            return json(['code' => 0, 'msg' => '请求方式错误']);
+            return json(['code' => 0, 'msg' => lang('请求方式错误')]);
         }
         $orderId = (int)$this->request->post('id', 0);
         $order = Db::name('order')->where('id', $orderId)->where('buyer_id', $this->user['id'])->find();
         if (!$order) {
-            return json(['code' => 0, 'msg' => '订单不存在']);
+            return json(['code' => 0, 'msg' => lang('订单不存在')]);
         }
         if ($order['order_status'] != 2) {
-            return json(['code' => 0, 'msg' => '订单状态不正确']);
+            return json(['code' => 0, 'msg' => lang('订单状态不正确')]);
         }
 
         Db::name('order')->where('id', $orderId)->update([
@@ -231,7 +231,7 @@ class Order extends Base
             'finish_time'  => time(),
             'update_time'  => time(),
         ]);
-        return json(['code' => 1, 'msg' => '已确认收货，交易完成']);
+        return json(['code' => 1, 'msg' => lang('已确认收货，交易完成')]);
     }
 
     /**
@@ -241,30 +241,30 @@ class Order extends Base
     {
         $this->checkLogin();
         if (!$this->request->isPost()) {
-            return json(['code' => 0, 'msg' => '请求方式错误']);
+            return json(['code' => 0, 'msg' => lang('请求方式错误')]);
         }
         $orderId = (int)$this->request->post('id', 0);
         $reason = trim($this->request->post('reason', ''));
         if ($orderId <= 0) {
-            return json(['code' => 0, 'msg' => '参数错误']);
+            return json(['code' => 0, 'msg' => lang('参数错误')]);
         }
         if (mb_strlen($reason) < 5) {
-            return json(['code' => 0, 'msg' => '请填写售后理由（至少 5 个字）']);
+            return json(['code' => 0, 'msg' => lang('请填写售后理由（至少 5 个字）')]);
         }
         if (mb_strlen($reason) > 500) {
-            return json(['code' => 0, 'msg' => '售后理由不能超过 500 字']);
+            return json(['code' => 0, 'msg' => lang('售后理由不能超过 500 字')]);
         }
 
         $order = Db::name('order')->where('id', $orderId)->where('buyer_id', $this->user['id'])->lock(true)->find();
         if (!$order) {
-            return json(['code' => 0, 'msg' => '订单不存在']);
+            return json(['code' => 0, 'msg' => lang('订单不存在')]);
         }
         if ($order['order_status'] != 3) {
-            return json(['code' => 0, 'msg' => '只有已完成的订单才能申请售后']);
+            return json(['code' => 0, 'msg' => lang('只有已完成的订单才能申请售后')]);
         }
         $exists = Db::name('after_sale')->where('order_id', $orderId)->find();
         if ($exists) {
-            return json(['code' => 0, 'msg' => '该订单已申请过售后，请勿重复申请']);
+            return json(['code' => 0, 'msg' => lang('该订单已申请过售后，请勿重复申请')]);
         }
 
         $now = time();
@@ -284,6 +284,6 @@ class Order extends Base
             'order_status' => 5,
             'update_time'  => $now,
         ]);
-        return json(['code' => 1, 'msg' => '售后申请已提交，请等待平台处理']);
+        return json(['code' => 1, 'msg' => lang('售后申请已提交，请等待平台处理')]);
     }
 }

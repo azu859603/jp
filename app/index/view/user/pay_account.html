@@ -5,64 +5,64 @@
     <div class="pa-types">
         <div class="pa-type {if empty($accounts['1'])}un{/if}" data-type="1" onclick="selectType(1)">
             <div class="pa-ico" style="color:#1677ff;">支</div>
-            <div class="pa-tname">支付宝</div>
-            <div class="pa-state" id="paState1">{if !empty($accounts['1'])}已绑定{else}未绑定{/if}</div>
+            <div class="pa-tname">{:lang('支付宝')}</div>
+            <div class="pa-state" id="paState1">{if !empty($accounts['1'])}{:lang('已绑定')}{else}{:lang('未绑定')}{/if}</div>
         </div>
         <div class="pa-type {if empty($accounts['2'])}un{/if}" data-type="2" onclick="selectType(2)">
             <div class="pa-ico" style="color:#07c160;">微</div>
-            <div class="pa-tname">微信</div>
-            <div class="pa-state" id="paState2">{if !empty($accounts['2'])}已绑定{else}未绑定{/if}</div>
+            <div class="pa-tname">{:lang('微信')}</div>
+            <div class="pa-state" id="paState2">{if !empty($accounts['2'])}{:lang('已绑定')}{else}{:lang('未绑定')}{/if}</div>
         </div>
         <div class="pa-type {if empty($accounts['3'])}un{/if}" data-type="3" onclick="selectType(3)">
             <div class="pa-ico" style="color:#c76b00;">银</div>
-            <div class="pa-tname">银行卡</div>
-            <div class="pa-state" id="paState3">{if !empty($accounts['3'])}已绑定{else}未绑定{/if}</div>
+            <div class="pa-tname">{:lang('银行卡')}</div>
+            <div class="pa-state" id="paState3">{if !empty($accounts['3'])}{:lang('已绑定')}{else}{:lang('未绑定')}{/if}</div>
         </div>
         <div class="pa-type {if empty($accounts['4'])}un{/if}" data-type="4" onclick="selectType(4)">
             <div class="pa-ico" style="color:#7b5ee6;">₮</div>
-            <div class="pa-tname">虚拟货币</div>
-            <div class="pa-state" id="paState4">{if !empty($accounts['4'])}已绑定{else}未绑定{/if}</div>
+            <div class="pa-tname">{:lang('虚拟货币')}</div>
+            <div class="pa-state" id="paState4">{if !empty($accounts['4'])}{:lang('已绑定')}{else}{:lang('未绑定')}{/if}</div>
         </div>
     </div>
 
     <!-- 绑定表单卡片 -->
     <div class="pa-card" id="paCard">
-        <div class="pa-card-title" id="paCardTitle">绑定支付宝</div>
+        <div class="pa-card-title" id="paCardTitle">{:lang('绑定支付宝')}</div>
 
         <div class="pa-row" id="row_real_name">
-            <span class="pa-lbl">姓名</span>
-            <input type="text" id="real_name" placeholder="请输入真实姓名">
+            <span class="pa-lbl">{:lang('姓名')}</span>
+            <input type="text" id="real_name" placeholder="{:lang('请输入真实姓名')}">
         </div>
         <div class="pa-row" id="row_account">
-            <span class="pa-lbl" id="lbl_account">账号</span>
-            <input type="text" id="account_input" placeholder="请输入收款账号">
+            <span class="pa-lbl" id="lbl_account">{:lang('账号')}</span>
+            <input type="text" id="account_input" placeholder="{:lang('请输入收款账号')}">
         </div>
         <div class="pa-row" id="row_bank">
-            <span class="pa-lbl" id="lbl_bank">银行名称</span>
-            <input type="text" id="bank_name" placeholder="如 中国工商银行">
+            <span class="pa-lbl" id="lbl_bank">{:lang('银行名称')}</span>
+            <input type="text" id="bank_name" placeholder="{:lang('如 中国工商银行')}">
         </div>
         <div class="pa-qr-block" id="row_qr">
-            <div class="pa-qr-title">收款码<span class="pa-qr-star">*</span></div>
+            <div class="pa-qr-title">{:lang('收款码')}<span class="pa-qr-star">*</span></div>
             <div class="pa-qr-area">
                 <div class="pa-qr-add" id="qrAdd" onclick="uploadQr()">
                     <div class="pa-qr-ico">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7V4h3"/><path d="M17 4h3v3"/><path d="M20 17v3h-3"/><path d="M7 20H4v-3"/><path d="M9 8h1.5v1.5H9z" fill="currentColor" stroke="none"/><path d="M13.5 8H15v1.5h-1.5z" fill="currentColor" stroke="none"/><path d="M9 12.5h1.5V14H9z" fill="currentColor" stroke="none"/><path d="M13.5 12.5H15V14h-1.5z" fill="currentColor" stroke="none"/><path d="M9 16.5h1.5V18H9z" fill="currentColor" stroke="none"/><path d="M13.5 16.5H15V18h-1.5z" fill="currentColor" stroke="none"/></svg>
                     </div>
-                    <div class="pa-qr-t1">点击上传收款码</div>
-                    <div class="pa-qr-t2">支持 jpg / png / gif，建议清晰完整</div>
+                    <div class="pa-qr-t1">{:lang('点击上传收款码')}</div>
+                    <div class="pa-qr-t2">{:lang('支持 jpg / png / gif，建议清晰完整')}</div>
                 </div>
                 <div class="pa-qr-prev" id="qrPrev" style="display:none;" onclick="uploadQr()">
                     <img id="qrImg" src="">
-                    <div class="pa-qr-mask">点击更换</div>
+                    <div class="pa-qr-mask">{:lang('点击更换')}</div>
                     <span class="pa-qr-del" onclick="event.stopPropagation();removeQr()">×</span>
                 </div>
             </div>
             <input type="hidden" id="qr_code" value="">
-            <div class="pa-qr-tip">收款码仅用于平台打款，请上传清晰的收款码图片</div>
+            <div class="pa-qr-tip">{:lang('收款码仅用于平台打款，请上传清晰的收款码图片')}</div>
         </div>
 
-        <div class="pa-save" onclick="saveAccount()">保存绑定</div>
-        <div class="pa-tip" style="text-align:center;margin-top:8px;">绑定信息支持随时修改，提现时将以最新绑定信息打款</div>
+        <div class="pa-save" onclick="saveAccount()">{:lang('保存绑定')}</div>
+        <div class="pa-tip" style="text-align:center;margin-top:8px;">{:lang('绑定信息支持随时修改，提现时将以最新绑定信息打款')}</div>
     </div>
 </div>
 
@@ -105,14 +105,17 @@
 <script>
 var accounts = {$pa_json|raw};
 var curType = 1;
-var typeName = {1:'支付宝', 2:'微信', 3:'银行卡', 4:'虚拟货币'};
+var typeName = {1:t('支付宝'), 2:t('微信'), 3:t('银行卡'), 4:t('虚拟货币')};
+// 支持 URL 参数 ?type=N 初始选中对应提现方式
+var urlType = parseInt(new URLSearchParams(location.search).get('type') || '0', 10);
+if (urlType >= 1 && urlType <= 4) { curType = urlType; }
 
 function selectType(t) {
     curType = t;
     var els = document.querySelectorAll('.pa-type');
     for (var i = 0; i < els.length; i++) { els[i].classList.remove('on'); }
     document.querySelector('.pa-type[data-type="' + t + '"]').classList.add('on');
-    document.getElementById('paCardTitle').textContent = '绑定' + typeName[t];
+    document.getElementById('paCardTitle').textContent = t('绑定') + typeName[t];
     var rowName = document.getElementById('row_real_name');
     var rowBank = document.getElementById('row_bank');
     var rowQr = document.getElementById('row_qr');
@@ -124,24 +127,24 @@ function selectType(t) {
         rowName.style.display = 'flex';
         rowBank.style.display = 'flex';
         rowQr.style.display = 'none';
-        lblAccount.textContent = '账号';
-        accountInput.placeholder = '请输入收款账号';
-        lblBank.textContent = '银行名称';
-        bankInput.placeholder = '如 中国工商银行';
+        lblAccount.textContent = t('账号');
+        accountInput.placeholder = t('请输入收款账号');
+        lblBank.textContent = t('银行名称');
+        bankInput.placeholder = t('如 中国工商银行');
     } else if (t === 4) {
         rowName.style.display = 'none';
         rowBank.style.display = 'flex';
         rowQr.style.display = 'none';
-        lblAccount.textContent = '钱包地址';
-        accountInput.placeholder = '请输入USDT钱包地址';
-        lblBank.textContent = '网络（链）';
+        lblAccount.textContent = t('钱包地址');
+        accountInput.placeholder = t('请输入USDT钱包地址');
+        lblBank.textContent = t('网络（链）');
         bankInput.placeholder = '如 TRC20 / ERC20';
     } else {
         rowName.style.display = 'flex';
         rowBank.style.display = 'none';
         rowQr.style.display = 'flex';
-        lblAccount.textContent = '账号';
-        accountInput.placeholder = '请输入收款账号';
+        lblAccount.textContent = t('账号');
+        accountInput.placeholder = t('请输入收款账号');
     }
     fillForm(t);
 }
@@ -210,6 +213,6 @@ function saveAccount() {
     });
 }
 
-selectType(1);
+selectType(curType);
 </script>
 {/block}

@@ -2,7 +2,7 @@
 {block name="title"}{$page_title}{/block}
 {block name="content"}
 {if empty($list)}
-<div class="empty"><div class="e-ico">🏺</div><div>该分类下暂无拍卖中的拍品</div></div>
+<div class="empty"><div class="e-ico">🏺</div><div>{:lang('该分类下暂无拍卖中的拍品')}</div></div>
 {else}
 <div class="goods-grid">
     {foreach $list as $g}
@@ -19,16 +19,16 @@
             <div class="g-price"><small>¥ </small>{$g.price_str}</div>
             <div class="g-meta">
                 <span class="time" data-countdown="{$g.end_time}" data-format="short">--</span>
-                <span>{$g.bid_count}次出价</span>
+                <span>{$g.bid_count}{:lang('次出价')}</span>
             </div>
         </div>
     </a>
     {/foreach}
 </div>
 {if $page*$limit < $total}
-<a class="load-more" href="/category/list?category_id={$category_id}&page={$page+1}">加载更多</a>
+<a class="load-more" href="/category/list?category_id={$category_id}&page={$page+1}">{:lang('加载更多')}</a>
 {else}
-<div class="no-more">—— 没有更多数据了 ——</div>
+<div class="no-more">{:lang('—— 没有更多数据了 ——')}</div>
 {/if}
 {/if}
 {/block}

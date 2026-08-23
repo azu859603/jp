@@ -69,7 +69,7 @@ class Chat extends Base
             'other_name' => $otherName,
             'last_id'    => $lastId,
             'uid'        => $uid,
-            'page_title' => '咨询 - ' . $otherName,
+            'page_title' => lang('咨询') . ' - ' . $otherName,
             'tab_active' => 'index',
         ]);
         return View::fetch();
@@ -81,24 +81,24 @@ class Chat extends Base
     public function send()
     {
         if (!Request::isAjax()) {
-            return json(['code' => 0, 'msg' => '请求错误']);
+            return json(['code' => 0, 'msg' => lang('请求错误')]);
         }
         $uid = session('user.id');
         if (!$uid) {
-            return json(['code' => -1, 'msg' => '请先登录']);
+            return json(['code' => -1, 'msg' => lang('请先登录')]);
         }
         $goodsId = (int)Request::param('goods_id', 0);
         $sellerId = (int)Request::param('seller_id', 0);
         $content = trim(Request::param('content', ''));
 
         if (!$goodsId || !$sellerId) {
-            return json(['code' => 0, 'msg' => '参数错误']);
+            return json(['code' => 0, 'msg' => lang('参数错误')]);
         }
         if ($content === '') {
-            return json(['code' => 0, 'msg' => '请输入消息内容']);
+            return json(['code' => 0, 'msg' => lang('请输入消息内容')]);
         }
         if (mb_strlen($content) > 500) {
-            return json(['code' => 0, 'msg' => '消息不能超过500字']);
+            return json(['code' => 0, 'msg' => lang('消息不能超过500字')]);
         }
 
         $msgId = Db::name('message')->insertGetId([
@@ -110,7 +110,7 @@ class Chat extends Base
             'create_time' => time(),
         ]);
 
-        return json(['code' => 1, 'msg' => '发送成功', 'id' => $msgId]);
+        return json(['code' => 1, 'msg' => lang('发送成功'), 'id' => $msgId]);
     }
 
     /**
@@ -242,7 +242,7 @@ class Chat extends Base
             'buyer_messages'  => $buyerGrouped,
             'seller_messages' => $sellerGrouped,
             'tab'             => $tab,
-            'page_title'      => '我的消息',
+            'page_title'      => lang('我的消息'),
             'tab_active'      => 'user',
         ]);
         return View::fetch();

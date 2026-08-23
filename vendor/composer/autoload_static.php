@@ -15,10 +15,8 @@ class ComposerStaticInit869f234c0c691ec742441d80e95a3cac
         't' =>
         array (
             'think\\view\\driver\\' => 18,
-            'think\\trace\\' => 12,
             'think\\app\\' => 10,
             'think\\' => 6,
-            'tests\\' => 6,
         ),
         'a' =>
         array (
@@ -38,10 +36,6 @@ class ComposerStaticInit869f234c0c691ec742441d80e95a3cac
         array (
             0 => __DIR__ . '/..' . '/topthink/think-view/src',
         ),
-        'think\\trace\\' =>
-        array (
-            0 => __DIR__ . '/..' . '/topthink/think-trace/src',
-        ),
         'think\\app\\' =>
         array (
             0 => __DIR__ . '/..' . '/topthink/think-multi-app/src',
@@ -52,10 +46,6 @@ class ComposerStaticInit869f234c0c691ec742441d80e95a3cac
             1 => __DIR__ . '/..' . '/topthink/framework/src/think',
             2 => __DIR__ . '/..' . '/topthink/think-orm/src',
             3 => __DIR__ . '/..' . '/topthink/think-helper/src',
-        ),
-        'tests\\' =>
-        array (
-            0 => __DIR__ . '/../..' . '/tests',
         ),
         'app\\' =>
         array (
@@ -109,7 +99,9 @@ class ComposerStaticInit869f234c0c691ec742441d80e95a3cac
         'app\\BaseController' => __DIR__ . '/../..' . '/app/BaseController.php',
         'app\\ExceptionHandle' => __DIR__ . '/../..' . '/app/ExceptionHandle.php',
         'app\\admin\\controller\\AdminUser' => __DIR__ . '/../..' . '/app/admin/controller/AdminUser.php',
+        'app\\admin\\controller\\AfterSale' => __DIR__ . '/../..' . '/app/admin/controller/AfterSale.php',
         'app\\admin\\controller\\Balance' => __DIR__ . '/../..' . '/app/admin/controller/Balance.php',
+        'app\\admin\\controller\\Banner' => __DIR__ . '/../..' . '/app/admin/controller/Banner.php',
         'app\\admin\\controller\\Base' => __DIR__ . '/../..' . '/app/admin/controller/Base.php',
         'app\\admin\\controller\\Bid' => __DIR__ . '/../..' . '/app/admin/controller/Bid.php',
         'app\\admin\\controller\\Category' => __DIR__ . '/../..' . '/app/admin/controller/Category.php',
@@ -118,10 +110,24 @@ class ComposerStaticInit869f234c0c691ec742441d80e95a3cac
         'app\\admin\\controller\\Log' => __DIR__ . '/../..' . '/app/admin/controller/Log.php',
         'app\\admin\\controller\\Login' => __DIR__ . '/../..' . '/app/admin/controller/Login.php',
         'app\\admin\\controller\\Member' => __DIR__ . '/../..' . '/app/admin/controller/Member.php',
+        'app\\admin\\controller\\Message' => __DIR__ . '/../..' . '/app/admin/controller/Message.php',
+        'app\\admin\\controller\\News' => __DIR__ . '/../..' . '/app/admin/controller/News.php',
         'app\\admin\\controller\\Order' => __DIR__ . '/../..' . '/app/admin/controller/Order.php',
+        'app\\admin\\controller\\Recharge' => __DIR__ . '/../..' . '/app/admin/controller/Recharge.php',
         'app\\admin\\controller\\Setting' => __DIR__ . '/../..' . '/app/admin/controller/Setting.php',
+        'app\\admin\\controller\\Upload' => __DIR__ . '/../..' . '/app/admin/controller/Upload.php',
         'app\\admin\\controller\\Withdraw' => __DIR__ . '/../..' . '/app/admin/controller/Withdraw.php',
         'app\\controller\\Index' => __DIR__ . '/../..' . '/app/controller/Index.php',
+        'app\\index\\controller\\Base' => __DIR__ . '/../..' . '/app/index/controller/Base.php',
+        'app\\index\\controller\\Chat' => __DIR__ . '/../..' . '/app/index/controller/Chat.php',
+        'app\\index\\controller\\Goods' => __DIR__ . '/../..' . '/app/index/controller/Goods.php',
+        'app\\index\\controller\\Index' => __DIR__ . '/../..' . '/app/index/controller/Index.php',
+        'app\\index\\controller\\News' => __DIR__ . '/../..' . '/app/index/controller/News.php',
+        'app\\index\\controller\\Order' => __DIR__ . '/../..' . '/app/index/controller/Order.php',
+        'app\\index\\controller\\Seller' => __DIR__ . '/../..' . '/app/index/controller/Seller.php',
+        'app\\index\\controller\\Shop' => __DIR__ . '/../..' . '/app/index/controller/Shop.php',
+        'app\\index\\controller\\Upload' => __DIR__ . '/../..' . '/app/index/controller/Upload.php',
+        'app\\index\\controller\\User' => __DIR__ . '/../..' . '/app/index/controller/User.php',
         'think\\App' => __DIR__ . '/..' . '/topthink/framework/src/think/App.php',
         'think\\Cache' => __DIR__ . '/..' . '/topthink/framework/src/think/Cache.php',
         'think\\Collection' => __DIR__ . '/..' . '/topthink/think-helper/src/Collection.php',
@@ -210,7 +216,6 @@ class ComposerStaticInit869f234c0c691ec742441d80e95a3cac
         'think\\contract\\ModelRelationInterface' => __DIR__ . '/..' . '/topthink/framework/src/think/contract/ModelRelationInterface.php',
         'think\\contract\\SessionHandlerInterface' => __DIR__ . '/..' . '/topthink/framework/src/think/contract/SessionHandlerInterface.php',
         'think\\contract\\TemplateHandlerInterface' => __DIR__ . '/..' . '/topthink/framework/src/think/contract/TemplateHandlerInterface.php',
-        'think\\db\\BaseBuilder' => __DIR__ . '/..' . '/topthink/think-orm/src/db/BaseBuilder.php',
         'think\\db\\BaseQuery' => __DIR__ . '/..' . '/topthink/think-orm/src/db/BaseQuery.php',
         'think\\db\\Builder' => __DIR__ . '/..' . '/topthink/think-orm/src/db/Builder.php',
         'think\\db\\CacheItem' => __DIR__ . '/..' . '/topthink/think-orm/src/db/CacheItem.php',
@@ -304,7 +309,6 @@ class ComposerStaticInit869f234c0c691ec742441d80e95a3cac
         'think\\model\\Pivot' => __DIR__ . '/..' . '/topthink/think-orm/src/model/Pivot.php',
         'think\\model\\Relation' => __DIR__ . '/..' . '/topthink/think-orm/src/model/Relation.php',
         'think\\model\\concern\\Attribute' => __DIR__ . '/..' . '/topthink/think-orm/src/model/concern/Attribute.php',
-        'think\\model\\concern\\AutoWriteId' => __DIR__ . '/..' . '/topthink/think-orm/src/model/concern/AutoWriteId.php',
         'think\\model\\concern\\Conversion' => __DIR__ . '/..' . '/topthink/think-orm/src/model/concern/Conversion.php',
         'think\\model\\concern\\ModelEvent' => __DIR__ . '/..' . '/topthink/think-orm/src/model/concern/ModelEvent.php',
         'think\\model\\concern\\OptimLock' => __DIR__ . '/..' . '/topthink/think-orm/src/model/concern/OptimLock.php',
@@ -312,8 +316,6 @@ class ComposerStaticInit869f234c0c691ec742441d80e95a3cac
         'think\\model\\concern\\SoftDelete' => __DIR__ . '/..' . '/topthink/think-orm/src/model/concern/SoftDelete.php',
         'think\\model\\concern\\TimeStamp' => __DIR__ . '/..' . '/topthink/think-orm/src/model/concern/TimeStamp.php',
         'think\\model\\concern\\Virtual' => __DIR__ . '/..' . '/topthink/think-orm/src/model/concern/Virtual.php',
-        'think\\model\\contract\\EnumTransform' => __DIR__ . '/..' . '/topthink/think-orm/src/model/contract/EnumTransform.php',
-        'think\\model\\contract\\FieldTypeTransform' => __DIR__ . '/..' . '/topthink/think-orm/src/model/contract/FieldTypeTransform.php',
         'think\\model\\relation\\BelongsTo' => __DIR__ . '/..' . '/topthink/think-orm/src/model/relation/BelongsTo.php',
         'think\\model\\relation\\BelongsToMany' => __DIR__ . '/..' . '/topthink/think-orm/src/model/relation/BelongsToMany.php',
         'think\\model\\relation\\HasMany' => __DIR__ . '/..' . '/topthink/think-orm/src/model/relation/HasMany.php',
@@ -352,14 +354,9 @@ class ComposerStaticInit869f234c0c691ec742441d80e95a3cac
         'think\\session\\driver\\Cache' => __DIR__ . '/..' . '/topthink/framework/src/think/session/driver/Cache.php',
         'think\\session\\driver\\File' => __DIR__ . '/..' . '/topthink/framework/src/think/session/driver/File.php',
         'think\\template\\TagLib' => __DIR__ . '/..' . '/topthink/think-template/src/template/TagLib.php',
-        'think\\template\\contract\\DriverInterface' => __DIR__ . '/..' . '/topthink/think-template/src/template/contract/DriverInterface.php',
         'think\\template\\driver\\File' => __DIR__ . '/..' . '/topthink/think-template/src/template/driver/File.php',
         'think\\template\\exception\\TemplateNotFoundException' => __DIR__ . '/..' . '/topthink/think-template/src/template/exception/TemplateNotFoundException.php',
         'think\\template\\taglib\\Cx' => __DIR__ . '/..' . '/topthink/think-template/src/template/taglib/Cx.php',
-        'think\\trace\\Console' => __DIR__ . '/..' . '/topthink/think-trace/src/Console.php',
-        'think\\trace\\Html' => __DIR__ . '/..' . '/topthink/think-trace/src/Html.php',
-        'think\\trace\\Service' => __DIR__ . '/..' . '/topthink/think-trace/src/Service.php',
-        'think\\trace\\TraceDebug' => __DIR__ . '/..' . '/topthink/think-trace/src/TraceDebug.php',
         'think\\validate\\ValidateRule' => __DIR__ . '/..' . '/topthink/framework/src/think/validate/ValidateRule.php',
         'think\\view\\driver\\Php' => __DIR__ . '/..' . '/topthink/framework/src/think/view/driver/Php.php',
         'think\\view\\driver\\Think' => __DIR__ . '/..' . '/topthink/think-view/src/Think.php',

@@ -11,13 +11,13 @@
 .ft-item .st.on{background:#E4393C;}
 </style>
 <div class="bid-list">
-    <div class="b-head">我的足迹（{$list|count}）</div>
+    <div class="b-head">{:lang('我的足迹（')}{$list|count}{:lang('）')}</div>
     {foreach $list as $v}
     <a class="ft-item" href="/goods/detail?id={$v.goods_id}">
-        <img class="cover" src="{$v.cover}" onerror="this.src='/static/img/noimg.png'">
+        <img class="cover" src="{$v.cover}" onerror="this.onerror=null;this.src='/static/img/noimg.png'">
         <div class="info">
             <div class="t">{$v.title}</div>
-            <div class="time">浏览于 {$v.create_time|date='m-d H:i'}</div>
+            <div class="time">{:lang('浏览于')} {$v.create_time|date='m-d H:i'}</div>
         </div>
         <div class="price">¥{$v.cur_price|number_format=2}<span class="st {if $v.goods_status==1}on{/if}">{$v.status_txt}</span></div>
     </a>
@@ -25,8 +25,8 @@
     {if empty($list)}
     <div class="empty" style="padding:60px 0;">
         <div class="e-ico">👣</div>
-        <div>还没有浏览记录</div>
-        <a class="e-btn" href="/">去逛逛</a>
+        <div>{:lang('还没有浏览记录')}</div>
+        <a class="e-btn" href="/">{:lang('去逛逛')}</a>
     </div>
     {/if}
 </div>

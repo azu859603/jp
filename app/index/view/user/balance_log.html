@@ -2,7 +2,7 @@
 {block name="content"}
 <div class="wallet-log">
     <div class="w-head">
-        <span class="t">余额明细</span>
+        <span class="t">{:lang('余额明细')}</span>
     </div>
     {foreach $logs as $l}
     <div class="log-item">
@@ -13,12 +13,12 @@
         </div>
         <div style="text-align:right;">
             <div class="l-amount {if $l.amount>0}in{else}out{/if}">{if $l.amount>0}+{/if}{$l.amount|number_format=2}</div>
-            <div class="l-balance">余额 {$l.balance|number_format=2}</div>
+            <div class="l-balance">{:lang('余额')} {$l.balance|number_format=2}</div>
         </div>
     </div>
     {/foreach}
     {if empty($logs)}
-    <div class="empty" style="padding:30px 0;">暂无记录</div>
+    <div class="empty" style="padding:30px 0;">{:lang('暂无记录')}</div>
     {/if}
 </div>
 {/block}

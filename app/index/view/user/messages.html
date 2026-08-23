@@ -1,7 +1,7 @@
 {extend name="layout" /}
 {block name="content"}
 {if empty($list)}
-<div class="empty" style="padding:60px 0;"><div class="e-ico">✉️</div>暂无站内信</div>
+<div class="empty" style="padding:60px 0;"><div class="e-ico">✉️</div>{:lang('暂无站内信')}</div>
 {else}
 <div style="background:#fff;">
     {foreach $list as $m}
@@ -37,7 +37,7 @@ if (page * limit < total) {
     var btn = document.createElement('div');
     btn.className = 'empty';
     btn.style.padding = '20px 0';
-    btn.innerHTML = '<a class="e-btn" href="/user/messages?page=' + (page+1) + '">加载更多</a>';
+    btn.innerHTML = '<a class="e-btn" href="/user/messages?page=' + (page+1) + '">' + t('加载更多') + '</a>';
     document.querySelector('.page').appendChild(btn);
 }
 </script>

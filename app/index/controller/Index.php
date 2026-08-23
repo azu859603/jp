@@ -2,6 +2,7 @@
 namespace app\index\controller;
 
 use think\facade\Db;
+use think\facade\Lang;
 use think\facade\View;
 
 class Index extends Base
@@ -61,6 +62,13 @@ class Index extends Base
 
         $categories = Db::name('category')->where('status', 1)->order('sort', 'asc')->select()->toArray();
 
+        // 多语言映射分类名
+        $langField = Lang::getLangSet() === 'zh-tw' ? 'name_tw' : (Lang::getLangSet() === 'en-us' ? 'name_en' : 'name');
+        foreach ($categories as &$c) {
+            $c['name'] = !empty($c[$langField]) ? $c[$langField] : $c['name'];
+        }
+        unset($c);
+
         // 成交记录（最近5条成交）
         $deals = Db::name('bid_record')->alias('b')
             ->leftJoin('goods g', 'b.goods_id = g.id')
@@ -75,12 +83,14 @@ class Index extends Base
         unset($d);
 
         // 拍卖头条（对接新闻模块：最新3条已发布新闻）
+        $langField = Lang::getLangSet() === 'zh-tw' ? 'title_tw' : (Lang::getLangSet() === 'en-us' ? 'title_en' : 'title');
         $headlines = Db::name('news')
             ->where('status', 1)
-            ->field('id, title, create_time')
+            ->field('id, title, title_tw, title_en, create_time')
             ->order('id', 'desc')
             ->limit(3)->select()->toArray();
         foreach ($headlines as &$h) {
+            $h['title'] = !empty($h[$langField]) ? $h[$langField] : $h['title'];
             $h['end_time'] = $h['create_time'];
         }
         unset($h);
@@ -102,7 +112,7 @@ class Index extends Base
             'keyword'     => $keyword,
             'sort'        => $sort,
             'now'         => $now,
-            'page_title'  => '首页',
+            'page_title'  => lang('首页'),
             'tab_active'  => 'index',
             'hide_header' => true,
             'deals'       => $deals,
@@ -120,7 +130,12 @@ class Index extends Base
     public function category()
     {
         $categories = Db::name('category')->where('status', 1)->order('sort', 'asc')->select()->toArray();
-        // 各分类竞拍中（status=1）商品数
+        // 多语言映射分类名
+        $langField = Lang::getLangSet() === 'zh-tw' ? 'name_tw' : (Lang::getLangSet() === 'en-us' ? 'name_en' : 'name');
+        foreach ($categories as &$c) {
+            $c['name'] = !empty($c[$langField]) ? $c[$langField] : $c['name'];
+        }
+        unset($c);
         $ids = array_column($categories, 'id');
         $counts = $ids
             ? Db::name('goods')->where('status', 1)->whereIn('category_id', $ids)->group('category_id')->column('COUNT(*)', 'category_id')
@@ -136,7 +151,7 @@ class Index extends Base
             'categories'       => $categories,
             'total_goods_count'=> $totalCount,
             'category_id'      => $categoryId,
-            'page_title'       => '分类',
+            'page_title'       => lang('分类'),
             'tab_active'       => 'category',
             'hide_header'      => true,
         ]);
@@ -155,6 +170,9 @@ class Index extends Base
             if (!$cate) {
                 return redirect('/');
             }
+            // 多语言映射分类名
+            $langField = Lang::getLangSet() === 'zh-tw' ? 'name_tw' : (Lang::getLangSet() === 'en-us' ? 'name_en' : 'name');
+            $cate['name'] = !empty($cate[$langField]) ? $cate[$langField] : $cate['name'];
         }
         $page = max((int)$this->request->param('page', 1), 1);
         $limit = 10;
@@ -185,7 +203,7 @@ class Index extends Base
             'limit'       => $limit,
             'category_id' => $categoryId,
             'now'         => $now,
-            'page_title'  => $cate ? $cate['name'] : '全部拍品',
+            'page_title'  => $cate ? $cate['name'] : lang('全部拍品'),
             'tab_active'  => 'index',
         ]);
         return View::fetch();
@@ -242,7 +260,7 @@ class Index extends Base
             'keyword'    => $keyword,
             'type'       => $type,
             'now'        => $now,
-            'page_title' => '搜索',
+            'page_title' => lang('搜索'),
             'tab_active' => 'index',
         ]);
         return View::fetch();
@@ -279,7 +297,7 @@ class Index extends Base
             'total'      => $total,
             'page'       => $page,
             'limit'      => $limit,
-            'page_title' => '成交记录',
+            'page_title' => lang('成交记录'),
             'tab_active' => 'index',
         ]);
         return View::fetch();

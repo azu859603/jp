@@ -1,20 +1,20 @@
 {extend name="layout" /}
 {block name="content"}
 <div class="g-tabs">
-    <a href="/seller/goods_list" class="{if $status==''}on{/if}">全部</a>
-    <a href="/seller/goods_list?status=1" class="{if $status==1}on{/if}">竞拍中</a>
-    <a href="/seller/goods_list?status=0" class="{if $status==0}on{/if}">审核中</a>
-    <a href="/seller/goods_list?status=2" class="{if $status==2}on{/if}">已成交</a>
-    <a href="/seller/goods_list?status=3" class="{if $status==3}on{/if}">已流拍</a>
+    <a href="/seller/goods_list" class="{if $status==''}on{/if}">{:lang('全部')}</a>
+    <a href="/seller/goods_list?status=1" class="{if $status==1}on{/if}">{:lang('竞拍中')}</a>
+    <a href="/seller/goods_list?status=0" class="{if $status==0}on{/if}">{:lang('审核中')}</a>
+    <a href="/seller/goods_list?status=2" class="{if $status==2}on{/if}">{:lang('已成交')}</a>
+    <a href="/seller/goods_list?status=3" class="{if $status==3}on{/if}">{:lang('已流拍')}</a>
 </div>
 {if empty($list)}
-<div class="empty"><div class="e-ico">📦</div><div>暂无拍品</div><a class="e-btn" href="/seller/goods_add">发布拍品</a></div>
+<div class="empty"><div class="e-ico">📦</div><div>{:lang('暂无拍品')}</div><a class="e-btn" href="/seller/goods_add">{:lang('发布拍品')}</a></div>
 {else}
 {foreach $list as $g}
 <div class="gmanage">
     <div class="g-head">
         <span>ID: {$g.id}</span>
-        <span class="st s{$g.status}">{if $g.status==0}待审核{elseif $g.status==1}竞拍中{elseif $g.status==2}已成交{elseif $g.status==3}已流拍{elseif $g.status==4}已下架{elseif $g.status==5}已拒绝{else}已结束{/if}</span>
+        <span class="st s{$g.status}">{if $g.status==0}{:lang('待审核')}{elseif $g.status==1}{:lang('竞拍中')}{elseif $g.status==2}{:lang('已成交')}{elseif $g.status==3}{:lang('已流拍')}{elseif $g.status==4}{:lang('已下架')}{elseif $g.status==5}{:lang('已拒绝')}{else}{:lang('已结束')}{/if}</span>
     </div>
     <div class="g-body">
         <div class="thumb">
@@ -27,44 +27,44 @@
         <div class="ginfo">
             <div class="gtitle">{$g.title}</div>
             <div class="gprice">¥{$g.start_price|number_format=2}</div>
-            <div class="gmeta">{$g.view_count}次浏览 · {$g.bid_count}次出价</div>
+            <div class="gmeta">{$g.view_count}{:lang('次浏览 · ')}{$g.bid_count}{:lang('次出价')}</div>
         </div>
     </div>
     <div class="g-foot">
         {if $g.status==4}
-        <a class="btn-sm solid-red" href="javascript:void(0)" onclick="putOnSale({$g.id})">上架</a>
+        <a class="btn-sm solid-red" href="javascript:void(0)" onclick="putOnSale({$g.id})">{:lang('上架')}</a>
         {elseif $g.status==1}
-        <a class="btn-sm gray" href="javascript:void(0)" onclick="takeOff({$g.id})">下架</a>
+        <a class="btn-sm gray" href="javascript:void(0)" onclick="takeOff({$g.id})">{:lang('下架')}</a>
         {elseif $g.status==3}
-        <a class="btn-sm solid-red" href="javascript:void(0)" onclick="openResale({$g.id})">重新上架</a>
+        <a class="btn-sm solid-red" href="javascript:void(0)" onclick="openResale({$g.id})">{:lang('重新上架')}</a>
         {elseif $g.status==5}
-        <a class="btn-sm gray" href="javascript:void(0)" onclick="delGoods({$g.id})">删除</a>
+        <a class="btn-sm gray" href="javascript:void(0)" onclick="delGoods({$g.id})">{:lang('删除')}</a>
         {/if}
         {if $g.status==5}<div class="g-reject">审核未通过：{$g.refuse_reason|default='未填写原因'}</div>{/if}
-        <span style="font-size:12px;color:#bbb;line-height:28px;">{$g.end_time|date='m-d H:i'}结束</span>
+        <span style="font-size:12px;color:#bbb;line-height:28px;">{$g.end_time|date='m-d H:i'}{:lang('结束')}</span>
     </div>
 </div>
 {/foreach}
 {if $page*$limit < $total}
-<a class="load-more" href="/seller/goods_list?status={$status}&page={$page+1}">加载更多</a>
+<a class="load-more" href="/seller/goods_list?status={$status}&page={$page+1}">{:lang('加载更多')}</a>
 {else}
-<div class="no-more">—— 没有更多数据了 ——</div>
+<div class="no-more">{:lang('—— 没有更多数据了 ——')}</div>
 {/if}
 {/if}
 
 <!-- 重新上架弹层 -->
 <div class="mask" id="resaleMask" onclick="closeResale()"></div>
 <div class="sheet" id="resaleSheet">
-    <div class="s-title">重新上架拍卖 <span class="s-close" onclick="closeResale()">×</span></div>
-    <div class="s-sub">重新开拍将清空旧的出价记录</div>
+    <div class="s-title">{:lang('重新上架拍卖')} <span class="s-close" onclick="closeResale()">×</span></div>
+    <div class="s-sub">{:lang('重新开拍将清空旧的出价记录')}</div>
     <div class="s-body">
-        <div class="rs-tip">选择本次拍卖结束时间（精确到分钟）</div>
+        <div class="rs-tip">{:lang('选择本次拍卖结束时间（精确到分钟）')}</div>
         <div class="rs-time">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 13.5"/></svg>
             <input type="datetime-local" id="resaleEnd">
         </div>
-        <div class="rs-hint">确认后将立即开拍，旧出价记录将被清空</div>
-        <a class="rs-btn" href="javascript:void(0)" onclick="doResale()">确认重新上架</a>
+        <div class="rs-hint">{:lang('确认后将立即开拍，旧出价记录将被清空')}</div>
+        <a class="rs-btn" href="javascript:void(0)" onclick="doResale()">{:lang('确认重新上架')}</a>
     </div>
 </div>
 <style>

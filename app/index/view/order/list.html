@@ -1,20 +1,20 @@
 {extend name="layout" /}
 {block name="content"}
 <div class="order-tabs">
-    <a href="/order/list" {if $order_status==''}class="on"{/if}>全部</a>
-    <a href="/order/list?order_status=0" {if $order_status=='0'}class="on"{/if}>待付款</a>
-    <a href="/order/list?order_status=1" {if $order_status=='1'}class="on"{/if}>待发货</a>
-    <a href="/order/list?order_status=2" {if $order_status=='2'}class="on"{/if}>待收货</a>
-    <a href="/order/list?order_status=3" {if $order_status=='3'}class="on"{/if}>已完成</a>
-    <a href="/order/list?order_status=5" {if $order_status=='5'}class="on"{/if}>售后中</a>
+    <a href="/order/list" {if $order_status==''}class="on"{/if}>{:lang('全部')}</a>
+    <a href="/order/list?order_status=0" {if $order_status=='0'}class="on"{/if}>{:lang('待付款')}</a>
+    <a href="/order/list?order_status=1" {if $order_status=='1'}class="on"{/if}>{:lang('待发货')}</a>
+    <a href="/order/list?order_status=2" {if $order_status=='2'}class="on"{/if}>{:lang('待收货')}</a>
+    <a href="/order/list?order_status=3" {if $order_status=='3'}class="on"{/if}>{:lang('已完成')}</a>
+    <a href="/order/list?order_status=5" {if $order_status=='5'}class="on"{/if}>{:lang('售后中')}</a>
 </div>
 {if empty($list)}
-<div class="empty"><div class="e-ico">📦</div><div>没有更多数据了</div></div>
+<div class="empty"><div class="e-ico">📦</div><div>{:lang('没有更多数据了')}</div></div>
 {else}
 {foreach $list as $o}
 <div class="order-card">
     <div class="o-head">
-        <span>订单号：{$o.order_no}</span>
+        <span>{:lang('订单号：')}{$o.order_no}</span>
         <span class="st">{$o.status_name}</span>
     </div>
     <a class="o-body" href="/order/pay?id={$o.id}">
@@ -34,39 +34,39 @@
     {if $o.order_status==2 && !empty($o.ship_no)}
     <div class="o-ship">
         <span class="ship-ico">🚚</span>
-        <span class="ship-info">{$o.ship_company|default='快递'} <b>{$o.ship_no}</b></span>
-        <a class="ship-copy" href="javascript:copyShip('{$o.ship_no}')">复制单号</a>
+        <span class="ship-info">{if !empty($o.ship_company)}{$o.ship_company}{else}{:lang('快递')}{/if} <b>{$o.ship_no}</b></span>
+        <a class="ship-copy" href="javascript:copyShip('{$o.ship_no}')">{:lang('复制单号')}</a>
     </div>
     {/if}
     <div class="o-foot">
         {if $o.order_status==0}
-        <a class="btn-sm solid-red" href="/order/pay?id={$o.id}">去付款</a>
-        <a class="btn-sm gray" href="javascript:cancelOrder({$o.id})">取消</a>
+        <a class="btn-sm solid-red" href="/order/pay?id={$o.id}">{:lang('去付款')}</a>
+        <a class="btn-sm gray" href="javascript:cancelOrder({$o.id})">{:lang('取消')}</a>
         {elseif $o.order_status==2}
-        <a class="btn-sm solid-red" href="javascript:confirmReceipt({$o.id})">确认收货</a>
+        <a class="btn-sm solid-red" href="javascript:confirmReceipt({$o.id})">{:lang('确认收货')}</a>
         {elseif $o.order_status==3 && empty($o.has_after_sale)}
-        <a class="btn-sm gray" href="javascript:openAfterSale({$o.id})">申请售后</a>
+        <a class="btn-sm gray" href="javascript:openAfterSale({$o.id})">{:lang('申请售后')}</a>
         {elseif $o.order_status==5}
-        <span class="aft-tip">售后处理中</span>
+        <span class="aft-tip">{:lang('售后处理中')}</span>
         {/if}
     </div>
 </div>
 {/foreach}
 {if $page*$limit < $total}
-<a class="load-more" href="/order/list?order_status={$order_status}&page={$page+1}">加载更多</a>
+<a class="load-more" href="/order/list?order_status={$order_status}&page={$page+1}">{:lang('加载更多')}</a>
 {else}
-<div class="no-more">—— 没有更多数据了 ——</div>
+<div class="no-more">{:lang('—— 没有更多数据了 ——')}</div>
 {/if}
 {/if}
 
 <!-- 申请售后弹窗 -->
 <div class="mask" id="aftMask" onclick="closeAfterSale()"></div>
 <div class="sheet" id="aftSheet">
-    <div class="s-title">申请售后 <span class="s-close" onclick="closeAfterSale()">×</span></div>
+    <div class="s-title">{:lang('申请售后')} <span class="s-close" onclick="closeAfterSale()">×</span></div>
     <div class="s-body">
-        <div class="aft-tip">请填写售后理由，提交后订单将转为售后单，由平台审核处理。</div>
-        <textarea id="aftReason" class="aft-textarea" rows="4" maxlength="500" placeholder="请输入售后理由（至少 5 个字）"></textarea>
-        <button class="btn btn-red" onclick="doAfterSale()">确认提交</button>
+        <div class="aft-tip">{:lang('请填写售后理由，提交后订单将转为售后单，由平台审核处理。')}</div>
+        <textarea id="aftReason" class="aft-textarea" rows="4" maxlength="500" placeholder="{:lang('请输入售后理由（至少 5 个字）')}"></textarea>
+        <button class="btn btn-red" onclick="doAfterSale()">{:lang('确认提交')}</button>
     </div>
 </div>
 {/block}

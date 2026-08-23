@@ -3,6 +3,7 @@
 namespace app\index\controller;
 
 use think\facade\Db;
+use think\facade\Lang;
 use think\facade\View;
 
 /**
@@ -22,6 +23,15 @@ class News extends Base
         $news = Db::name('news')->where('id', $id)->where('status', 1)->find();
         if (!$news) {
             return redirect('/');
+        }
+
+        // 多语言：按当前语言取标题与内容（未填则回退简体）
+        if (Lang::getLangSet() === 'zh-tw') {
+            $news['title'] = !empty($news['title_tw']) ? $news['title_tw'] : $news['title'];
+            $news['content'] = !empty($news['content_tw']) ? $news['content_tw'] : $news['content'];
+        } elseif (Lang::getLangSet() === 'en-us') {
+            $news['title'] = !empty($news['title_en']) ? $news['title_en'] : $news['title'];
+            $news['content'] = !empty($news['content_en']) ? $news['content_en'] : $news['content'];
         }
 
         // 含 HTML 标签的内容原样渲染，纯文本内容按原有方式转义并保留换行

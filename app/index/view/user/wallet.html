@@ -1,14 +1,14 @@
 {extend name="layout" /}
 {block name="content"}
 <div class="wallet-top">
-    <div class="w-label">资产总额(元)</div>
+    <div class="w-label">{:lang('资产总额(元)')}</div>
     <div class="w-amount">{$user.balance|number_format=2}</div>
     <div class="w-ops">
         {if isset($is_virtual) && $is_virtual}
-        <span class="w-tip" style="font-size:12px;color:#999;line-height:44px;padding:0 12px;">虚拟会员：余额为系统永存金额，不支持充值/提现</span>
+        <span class="w-tip" style="font-size:12px;color:#999;line-height:44px;padding:0 12px;">{:lang('虚拟会员：余额为系统永存金额，不支持充值/提现')}</span>
         {else /}
-        <a class="w-op" href="/user/withdraw">提现</a>
-        <a class="w-op" href="/user/recharge">充值</a>
+        <a class="w-op" href="/user/withdraw">{:lang('提现')}</a>
+        <a class="w-op" href="/user/recharge">{:lang('充值')}</a>
         {/if}
     </div>
 </div>
@@ -20,8 +20,8 @@
 <!--</div>-->
 <div class="wallet-log">
     <div class="w-head">
-        <span class="t">余额明细</span>
-        <a class="more" href="/user/balance_log">更多</a>
+        <span class="t">{:lang('余额明细')}</span>
+        <a class="more" href="/user/balance_log">{:lang('更多')}</a>
     </div>
     {foreach $logs as $l}
     <div class="log-item">
@@ -32,12 +32,12 @@
         </div>
         <div style="text-align:right;">
             <div class="l-amount {if $l.amount>0}in{else}out{/if}">{if $l.amount>0}+{/if}{$l.amount|number_format=2}</div>
-            <div class="l-balance">余额 {$l.balance|number_format=2}</div>
+            <div class="l-balance">{:lang('余额')} {$l.balance|number_format=2}</div>
         </div>
     </div>
     {/foreach}
     {if empty($logs)}
-    <div class="empty" style="padding:30px 0;">暂无记录</div>
+    <div class="empty" style="padding:30px 0;">{:lang('暂无记录')}</div>
     {/if}
 </div>
 {/block}

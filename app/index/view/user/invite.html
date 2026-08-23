@@ -2,11 +2,11 @@
 {block name="content"}
 <div class="invite-card">
     <div class="inv-ico">🎁</div>
-    <div class="inv-t">我的邀请码</div>
+    <div class="inv-t">{:lang('我的邀请码')}</div>
     <div class="inv-code">{$user.invite_code}</div>
-    <div class="inv-tip">邀请好友注册，好友填写你的邀请码即可获得积分奖励</div>
-    <button class="inv-btn" onclick="copyInvite()">复制邀请码</button>
-    <div class="inv-tip">好友注册时填写此邀请码<br>可获得积分奖励，多邀多得</div>
+    <div class="inv-tip">{:lang('邀请好友注册，好友填写你的邀请码即可获得积分奖励')}</div>
+    <button class="inv-btn" onclick="copyInvite()">{:lang('复制邀请码')}</button>
+    <div class="inv-tip">{:lang('好友注册时填写此邀请码<br>可获得积分奖励，多邀多得')}</div>
 </div>
 {/block}
 {block name="script"}

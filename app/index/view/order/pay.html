@@ -2,12 +2,12 @@
 {block name="content"}
 <div class="pay-card">
     <div class="p-head">
-        <div class="lbl">需支付</div>
+        <div class="lbl">{:lang('需支付')}</div>
         <div class="num">¥{$order.price|number_format=2}</div>
     </div>
-    <div class="p-row"><span>订单号</span><b>{$order.order_no}</b></div>
-    <div class="p-row"><span>商品</span><b>{$order.goods_title}</b></div>
-    <div class="p-row"><span>数量</span><b>1</b></div>
+    <div class="p-row"><span>{:lang('订单号')}</span><b>{$order.order_no}</b></div>
+    <div class="p-row"><span>{:lang('商品')}</span><b>{$order.goods_title}</b></div>
+    <div class="p-row"><span>{:lang('数量')}</span><b>1</b></div>
 </div>
 
 <div class="pay-addr" onclick="openAddr()">
@@ -19,8 +19,8 @@
     </div>
     {else}
     <div class="a-info" id="addrBox">
-        <div class="a-name" id="addrName" style="color:#999;">请添加收货地址</div>
-        <div class="a-detail" id="addrDetail" style="color:#bbb;">点击添加</div>
+        <div class="a-name" id="addrName" style="color:#999;">{:lang('请添加收货地址')}</div>
+        <div class="a-detail" id="addrDetail" style="color:#bbb;">{:lang('点击添加')}</div>
     </div>
     {/if}
     <span class="arrow">›</span>
@@ -30,23 +30,23 @@
 <!-- 地址选择弹窗 -->
 <div class="mask" id="addrMask" onclick="closeAddr()"></div>
 <div class="sheet" id="addrSheet">
-    <div class="s-title">选择收货地址 <span class="s-close" onclick="closeAddr()">×</span></div>
+    <div class="s-title">{:lang('选择收货地址')} <span class="s-close" onclick="closeAddr()">×</span></div>
     <div class="s-body" style="max-height:50vh;overflow-y:auto;padding:8px 14px;">
         {foreach $addresses as $ad}
         <div class="adr-item" data-id="{$ad.id}" data-name="{$ad.name}" data-mobile="{$ad.mobile}" data-full="{$ad.province} {$ad.city} {$ad.district} {$ad.address}" onclick="pickAddr(this)">
-            <div style="font-size:14px;color:#333;font-weight:600;">{$ad.name} · {$ad.mobile} {if $ad.is_default==1}<span class="tag tag-red">默认</span>{/if}</div>
+            <div style="font-size:14px;color:#333;font-weight:600;">{$ad.name} · {$ad.mobile} {if $ad.is_default==1}<span class="tag tag-red">{:lang('默认')}</span>{/if}</div>
             <div style="font-size:12px;color:#999;margin-top:4px;">{$ad.province} {$ad.city} {$ad.district} {$ad.address}</div>
         </div>
         {/foreach}
-        <a href="/user/address_edit?id=0" style="display:block;text-align:center;font-size:13px;color:#E4393C;padding:12px 0;">＋ 新增收货地址</a>
+        <a href="/user/address_edit?id=0" style="display:block;text-align:center;font-size:13px;color:#E4393C;padding:12px 0;">{:lang('＋ 新增收货地址')}</a>
     </div>
 </div>
 
 <div class="form-card" style="margin-top:12px;">
     <div class="form-row">
-        <span class="fl">支付方式</span>
+        <span class="fl">{:lang('支付方式')}</span>
         <div class="fr pay-radio">
-            <label class="on" onclick="pickPay(0)">余额支付</label>
+            <label class="on" onclick="pickPay(0)">{:lang('余额支付')}</label>
             <!-- <label onclick="pickPay(1)">微信支付</label> -->
         </div>
     </div>
@@ -54,7 +54,7 @@
 <input type="hidden" id="payType" value="balance">
 
 <div class="form-submit">
-    <button class="btn btn-red" onclick="doPay()">确认支付</button>
+    <button class="btn btn-red" onclick="doPay()">{:lang('确认支付')}</button>
 </div>
 {/block}
 {block name="script"}

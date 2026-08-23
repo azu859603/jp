@@ -2,14 +2,14 @@
 {block name="content"}
 <div class="form-card">
     <div class="form-row">
-        <span class="fl">拍品名称</span>
-        <div class="fr"><input type="text" id="title" placeholder="请输入拍品名称"></div>
+        <span class="fl">{:lang('拍品名称')}</span>
+        <div class="fr"><input type="text" id="title" placeholder="{:lang('请输入拍品名称')}"></div>
     </div>
     <div class="form-row">
-        <span class="fl">所属分类</span>
+        <span class="fl">{:lang('所属分类')}</span>
         <div class="fr">
             <select id="category_id">
-                <option value="">请选择分类</option>
+                <option value="">{:lang('请选择分类')}</option>
                 {foreach $categories as $c}
                 <option value="{$c.id}">{$c.name}</option>
                 {/foreach}
@@ -17,68 +17,68 @@
         </div>
     </div>
     <div class="form-row">
-        <span class="fl">起拍价格</span>
-        <div class="fr"><input type="number" id="start_price" placeholder="请输入起拍价"></div>
+        <span class="fl">{:lang('起拍价格')}</span>
+        <div class="fr"><input type="number" id="start_price" placeholder="{:lang('请输入起拍价')}"></div>
     </div>
     <div class="form-row">
-        <span class="fl">加价幅度</span>
-        <div class="fr"><input type="number" id="raise_price" placeholder="最低加价额度" value="100"></div>
+        <span class="fl">{:lang('加价幅度')}</span>
+        <div class="fr"><input type="number" id="raise_price" placeholder="{:lang('最低加价额度')}" value="100"></div>
     </div>
     <div class="form-row">
-        <span class="fl">保证金</span>
-        <div class="fr"><input type="number" id="deposit" placeholder="买家出价保证金（选填）"></div>
+        <span class="fl">{:lang('保证金')}</span>
+        <div class="fr"><input type="number" id="deposit" placeholder="{:lang('买家出价保证金（选填）')}"></div>
     </div>
     <div class="form-row">
-        <span class="fl">截拍时间</span>
+        <span class="fl">{:lang('截拍时间')}</span>
         <div class="fr"><input type="datetime-local" id="end_time"></div>
     </div>
     <div class="form-row">
-        <span class="fl">快捷选择</span>
+        <span class="fl">{:lang('快捷选择')}</span>
         <div class="fr" style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;">
-            <a class="end-quick" href="javascript:;" onclick="quickEnd(1)">1天</a>
-            <a class="end-quick" href="javascript:;" onclick="quickEnd(3)">3天</a>
-            <a class="end-quick" href="javascript:;" onclick="quickEnd(10)">10天</a>
-            <a class="end-quick" href="javascript:;" onclick="quickEnd(30)">1月</a>
+            <a class="end-quick" href="javascript:;" onclick="quickEnd(1)">{:lang('1天')}</a>
+            <a class="end-quick" href="javascript:;" onclick="quickEnd(3)">{:lang('3天')}</a>
+            <a class="end-quick" href="javascript:;" onclick="quickEnd(10)">{:lang('10天')}</a>
+            <a class="end-quick" href="javascript:;" onclick="quickEnd(30)">{:lang('1月')}</a>
         </div>
     </div>
     <div class="form-row area">
-        <span class="fl">描述简介</span>
-        <div class="fr"><textarea id="content" placeholder="请描述拍品详情" rows="4"></textarea></div>
+        <span class="fl">{:lang('描述简介')}</span>
+        <div class="fr"><textarea id="content" placeholder="{:lang('请描述拍品详情')}" rows="4"></textarea></div>
     </div>
 </div>
 
 <div class="form-card">
-    <div class="form-tip" style="padding:10px 14px;">可选设置</div>
+    <div class="form-tip" style="padding:10px 14px;">{:lang('可选设置')}</div>
     <div class="form-row">
-        <span class="fl">是否精选</span>
+        <span class="fl">{:lang('是否精选')}</span>
         <div class="fr">
-            <label style="display:flex;align-items:center;gap:6px;"><input type="radio" name="is_featured" value="0" checked> 否</label>
-            <label style="display:flex;align-items:center;gap:6px;margin-left:16px;"><input type="radio" name="is_featured" value="1"> 是</label>
+            <label style="display:flex;align-items:center;gap:6px;"><input type="radio" name="is_featured" value="0" checked> {:lang('否')}</label>
+            <label style="display:flex;align-items:center;gap:6px;margin-left:16px;"><input type="radio" name="is_featured" value="1"> {:lang('是')}</label>
         </div>
     </div>
     <div class="form-row">
-        <span class="fl">是否包邮</span>
+        <span class="fl">{:lang('是否包邮')}</span>
         <div class="fr">
-            <label style="display:flex;align-items:center;gap:6px;"><input type="radio" name="is_free_shipping" value="0" checked> 否</label>
-            <label style="display:flex;align-items:center;gap:6px;margin-left:16px;"><input type="radio" name="is_free_shipping" value="1"> 是</label>
+            <label style="display:flex;align-items:center;gap:6px;"><input type="radio" name="is_free_shipping" value="0" checked> {:lang('否')}</label>
+            <label style="display:flex;align-items:center;gap:6px;margin-left:16px;"><input type="radio" name="is_free_shipping" value="1"> {:lang('是')}</label>
         </div>
     </div>
 </div>
 
 <div class="form-card">
-    <div class="form-tip" style="padding:10px 14px;">上传图片 <span style="color:#E4393C;">（至少4张，不同角度拍摄）</span></div>
+    <div class="form-tip" style="padding:10px 14px;">{:lang('上传图片')} <span style="color:#E4393C;">{:lang('（至少4张，不同角度拍摄）')}</span></div>
     <div class="upload-grid" id="uploadGrid">
         <div class="upload-add" id="uploadBtn" onclick="uploadImage()">
             <span>+</span>
-            <span class="t">上传</span>
+            <span class="t">{:lang('上传')}</span>
         </div>
     </div>
-    <div class="form-tip">请提供至少4张不同角度的商品照片，便于鉴定师准确鉴定拍品</div>
+    <div class="form-tip">{:lang('请提供至少4张不同角度的商品照片，便于鉴定师准确鉴定拍品')}</div>
 </div>
 
 <div class="form-tip" style="padding:0 16px;">
     <label style="display:flex;align-items:center;gap:6px;">
-        <input type="checkbox" id="agree"> 我已阅读并同意<a href="javascript:void(0)" class="agree-link" onclick="openAgreement()">《发布协议》</a>
+        <input type="checkbox" id="agree"> {:lang('我已阅读并同意')}<a href="javascript:void(0)" class="agree-link" onclick="openAgreement()">{:lang('《发布协议》')}</a>
     </label>
 </div>
 
@@ -87,21 +87,21 @@
 .end-quick:active{border-color:#E4393C;background:#E4393C;color:#fff;transform:scale(.92);}
 </style>
 <div class="form-submit">
-    <button class="btn btn-red" onclick="doPublish()">提交鉴定</button>
+    <button class="btn btn-red" onclick="doPublish()">{:lang('提交鉴定')}</button>
 </div>
 
 <!-- 发布协议弹窗 -->
 <div class="mask" id="agreeMask" onclick="closeAgreement()"></div>
 <div class="sheet" id="agreeSheet">
-    <div class="s-title">发布协议 <span class="s-close" onclick="closeAgreement()">×</span></div>
+    <div class="s-title">{:lang('发布协议')} <span class="s-close" onclick="closeAgreement()">×</span></div>
     <div class="agree-body">
         {if !empty($publish_protocol)}
         {$publish_protocol|raw}
         {else}
-        <div class="agree-empty">内容暂未发布，请稍后再查看</div>
+        <div class="agree-empty">{:lang('内容暂未发布，请稍后再查看')}</div>
         {/if}
     </div>
-    <div style="padding:0 20px;"><button class="btn btn-red" style="width:100%;" onclick="closeAgreement()">我知道了</button></div>
+    <div style="padding:0 20px;"><button class="btn btn-red" style="width:100%;" onclick="closeAgreement()">{:lang('我知道了')}</button></div>
 </div>
 {/block}
 {block name="script"}

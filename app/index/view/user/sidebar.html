@@ -5,28 +5,28 @@
         </div>
         <div class="nick">{$user.nickname}</div>
         <div class="mobile">{$user.mobile}</div>
-        {if $user.is_seller==1}<span class="tag tag-orange mt10" style="margin-top:6px;">卖家</span>{else}<span class="tag tag-gray mt10" style="margin-top:6px;">普通会员</span>{/if}
+        {if $user.is_seller==1}<span class="tag tag-orange mt10" style="margin-top:6px;">{:lang('卖家')}</span>{else}<span class="tag tag-gray mt10" style="margin-top:6px;">{:lang('普通会员')}</span>{/if}
     </div>
     <div class="balance-card">
         <div class="flex-between">
-            <span class="label">可用余额</span>
-            <a href="/user/recharge" style="color:#fff;font-size:12px;text-decoration:underline;">充值</a>
+            <span class="label">{:lang('可用余额')}</span>
+            <a href="/user/recharge" style="color:#fff;font-size:12px;text-decoration:underline;">{:lang('充值')}</a>
         </div>
         <div class="num">¥{$user.balance}</div>
-        <div class="sub">冻结保证金：¥{$user.freeze_balance} &nbsp; 积分：{$user.points}</div>
+        <div class="sub">{:lang('冻结保证金：')}¥{$user.freeze_balance} &nbsp; {:lang('积分：')}{$user.points}</div>
     </div>
     <div class="menu">
-        <a href="/user/center" {if $center_tab=='center'}class="active"{/if}>个人中心</a>
-        <a href="/order/list" {if $center_tab=='orders'}class="active"{/if}>我的订单</a>
-        <a href="/user/bids" {if $center_tab=='bids'}class="active"{/if}>我的出价</a>
-        <a href="/user/balance_log" {if $center_tab=='balance'}class="active"{/if}>余额明细</a>
-        <a href="/user/recharge" {if $center_tab=='recharge'}class="active"{/if}>余额充值</a>
-        <a href="/user/withdraw" {if $center_tab=='withdraw'}class="active"{/if}>申请提现</a>
-        <a href="/user/address" {if $center_tab=='address'}class="active"{/if}>收货地址</a>
-        <a href="/user/profile" {if $center_tab=='profile'}class="active"{/if}>修改资料</a>
-        <a href="/user/password" {if $center_tab=='password'}class="active"{/if}>修改密码</a>
+        <a href="/user/center" {if $center_tab=='center'}class="active"{/if}>{:lang('个人中心')}</a>
+        <a href="/order/list" {if $center_tab=='orders'}class="active"{/if}>{:lang('我的订单')}</a>
+        <a href="/user/bids" {if $center_tab=='bids'}class="active"{/if}>{:lang('我的出价')}</a>
+        <a href="/user/balance_log" {if $center_tab=='balance'}class="active"{/if}>{:lang('余额明细')}</a>
+        <a href="/user/recharge" {if $center_tab=='recharge'}class="active"{/if}>{:lang('余额充值')}</a>
+        <a href="/user/withdraw" {if $center_tab=='withdraw'}class="active"{/if}>{:lang('申请提现')}</a>
+        <a href="/user/address" {if $center_tab=='address'}class="active"{/if}>{:lang('收货地址')}</a>
+        <a href="/user/profile" {if $center_tab=='profile'}class="active"{/if}>{:lang('修改资料')}</a>
+        <a href="/user/password" {if $center_tab=='password'}class="active"{/if}>{:lang('修改密码')}</a>
         {if $user.is_seller==1}
-        <a href="/seller/apply" {if $center_tab=='seller'}class="active"{/if}>卖家中心</a>
+        <a href="/seller/apply" {if $center_tab=='seller'}class="active"{/if}>{:lang('卖家中心')}</a>
         {/if}
     </div>
 </div>

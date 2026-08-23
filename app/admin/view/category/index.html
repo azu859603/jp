@@ -15,16 +15,18 @@
     <div class="table-wrap">
         <table class="table">
             <thead>
-            <tr><th>ID</th><th>分类名称</th><th>图标</th><th>排序</th><th>商品数</th><th>状态</th><th>操作</th></tr>
+            <tr><th>ID</th><th>分类名称</th><th>繁体名称</th><th>英文名称</th><th>图标</th><th>排序</th><th>商品数</th><th>状态</th><th>操作</th></tr>
             </thead>
             <tbody>
             {empty name="list"}
-            <tr><td colspan="7" class="empty">暂无分类</td></tr>
+            <tr><td colspan="9" class="empty">暂无分类</td></tr>
             {else /}
             {volist name="list" id="c"}
             <tr>
                 <td>{$c.id}</td>
                 <td>{$c.name}</td>
+                <td>{$c.name_tw ?: '-'}</td>
+                <td>{$c.name_en ?: '-'}</td>
                 <td>{if !empty($c.image)}<img src="{$c.image}" style="width:36px;height:36px;border-radius:4px;object-fit:cover;vertical-align:middle;">{else /}{$c.icon ?: '-'}{/if}</td>
                 <td>{$c.sort}</td>
                 <td>{$c.goods_count}</td>
@@ -49,7 +51,15 @@
             <input type="hidden" id="editId" value="0">
             <div class="form-group">
                 <label>分类名称 <span class="req">*</span></label>
-                <input type="text" class="form-control" id="editName" placeholder="请输入分类名称">
+                <input type="text" class="form-control" id="editName" placeholder="请输入简体中文名称">
+            </div>
+            <div class="form-group">
+                <label>繁体名称 <span class="req">*</span></label>
+                <input type="text" class="form-control" id="editNameTw" placeholder="请输入繁体中文名称">
+            </div>
+            <div class="form-group">
+                <label>英文名称 <span class="req">*</span></label>
+                <input type="text" class="form-control" id="editNameEn" placeholder="请输入英文名称">
             </div>
             <div class="form-group">
                 <label>分类图片（建议正方形，首页展示）</label>
@@ -90,6 +100,8 @@ var editData = {:json_encode($list, JSON_UNESCAPED_UNICODE)};
 function openEdit(id){
     document.getElementById('editId').value = id;
     document.getElementById('editName').value = '';
+    document.getElementById('editNameTw').value = '';
+    document.getElementById('editNameEn').value = '';
     document.getElementById('editIcon').value = '';
     document.getElementById('editImage').value = '';
     document.getElementById('cateImgBox') && document.getElementById('cateImgBox').remove();
@@ -100,6 +112,8 @@ function openEdit(id){
         editData.forEach(function(c){
             if(c.id == id){
                 document.getElementById('editName').value = c.name;
+                document.getElementById('editNameTw').value = c.name_tw || c.name;
+                document.getElementById('editNameEn').value = c.name_en || c.name;
                 document.getElementById('editIcon').value = c.icon;
                 document.getElementById('editSort').value = c.sort;
                 document.getElementById('editStatus').value = c.status;
@@ -157,12 +171,16 @@ function doSave(){
     var data = {
         id: document.getElementById('editId').value,
         name: document.getElementById('editName').value.trim(),
+        name_tw: document.getElementById('editNameTw').value.trim(),
+        name_en: document.getElementById('editNameEn').value.trim(),
         icon: document.getElementById('editIcon').value.trim(),
         image: document.getElementById('editImage').value.trim(),
         sort: document.getElementById('editSort').value,
         status: document.getElementById('editStatus').value
     };
     if(!data.name){ alert('请输入分类名称'); return; }
+    if(!data.name_tw){ data.name_tw = data.name; }
+    if(!data.name_en){ data.name_en = data.name; }
     ajaxPost('/admin1314/category/save', data, function(res){
         alert(res.msg);
         if(res.code == 1) location.reload();

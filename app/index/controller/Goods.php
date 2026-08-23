@@ -20,7 +20,7 @@ class Goods extends Base
             ->find();
 
         if (!$goods || !in_array($goods['status'], [1, 2, 3])) {
-            return $this->error('商品不存在或已下架', '/');
+            return $this->error(lang('商品不存在或已下架'), '/');
         }
 
         // 浏览量 +1（拍卖中）
@@ -63,7 +63,7 @@ class Goods extends Base
             ->select()
             ->toArray();
         foreach ($bids as &$b) {
-            $b['display_name'] = !empty($b['nickname']) ? $b['nickname'] : (!empty($b['mobile']) ? substr($b['mobile'], 0, 3) . '****' . substr($b['mobile'], -4) : '拍友' . $b['user_id']);
+            $b['display_name'] = !empty($b['nickname']) ? $b['nickname'] : (!empty($b['mobile']) ? substr($b['mobile'], 0, 3) . '****' . substr($b['mobile'], -4) : lang('拍友') . $b['user_id']);
         }
         unset($b);
 
@@ -133,21 +133,21 @@ class Goods extends Base
     {
         $this->checkLogin();
         if (!$this->request->isPost()) {
-            return json(['code' => 0, 'msg' => '请求方式错误']);
+            return json(['code' => 0, 'msg' => lang('请求方式错误')]);
         }
         $goodsId = (int)$this->request->post('goods_id', 0);
         $goods = Db::name('goods')->where('id', $goodsId)->find();
         if (!$goods) {
-            return json(['code' => 0, 'msg' => '商品不存在']);
+            return json(['code' => 0, 'msg' => lang('商品不存在')]);
         }
         $uid = $this->user['id'];
         $exists = Db::name('goods_favorite')->where('user_id', $uid)->where('goods_id', $goodsId)->find();
         if ($exists) {
             Db::name('goods_favorite')->where('id', $exists['id'])->delete();
-            return json(['code' => 1, 'msg' => '已取消收藏', 'faved' => 0]);
+            return json(['code' => 1, 'msg' => lang('已取消收藏'), 'faved' => 0]);
         }
         Db::name('goods_favorite')->insert(['user_id' => $uid, 'goods_id' => $goodsId, 'create_time' => time()]);
-        return json(['code' => 1, 'msg' => '收藏成功', 'faved' => 1]);
+        return json(['code' => 1, 'msg' => lang('收藏成功'), 'faved' => 1]);
     }
 
     /**
@@ -157,23 +157,23 @@ class Goods extends Base
     {
         $this->checkLogin();
         if (!$this->request->isPost()) {
-            return json(['code' => 0, 'msg' => '请求方式错误']);
+            return json(['code' => 0, 'msg' => lang('请求方式错误')]);
         }
         $sellerId = (int)$this->request->post('seller_id', 0);
         if ($sellerId <= 0) {
-            return json(['code' => 0, 'msg' => '参数错误']);
+            return json(['code' => 0, 'msg' => lang('参数错误')]);
         }
         $uid = $this->user['id'];
         if ($uid == $sellerId) {
-            return json(['code' => 0, 'msg' => '不能关注自己']);
+            return json(['code' => 0, 'msg' => lang('不能关注自己')]);
         }
         $exists = Db::name('seller_follow')->where('user_id', $uid)->where('seller_id', $sellerId)->find();
         if ($exists) {
             Db::name('seller_follow')->where('id', $exists['id'])->delete();
-            return json(['code' => 1, 'msg' => '已取消关注', 'followed' => 0]);
+            return json(['code' => 1, 'msg' => lang('已取消关注'), 'followed' => 0]);
         }
         Db::name('seller_follow')->insert(['user_id' => $uid, 'seller_id' => $sellerId, 'create_time' => time()]);
-        return json(['code' => 1, 'msg' => '关注成功', 'followed' => 1]);
+        return json(['code' => 1, 'msg' => lang('关注成功'), 'followed' => 1]);
     }
 
     /**
@@ -183,7 +183,7 @@ class Goods extends Base
     {
         $this->checkLogin();
         if (!$this->request->isPost()) {
-            return json(['code' => 0, 'msg' => '请求方式错误']);
+            return json(['code' => 0, 'msg' => lang('请求方式错误')]);
         }
 
         $goodsId = (int)$this->request->post('goods_id', 0);
@@ -191,20 +191,20 @@ class Goods extends Base
 
         $goods = Db::name('goods')->where('id', $goodsId)->lock(true)->find();
         if (!$goods) {
-            return json(['code' => 0, 'msg' => '商品不存在']);
+            return json(['code' => 0, 'msg' => lang('商品不存在')]);
         }
         if ($goods['status'] != 1) {
-            return json(['code' => 0, 'msg' => '该商品不在拍卖中']);
+            return json(['code' => 0, 'msg' => lang('该商品不在拍卖中')]);
         }
         $now = time();
         if ($now < $goods['start_time']) {
-            return json(['code' => 0, 'msg' => '拍卖尚未开始']);
+            return json(['code' => 0, 'msg' => lang('拍卖尚未开始')]);
         }
         if ($now >= $goods['end_time']) {
-            return json(['code' => 0, 'msg' => '拍卖已结束']);
+            return json(['code' => 0, 'msg' => lang('拍卖已结束')]);
         }
         if ($goods['seller_id'] == $this->user['id']) {
-            return json(['code' => 0, 'msg' => '不能给自己的商品出价']);
+            return json(['code' => 0, 'msg' => lang('不能给自己的商品出价')]);
         }
 
         // 当前最高价
@@ -222,12 +222,12 @@ class Goods extends Base
         $minPrice = round($basePrice + $raise, 2);
 
         if ($price < $minPrice) {
-            return json(['code' => 0, 'msg' => '出价不能低于 ' . number_format($minPrice, 2) . ' 元']);
+            return json(['code' => 0, 'msg' => lang('出价不能低于 ') . number_format($minPrice, 2) . lang(' 元')]);
         }
         // 阶梯校验：出价必须是 当前价 + 加价幅度的整数倍，禁止乱加价
         $steps = ($price - $basePrice) / $raise;
         if (abs($steps - round($steps)) > 0.0001) {
-            return json(['code' => 0, 'msg' => '出价必须按加价幅度 ' . number_format($raise, 2) . ' 元递增（如 ' . number_format($minPrice, 2) . '、' . number_format($minPrice + $raise, 2) . ' 元）']);
+            return json(['code' => 0, 'msg' => lang('出价必须按加价幅度 ') . number_format($raise, 2) . lang(' 元递增（如 ') . number_format($minPrice, 2) . lang('、') . number_format($minPrice + $raise, 2) . lang(' 元）')]);
         }
 
         $user = Db::name('user')->where('id', $this->user['id'])->lock(true)->find();
@@ -255,7 +255,7 @@ class Goods extends Base
                 $deposit = (float)$goods['deposit'];
                 if ($user['balance'] < $deposit) {
                     Db::rollback();
-                    return json(['code' => 0, 'msg' => '可用余额不足，无法缴纳保证金（需 ' . number_format($deposit, 2) . '元），请先充值']);
+                    return json(['code' => 0, 'msg' => lang('可用余额不足，无法缴纳保证金（需 ') . number_format($deposit, 2) . lang('元），请先充值')]);
                 }
                 $newBalance = round($user['balance'] - $deposit, 2);
                 $newFreeze = round($user['freeze_balance'] + $deposit, 2);
@@ -307,10 +307,10 @@ class Goods extends Base
             Db::commit();
         } catch (\Throwable $e) {
             Db::rollback();
-            return json(['code' => 0, 'msg' => '出价失败：' . $e->getMessage()]);
+            return json(['code' => 0, 'msg' => lang('出价失败：') . $e->getMessage()]);
         }
 
-        return json(['code' => 1, 'msg' => '出价成功']);
+        return json(['code' => 1, 'msg' => lang('出价成功')]);
     }
 
     /**
@@ -330,7 +330,7 @@ class Goods extends Base
             ->select()
             ->toArray();
         foreach ($list as &$b) {
-            $b['display_name'] = !empty($b['nickname']) ? $b['nickname'] : (!empty($b['mobile']) ? substr($b['mobile'], 0, 3) . '****' . substr($b['mobile'], -4) : '拍友' . $b['user_id']);
+            $b['display_name'] = !empty($b['nickname']) ? $b['nickname'] : (!empty($b['mobile']) ? substr($b['mobile'], 0, 3) . '****' . substr($b['mobile'], -4) : lang('拍友') . $b['user_id']);
         }
         unset($b);
 

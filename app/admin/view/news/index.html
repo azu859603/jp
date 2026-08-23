@@ -59,12 +59,28 @@
         <div class="dialog-body">
             <input type="hidden" id="editId" value="0">
             <div class="form-group">
-                <label>新闻标题 <span class="req">*</span></label>
+                <label>新闻标题（简体） <span class="req">*</span></label>
                 <input type="text" class="form-control" id="editTitleInput" maxlength="100" placeholder="请输入新闻标题（100字以内）">
             </div>
             <div class="form-group">
-                <label>新闻内容 <span class="req">*</span></label>
-                <textarea class="form-control" id="editContent" rows="12" placeholder="请输入新闻内容，支持直接粘贴 HTML 代码" style="resize:vertical;font-family:Consolas,Monaco,monospace;"></textarea>
+                <label>新闻标题（繁体）</label>
+                <input type="text" class="form-control" id="editTitleTw" maxlength="100" placeholder="不填则默认使用简体标题">
+            </div>
+            <div class="form-group">
+                <label>新闻标题（英文）</label>
+                <input type="text" class="form-control" id="editTitleEn" maxlength="100" placeholder="不填则默认使用简体标题">
+            </div>
+            <div class="form-group">
+                <label>新闻内容（简体） <span class="req">*</span></label>
+                <textarea class="form-control" id="editContent" rows="6" placeholder="请输入新闻内容，支持直接粘贴 HTML 代码" style="resize:vertical;font-family:Consolas,Monaco,monospace;"></textarea>
+            </div>
+            <div class="form-group">
+                <label>新闻内容（繁体）</label>
+                <textarea class="form-control" id="editContentTw" rows="6" placeholder="不填则默认使用简体内容" style="resize:vertical;font-family:Consolas,Monaco,monospace;"></textarea>
+            </div>
+            <div class="form-group">
+                <label>新闻内容（英文）</label>
+                <textarea class="form-control" id="editContentEn" rows="6" placeholder="不填则默认使用简体内容" style="resize:vertical;font-family:Consolas,Monaco,monospace;"></textarea>
             </div>
             <div class="form-row">
                 <div class="form-group">
@@ -89,14 +105,22 @@ var editData = {:json_encode($list, JSON_UNESCAPED_UNICODE)};
 function openEdit(id){
     document.getElementById('editId').value = id;
     document.getElementById('editTitleInput').value = '';
+    document.getElementById('editTitleTw').value = '';
+    document.getElementById('editTitleEn').value = '';
     document.getElementById('editContent').value = '';
+    document.getElementById('editContentTw').value = '';
+    document.getElementById('editContentEn').value = '';
     document.getElementById('editStatus').value = 1;
     document.getElementById('editTitle').textContent = '发布新闻';
     if(id > 0){
         editData.forEach(function(n){
             if(n.id == id){
                 document.getElementById('editTitleInput').value = n.title;
+                document.getElementById('editTitleTw').value = n.title_tw || '';
+                document.getElementById('editTitleEn').value = n.title_en || '';
                 document.getElementById('editContent').value = n.content;
+                document.getElementById('editContentTw').value = n.content_tw || '';
+                document.getElementById('editContentEn').value = n.content_en || '';
                 document.getElementById('editStatus').value = n.status;
                 document.getElementById('editTitle').textContent = '编辑新闻';
             }
@@ -109,7 +133,11 @@ function doSave(){
     var data = {
         id: document.getElementById('editId').value,
         title: document.getElementById('editTitleInput').value.trim(),
+        title_tw: document.getElementById('editTitleTw').value.trim(),
+        title_en: document.getElementById('editTitleEn').value.trim(),
         content: document.getElementById('editContent').value.trim(),
+        content_tw: document.getElementById('editContentTw').value.trim(),
+        content_en: document.getElementById('editContentEn').value.trim(),
         status: document.getElementById('editStatus').value
     };
     if(!data.title){ alert('请输入新闻标题'); return; }

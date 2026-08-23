@@ -29,10 +29,10 @@
         <span class="ab-ico">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 13.5"/></svg>
         </span>
-        <span class="ab-txt"><b>正在竞拍</b><i>火热进行中</i></span>
+        <span class="ab-txt"><b>{:lang('正在竞拍')}</b><i>{:lang('火热进行中')}</i></span>
     </div>
     <div class="r">
-        <span class="ab-lab">距离结束</span>
+        <span class="ab-lab">{:lang('距离结束')}</span>
         <b class="ab-time" data-countdown="{$goods.end_time}" data-format="detail">--</b>
     </div>
 </div>
@@ -42,10 +42,10 @@
         <span class="ab-ico">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
         </span>
-        <span class="ab-txt"><b>竞拍成交</b><i>恭喜买家</i></span>
+        <span class="ab-txt"><b>{:lang('竞拍成交')}</b><i>{:lang('恭喜买家')}</i></span>
     </div>
     <div class="r">
-        <span class="ab-lab">成交价</span>
+        <span class="ab-lab">{:lang('成交价')}</span>
         <b class="ab-time">¥{$goods.final_price}</b>
     </div>
 </div>
@@ -55,11 +55,11 @@
         <span class="ab-ico">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
         </span>
-        <span class="ab-txt"><b>竞拍已结束</b><i>{if $goods.status==3}流拍{else}未成交{/if}</i></span>
+        <span class="ab-txt"><b>{:lang('竞拍已结束')}</b><i>{if $goods.status==3}{:lang('流拍')}{else}{:lang('未成交')}{/if}</i></span>
     </div>
     <div class="r">
-        <span class="ab-lab">状态</span>
-        <b class="ab-time">{if $goods.status==3}流拍{else}未成交{/if}</b>
+        <span class="ab-lab">{:lang('状态')}</span>
+        <b class="ab-time">{if $goods.status==3}{:lang('流拍')}{else}{:lang('未成交')}{/if}</b>
     </div>
 </div>
 {/if}
@@ -74,42 +74,42 @@
         {/if}
     </a>
     <div class="s-info">
-        <a class="s-name" href="/shop/detail?id={$goods.seller_id}" style="display:block;color:inherit;text-decoration:none;">{if !empty($goods.seller_shop)}{$goods.seller_shop}{else}{$goods.seller_name}{/if} <span class="s-badge">钻石店铺</span></a>
-        <div class="s-tags"><span>企业认证</span></div>
+        <a class="s-name" href="/shop/detail?id={$goods.seller_id}" style="display:block;color:inherit;text-decoration:none;">{if !empty($goods.seller_shop)}{$goods.seller_shop}{else}{$goods.seller_name}{/if} <span class="s-badge">{:lang('钻石店铺')}</span></a>
+        <div class="s-tags"><span>{:lang('企业认证')}</span></div>
     </div>
     <div class="s-ops">
-        <a class="s-op yellow" href="javascript:void(0)" id="followBtn" onclick="toggleFollow()">{if $is_followed}已关注{else}关注{/if}</a>
-        <a class="s-op blue" href="/chat/detail?goods_id={$goods.id}&seller_id={$goods.seller_id}">咨询</a>
+        <a class="s-op yellow" href="javascript:void(0)" id="followBtn" onclick="toggleFollow()">{if $is_followed}{:lang('已关注')}{else}{:lang('关注')}{/if}</a>
+        <a class="s-op blue" href="/chat/detail?goods_id={$goods.id}&seller_id={$goods.seller_id}">{:lang('咨询')}</a>
     </div>
 </div>
 
 <!-- 店铺资料 -->
 <div class="shop-meta">
-    <div class="sm-intro">{if !empty($goods.seller_intro)}{$goods.seller_intro}{else}该店铺暂无介绍{/if}</div>
+    <div class="sm-intro">{if !empty($goods.seller_intro)}{$goods.seller_intro}{else}{:lang('该店铺暂无介绍')}{/if}</div>
     <div class="sm-row">
-        <div class="sm-item"><div class="v">¥{$goods.seller_deposit|default=0|number_format=2}</div><div class="k">消费保证金</div></div>
-        <div class="sm-item"><div class="v">{$goods.shop_score|default=0|number_format=1}</div><div class="k">店铺评分</div></div>
-        <div class="sm-item"><div class="v">{$goods.fans_count|default=0}</div><div class="k">粉丝数量</div></div>
+        <div class="sm-item"><div class="v">¥{$goods.seller_deposit|default=0|number_format=2}</div><div class="k">{:lang('消费保证金')}</div></div>
+        <div class="sm-item"><div class="v">{$goods.shop_score|default=0|number_format=1}</div><div class="k">{:lang('店铺评分')}</div></div>
+        <div class="sm-item"><div class="v">{$goods.fans_count|default=0}</div><div class="k">{:lang('粉丝数量')}</div></div>
     </div>
 </div>
 
 <!-- 标题与描述 -->
 <div class="detail-title">{$goods.title}</div>
 <div class="detail-desc">
-    <div class="txt" id="descTxt" style="max-height:70px;overflow:hidden;">{$goods.content|default='暂无描述'}</div>
-    <a href="javascript:void(0)" class="more-btn" id="descMore" style="display:none;" onclick="toggleDesc()">展开</a>
+    <div class="txt" id="descTxt" style="max-height:70px;overflow:hidden;">{if !empty($goods.content)}{$goods.content}{else}{:lang('暂无描述')}{/if}</div>
+    <a href="javascript:void(0)" class="more-btn" id="descMore" style="display:none;" onclick="toggleDesc()">{:lang('展开')}</a>
 </div>
 
 <!-- 参数区（参考站样式） -->
 <div class="detail-params">
-    <div class="param-row"><span>起拍价</span><b>¥{$goods.start_price|number_format=2}</b></div>
-    <div class="param-row"><span>保证金</span><b>{if $goods.deposit>0}¥{$goods.deposit|number_format=2}{else}无需保证金{/if}</b></div>
+    <div class="param-row"><span>{:lang('起拍价')}</span><b>¥{$goods.start_price|number_format=2}</b></div>
+    <div class="param-row"><span>{:lang('保证金')}</span><b>{if $goods.deposit>0}¥{$goods.deposit|number_format=2}{else}{:lang('无需保证金')}{/if}</b></div>
     <!-- <div class="param-row"><span>佣金</span><b>{$goods.commission_rate|default=0}%</b></div> -->
-    <div class="param-row"><span>加价幅度</span><b>¥{$goods.raise_price|number_format=2}</b></div>
+    <div class="param-row"><span>{:lang('加价幅度')}</span><b>¥{$goods.raise_price|number_format=2}</b></div>
     {if isset($goods.reference_price) && $goods.reference_price > 0}
-    <div class="param-row"><span>参考价</span><b>¥{$goods.reference_price|number_format=2}</b></div>
+    <div class="param-row"><span>{:lang('参考价')}</span><b>¥{$goods.reference_price|number_format=2}</b></div>
     {/if}
-    <div class="param-row"><span>邮费</span><b>{if isset($goods.is_free_shipping) && $goods.is_free_shipping}包邮{else}买家承担{/if}</b></div>
+    <div class="param-row"><span>{:lang('邮费')}</span><b>{if isset($goods.is_free_shipping) && $goods.is_free_shipping}{:lang('包邮')}{else}{:lang('买家承担')}{/if}</b></div>
 </div>
 
 <!-- 互动信息 -->
@@ -134,21 +134,21 @@
     </a> -->
     <a class="fav-btn {if $is_faved}on{/if}" id="favBtn" href="javascript:toggleFav();">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/></svg>
-        <span id="favTxt">{if $is_faved}已收藏{else}收藏{/if}</span>
+        <span id="favTxt">{if $is_faved}{:lang('已收藏')}{else}{:lang('收藏')}{/if}</span>
     </a>
 </div>
 
 <!-- 出价记录 -->
 <div class="bid-list">
-    <div class="b-head">出价记录 <span class="b-count">共 {$goods.bid_count} 次</span></div>
+    <div class="b-head">{:lang('出价记录')} <span class="b-count">{:lang('共')} {$goods.bid_count} {:lang('次')}</span></div>
     {if empty($bids)}
-    <div class="empty"><div class="e-ico">🔨</div>暂无出价，快来抢第一口</div>
+    <div class="empty"><div class="e-ico">🔨</div>{:lang('暂无出价，快来抢第一口')}</div>
     {else}
     {foreach $bids as $k=>$b}
     <div class="bid-row {if $k==0}top{/if}{if !empty($user) && $b.user_id==$user.id} mine{/if}{if $k>=5} bid-hide{/if}">
         <span class="bid-rank r{$k+1}">{$k+1}</span>
         <div class="bid-user">
-            <div class="u-name">{$b.display_name}{if $k==0}<span class="lead-tag">领先</span>{else}<span class="out-tag">出局</span>{/if}{if !empty($user) && $b.user_id==$user.id}<span class="my-tag">我</span>{/if}</div>
+            <div class="u-name">{$b.display_name}{if $k==0}<span class="lead-tag">{:lang('领先')}</span>{else}<span class="out-tag">{:lang('出局')}</span>{/if}{if !empty($user) && $b.user_id==$user.id}<span class="my-tag">{:lang('我')}</span>{/if}</div>
             <div class="u-time">{$b.create_time|date='m-d H:i:s'}</div>
         </div>
         <div class="bid-price">¥{$b.price|number_format=2}</div>
@@ -156,7 +156,7 @@
     {/foreach}
     {if count($bids) > 5}
     <a href="javascript:;" class="bid-more" id="bidMore" onclick="toggleBidMore()">
-        <span class="bm-txt">展开更多（{:count($bids)-5}条）</span><span class="bm-arrow">⌄</span>
+        <span class="bm-txt">{:lang('展开更多（')}{:count($bids)-5}{:lang('条）')}</span><span class="bm-arrow">⌄</span>
     </a>
     {/if}
     {/if}
@@ -182,25 +182,25 @@
 <!-- 出价弹窗 -->
 <div class="mask" id="bidMask" onclick="closeBid()"></div>
 <div class="sheet" id="bidSheet">
-    <div class="s-title">出价竞拍 <span class="s-close" onclick="closeBid()">×</span></div>
+    <div class="s-title">{:lang('出价竞拍')} <span class="s-close" onclick="closeBid()">×</span></div>
     <div class="s-sub">{$goods.title}</div>
     <div class="s-body">
         <div class="cur-price">
-            <span>当前价</span>
+            <span>{:lang('当前价')}</span>
             <b>¥ <span id="bidCur">{$current_price|number_format=2}</span></b>
         </div>
         <div class="bid-input">
             <span class="unit">¥</span>
-            <input type="number" id="bidPrice" placeholder="请输入出价金额">
+            <input type="number" id="bidPrice" placeholder="{:lang('请输入出价金额')}">
         </div>
         <div class="bid-tip">
-            最低出价：<b>¥<span id="bidMin">{$min_bid|number_format=2}</span></b>　加价幅度：<b>¥<span id="bidRaise">{$goods.raise_price|number_format=2}</span></b>
-            <br>出价需按加价幅度递增<span style="color:#2ECC71;font-weight:600;">（如 当前价+¥<span id="bidRaise2">{$goods.raise_price|number_format=2}</span>、当前价+¥<span id="bidRaise3">{$goods.raise_price*2|number_format=2}</span>）</span>
+            {:lang('最低出价：')}<b>¥<span id="bidMin">{$min_bid|number_format=2}</span></b>　{:lang('加价幅度：')}<b>¥<span id="bidRaise">{$goods.raise_price|number_format=2}</span></b>
+            <br>{:lang('出价需按加价幅度递增')}<span style="color:#2ECC71;font-weight:600;">{:lang('（')}{:lang('如')} {:lang('当前价')}+¥<span id="bidRaise2">{$goods.raise_price|number_format=2}</span>{:lang('、当前价')}+¥<span id="bidRaise3">{$goods.raise_price*2|number_format=2}</span>{:lang('）')}</span>
             {if $goods.deposit>0}
-            <br>缴纳保证金：<b>¥{$goods.deposit}</b><span style="color:#2ECC71;font-weight:600;">（{if $paid_deposit>0}已缴纳{else}出价时从余额冻结{/if}）</span>
+            <br>{:lang('缴纳保证金：')}<b>¥{$goods.deposit}</b><span style="color:#2ECC71;font-weight:600;">{:lang('（')}{if $paid_deposit>0}{:lang('已缴纳')}{else}{:lang('出价时从余额冻结')}{/if}{:lang('）')}</span>
             {/if}
         </div>
-        <button class="btn btn-red" onclick="doBid()">确认出价</button>
+        <button class="btn btn-red" onclick="doBid()">{:lang('确认出价')}</button>
     </div>
 </div>
 {/block}
@@ -208,12 +208,12 @@
 {if $goods.status==1}
 <div class="detail-bottom">
     <div class="cur">
-        <span>当前价</span>
+        <span>{:lang('当前价')}</span>
         <b>¥<span id="footCur">{$current_price|number_format=2}</span></b>
     </div>
     <div class="b-actions">
         <!-- <a class="judge-btn" href="javascript:void(0)" onclick="toast('鉴定功能开发中')">去鉴定</a> -->
-        <a class="go-bid" href="javascript:openBid();">去出价</a>
+        <a class="go-bid" href="javascript:openBid();">{:lang('去出价')}</a>
     </div>
 </div>
 
@@ -221,21 +221,21 @@
 <div class="tabbar">
     <a href="/" {if $tab_active=='index'}class="on"{/if}>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/><path d="M9.5 21v-6h5v6"/></svg>
-        <span>首页</span>
+        <span>{:lang('首页')}</span>
     </a>
     <a href="/category">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/></svg>
-        <span>分类</span>
+        <span>{:lang('分类')}</span>
     </a>
     <a class="tab-pub" href="/seller/goods_add">
         <span class="pub-ico">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         </span>
-        <span>发布</span>
+        <span>{:lang('发布')}</span>
     </a>
     <a href="/user/center">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M4.5 21c1.2-3.6 4-5.5 7.5-5.5s6.3 1.9 7.5 5.5"/></svg>
-        <span>我的</span>
+        <span>{:lang('我的')}</span>
     </a>
 </div>
 {/if}
@@ -449,11 +449,11 @@ function toggleDesc(){
     if (txt.style.maxHeight) {
         txt.style.maxHeight = '';
         txt.style.overflow = '';
-        more.textContent = '收起';
+        more.textContent = '{:lang('收起')}';
     } else {
         txt.style.maxHeight = '70px';
         txt.style.overflow = 'hidden';
-        more.textContent = '展开';
+        more.textContent = '{:lang('展开')}';
     }
 }
 
@@ -466,10 +466,10 @@ function toggleFav(){
             var txt = document.getElementById('favTxt');
             if (res.faved == 1) {
                 btn.classList.add('on');
-                txt.textContent = '已收藏';
+                txt.textContent = '{:lang('已收藏')}';
             } else {
                 btn.classList.remove('on');
-                txt.textContent = '收藏';
+                txt.textContent = '{:lang('收藏')}';
             }
         } else {
             toast(res.msg);
@@ -484,7 +484,7 @@ function toggleFollow(){
         if (res.code === 1) {
             toast(res.msg);
             var btn = document.getElementById('followBtn');
-            btn.textContent = res.followed == 1 ? '已关注' : '关注';
+            btn.textContent = res.followed == 1 ? '{:lang('已关注')}' : '{:lang('关注')}';
         } else {
             toast(res.msg);
         }
@@ -499,7 +499,7 @@ function toggleBidMore(){
     var open = btn.getAttribute('data-open') === '1';
     rows.forEach(function(r){ r.style.display = open ? 'none' : 'flex'; });
     btn.setAttribute('data-open', open ? '0' : '1');
-    btn.querySelector('.bm-txt').textContent = open ? '展开更多（' + rows.length + '条）' : '收起';
+    btn.querySelector('.bm-txt').textContent = open ? '{:lang('展开更多（')}' + rows.length + '{:lang('条）')}' : '{:lang('收起')}';
     btn.querySelector('.bm-arrow').textContent = open ? '⌄' : '⌃';
 }
 
@@ -518,13 +518,13 @@ function closeBid() {
 function doBid() {
     var price = parseFloat(document.getElementById('bidPrice').value);
     if (!price || price < minBid) {
-        toast('出价不能低于 ' + minBid.toFixed(2) + ' 元');
+        toast(t('出价不能低于 ') + minBid.toFixed(2) + t(' 元'));
         return;
     }
     // 阶梯校验：必须是 当前价 + 加价幅度 的整数倍
     var steps = (price - curPrice) / raisePrice;
     if (raisePrice > 0 && Math.abs(steps - Math.round(steps)) > 0.0001) {
-        toast('出价必须按加价幅度 ' + raisePrice.toFixed(2) + ' 元递增（最低 ' + minBid.toFixed(2) + ' 元）');
+        toast(t('出价必须按加价幅度 ') + raisePrice.toFixed(2) + t(' 元递增（最低 ') + minBid.toFixed(2) + t(' 元）'));
         return;
     }
     ajaxPost('/goods/bid', {goods_id: goodsId, price: price}, function(res){
@@ -544,7 +544,7 @@ function shareGoods() {
     if (navigator.share) {
         navigator.share({
             title: '{$goods.title}',
-            text: '拍卖中，当前价 ¥' + curPrice.toFixed(2),
+            text: t('拍卖中，当前价 ¥') + curPrice.toFixed(2),
             url: location.href
         }).catch(function(){});
     } else {

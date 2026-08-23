@@ -3,7 +3,7 @@
 <div class="cate-search">
     <div class="sbox" onclick="location.href='/search'">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/></svg>
-        <input type="text" placeholder="请输入搜索内容" readonly onclick="event.stopPropagation();location.href='/search'">
+        <input type="text" placeholder="{:lang('请输入搜索内容')}" readonly onclick="event.stopPropagation();location.href='/search'">
     </div>
 </div>
 <div class="cate-wrap">
@@ -14,15 +14,15 @@
     </div>
     <div class="cate-right">
         <a class="cate-card" href="/category/list">
-            <div class="cc-icon"><span>全</span></div>
-            <div class="cc-name">全部拍品</div>
-            <div class="cc-count"><b>{$total_goods_count}</b>件拍品</div>
+            <div class="cc-icon"><span>{:lang('全')}</span></div>
+            <div class="cc-name">{:lang('全部拍品')}</div>
+            <div class="cc-count"><b>{$total_goods_count}</b>{:lang('件拍品')}</div>
         </a>
         {foreach $categories as $c}
         <a class="cate-card" href="/category/list?category_id={$c.id}">
             <div class="cc-icon">{if !empty($c.image)}<img src="{$c.image}" alt="{$c.name}">{else}<span>{$c.name|mb_substr=0,1}</span>{/if}</div>
             <div class="cc-name">{$c.name}</div>
-            <div class="cc-count"><b>{$c.goods_count}</b>件拍品</div>
+            <div class="cc-count"><b>{$c.goods_count}</b>{:lang('件拍品')}</div>
         </a>
         {/foreach}
     </div>

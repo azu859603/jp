@@ -4,6 +4,7 @@ namespace app\index\controller;
 use app\BaseController;
 use think\exception\HttpResponseException;
 use think\facade\Db;
+use think\facade\Lang;
 use think\facade\View;
 
 class Base extends BaseController
@@ -19,6 +20,16 @@ class Base extends BaseController
         try {
             settle_expired_goods();
         } catch (\Throwable $e) {
+        }
+
+        // 手动检测并切换语言（URL参数 ?lang= 优先，其次 Cookie）
+        $allowLang = ['zh-cn', 'zh-tw', 'en-us'];
+        $detectLang = $this->request->param('lang', '');
+        if (!$detectLang || !in_array($detectLang, $allowLang)) {
+            $detectLang = $this->request->cookie('think_lang', '');
+        }
+        if ($detectLang && in_array($detectLang, $allowLang) && $detectLang != Lang::getLangSet()) {
+            Lang::switchLangSet($detectLang);
         }
 
         // 登录用户
@@ -39,6 +50,7 @@ class Base extends BaseController
             'user'     => $user,
             'settings' => $settings,
             'site_name'=> !empty($settings['site_name']) ? $settings['site_name'] : '竞拍商城',
+            'current_lang' => Lang::getLangSet(),
         ]);
     }
 
@@ -49,7 +61,7 @@ class Base extends BaseController
     {
         if (empty($this->user)) {
             if ($this->request->isAjax()) {
-                throw new HttpResponseException(json(['code' => -1, 'msg' => '请先登录']));
+                throw new HttpResponseException(json(['code' => -1, 'msg' => lang('请先登录')]));
             }
             throw new HttpResponseException(response('', 302, ['Location' => '/user/login']));
         }
@@ -63,26 +75,28 @@ class Base extends BaseController
         $this->checkLogin();
         if ($this->user['is_seller'] != 1 || $this->user['seller_check'] != 1) {
             if ($this->request->isAjax()) {
-                throw new HttpResponseException(json(['code' => -1, 'msg' => '您还不是卖家，请先申请入驻']));
+                throw new HttpResponseException(json(['code' => -1, 'msg' => lang('您还不是卖家，请先申请入驻')]));
             }
             throw new HttpResponseException(response('', 302, ['Location' => '/seller/apply']));
         }
     }
 
-    protected function success($msg = '操作成功', $url = null, $data = [])
+    protected function success($msg = null, $url = null, $data = [])
     {
         if ($this->request->isAjax()) {
+            $msg = $msg ?: lang('操作成功');
             return json(['code' => 1, 'msg' => $msg, 'data' => $data]);
         }
-        return $this->jumpHtml($msg, $url);
+        return $this->jumpHtml($msg ?: lang('操作成功'), $url);
     }
 
-    protected function error($msg = '操作失败', $url = null)
+    protected function error($msg = null, $url = null)
     {
         if ($this->request->isAjax()) {
+            $msg = $msg ?: lang('操作失败');
             return json(['code' => 0, 'msg' => $msg]);
         }
-        return $this->jumpHtml($msg, $url);
+        return $this->jumpHtml($msg ?: lang('操作失败'), $url);
     }
 
     protected function jumpHtml($msg, $url = null)

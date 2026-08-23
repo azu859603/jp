@@ -2,74 +2,74 @@
 {block name="content"}
 <div class="form-card" style="margin-top:12px;">
     <div class="form-row" onclick="document.getElementById('avatarFile').click();" style="cursor:pointer;">
-        <span class="fl">头像</span>
+        <span class="fl">{:lang('头像')}</span>
         <div class="fr" style="justify-content:flex-end;">
             <span style="width:44px;height:44px;border-radius:50%;background:#f0f0f0;overflow:hidden;display:flex;align-items:center;justify-content:center;">
                 {if !empty($user.avatar)}<img id="avatarImg" src="{$user.avatar}" style="width:100%;height:100%;object-fit:cover;">{else}<span style="font-size:20px;">👤</span>{/if}
             </span>
             <input type="file" id="avatarFile" accept="image/*" style="display:none;" onchange="uploadAvatar(this)">
-            <span style="font-size:11px;color:#999;margin:0 8px 0 10px;">点击修改</span>
+            <span style="font-size:11px;color:#999;margin:0 8px 0 10px;">{:lang('点击修改')}</span>
             <span class="arrow">›</span>
         </div>
     </div>
     <div class="form-row">
-        <span class="fl">昵称</span>
+        <span class="fl">{:lang('昵称')}</span>
         <div class="fr">
-            <input type="text" id="nickname" value="{$user.nickname}" maxlength="20" placeholder="请输入昵称">
+            <input type="text" id="nickname" value="{$user.nickname}" maxlength="20" placeholder="{:lang('请输入昵称')}">
         </div>
     </div>
     <div class="form-row">
-        <span class="fl">姓名</span>
+        <span class="fl">{:lang('姓名')}</span>
         <div class="fr">
-            <input type="text" id="real_name" value="{$user.real_name|default=''}" maxlength="20" placeholder="请输入真实姓名">
+            <input type="text" id="real_name" value="{$user.real_name|default=''}" maxlength="20" placeholder="{:lang('请输入真实姓名')}">
         </div>
     </div>
     <div class="form-row">
-        <span class="fl">手机号码</span>
+        <span class="fl">{:lang('手机号码')}</span>
         <div class="fr">
             <span class="ph">{$user.mobile}</span>
         </div>
     </div>
     <div class="form-row">
-        <span class="fl">实名认证</span>
+        <span class="fl">{:lang('实名认证')}</span>
         <div class="fr" style="justify-content:flex-end;">
             {if $user.auth_status==2}
-            <span class="tag tag-green">已认证</span>
+            <span class="tag tag-green">{:lang('已认证')}</span>
             {elseif $user.auth_status==1}
-            <span class="tag tag-orange">审核中</span>
+            <span class="tag tag-orange">{:lang('审核中')}</span>
             {elseif $user.auth_status==3}
-            <a class="tag tag-red" href="/user/auth">未通过 ›</a>
+            <a class="tag tag-red" href="/user/auth">{:lang('未通过')} ›</a>
             {else}
-            <a class="tag tag-red" href="/user/auth">未认证 ›</a>
+            <a class="tag tag-red" href="/user/auth">{:lang('未认证')} ›</a>
             {/if}
         </div>
     </div>
     {if $user.is_seller==1}
     <div class="form-row">
-        <span class="fl">店铺名称</span>
+        <span class="fl">{:lang('店铺名称')}</span>
         <div class="fr">
-            <input type="text" id="shop_name" value="{$user.shop_name|default=''}" maxlength="30" placeholder="请输入店铺名称">
+            <input type="text" id="shop_name" value="{$user.shop_name|default=''}" maxlength="30" placeholder="{:lang('请输入店铺名称')}">
         </div>
     </div>
     <div class="form-row">
-        <span class="fl">企业名称</span>
+        <span class="fl">{:lang('企业名称')}</span>
         <div class="fr">
-            <input type="text" id="company_name" value="{$user.company_name|default=''}" maxlength="50" placeholder="请输入企业名称">
+            <input type="text" id="company_name" value="{$user.company_name|default=''}" maxlength="50" placeholder="{:lang('请输入企业名称')}">
         </div>
     </div>
     <div class="form-row">
-        <span class="fl">店铺头像</span>
+        <span class="fl">{:lang('店铺头像')}</span>
         <div class="fr" style="justify-content:flex-end;">
             <span style="width:36px;height:36px;border-radius:50%;background:#f0f0f0;overflow:hidden;display:flex;align-items:center;justify-content:center;">
                 {if !empty($user.avatar)}<img src="{$user.avatar}" style="width:100%;height:100%;object-fit:cover;">{else}<span style="font-size:16px;">👤</span>{/if}
             </span>
-            <span style="font-size:11px;color:#999;margin-left:8px;">与头像一致</span>
+            <span style="font-size:11px;color:#999;margin-left:8px;">{:lang('与头像一致')}</span>
         </div>
     </div>
     {/if}
 </div>
 <div class="form-submit">
-    <button class="btn btn-red" onclick="saveProfile()">提交</button>
+    <button class="btn btn-red" onclick="saveProfile()">{:lang('提交')}</button>
 </div>
 {/block}
 {block name="script"}

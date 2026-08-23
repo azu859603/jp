@@ -3,19 +3,19 @@
 <div class="search-top">
     <div class="search-box">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/></svg>
-        <input type="text" id="kw" placeholder="请输入搜索内容" value="{$keyword}" onkeydown="if(event.keyCode==13)doSearch();">
+        <input type="text" id="kw" placeholder="{:lang('请输入搜索内容')}" value="{$keyword}" onkeydown="if(event.keyCode==13)doSearch();">
     </div>
-    <a class="search-btn" href="javascript:doSearch();">搜索</a>
+    <a class="search-btn" href="javascript:doSearch();">{:lang('搜索')}</a>
 </div>
 <div class="search-tabs">
-    <a href="javascript:switchTab('goods');" class="{if $type=='goods'}on{/if}" id="tab-goods">拍品</a>
-    <a href="javascript:switchTab('shop');" class="{if $type=='shop'}on{/if}" id="tab-shop">店铺</a>
+    <a href="javascript:switchTab('goods');" class="{if $type=='goods'}on{/if}" id="tab-goods">{:lang('拍品')}</a>
+    <a href="javascript:switchTab('shop');" class="{if $type=='shop'}on{/if}" id="tab-shop">{:lang('店铺')}</a>
 </div>
 
 {if $keyword==''}
-<div class="empty"><div class="e-ico">🔍</div><div>输入关键词搜索拍品或店铺</div></div>
+<div class="empty"><div class="e-ico">🔍</div><div>{:lang('输入关键词搜索拍品或店铺')}</div></div>
 {elseif empty($list)}
-<div class="empty"><div class="e-ico">🔍</div><div>没有找到与“{$keyword}”相关的内容</div></div>
+<div class="empty"><div class="e-ico">🔍</div><div>{:lang('没有找到与“')}{$keyword}{:lang('”相关的内容')}</div></div>
 {else}
 {if $type=='goods'}
 <div class="goods-grid">
@@ -36,7 +36,7 @@
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 13.5"/></svg>
                     <b data-countdown="{$g.end_time}" data-format="short">--</b>
                 </span>
-                <span>{$g.bid_count}次出价</span>
+                <span>{$g.bid_count}{:lang('次出价')}</span>
             </div>
         </div>
     </a>
@@ -56,17 +56,17 @@
         <div class="sinfo">
             <div class="sname">{if !empty($s.shop_name)}{$s.shop_name}{else}{$s.nickname}{/if}</div>
             {if !empty($s.seller_intro)}<div class="sintro">{$s.seller_intro}</div>{/if}
-            <div class="smeta">累计售出 {$s.total_sell} 件 · 成交 {$s.total_buy} 次</div>
+            <div class="smeta">{:lang('累计售出')} {$s.total_sell} {:lang('件 · 成交')} {$s.total_buy} {:lang('次')}</div>
         </div>
-        <span class="enter">进店</span>
+        <span class="enter">{:lang('进店')}</span>
     </a>
     {/foreach}
 </div>
 {/if}
 {if $page*$limit < $total}
-<a class="load-more" href="/search?keyword={$keyword|urlencode=###}&type={$type}&page={$page+1}">加载更多</a>
+<a class="load-more" href="/search?keyword={$keyword|urlencode=###}&type={$type}&page={$page+1}">{:lang('加载更多')}</a>
 {else}
-<div class="no-more">—— 没有更多数据了 ——</div>
+<div class="no-more">{:lang('—— 没有更多数据了 ——')}</div>
 {/if}
 {/if}
 {/block}
