@@ -12,6 +12,7 @@ class AppService extends Service
 {
     public function register()
     {
+
         // 服务注册
     }
 
