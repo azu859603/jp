@@ -15,16 +15,30 @@
     <div class="cate-right">
         <a class="cate-card" href="/category/list">
             <div class="cc-icon"><span>{:lang('全')}</span></div>
-            <div class="cc-name">{:lang('全部拍品')}</div>
-            <div class="cc-count"><b>{$total_goods_count}</b>{:lang('件拍品')}</div>
+            <div class="cc-info">
+                <div class="cc-name">{:lang('全部拍品')}</div>
+                <div class="cc-count"><b>{$total_goods_count}</b>{:lang('件拍品')}</div>
+            </div>
         </a>
         {foreach $categories as $c}
         <a class="cate-card" href="/category/list?category_id={$c.id}">
             <div class="cc-icon">{if !empty($c.image)}<img src="{$c.image}" alt="{$c.name}">{else}<span>{$c.name|mb_substr=0,1}</span>{/if}</div>
-            <div class="cc-name">{$c.name}</div>
-            <div class="cc-count"><b>{$c.goods_count}</b>{:lang('件拍品')}</div>
+            <div class="cc-info">
+                <div class="cc-name">{$c.name}</div>
+                <div class="cc-count"><b>{$c.goods_count}</b>{:lang('件拍品')}</div>
+            </div>
         </a>
         {/foreach}
     </div>
 </div>
+<style>
+/* 分类卡片：隐藏左侧导航，一行一个，图标在左、文字在右 */
+.cate-left{display:none;}
+.cate-right{grid-template-columns:1fr;}
+.cate-right .cate-card{flex-direction:row;align-items:center;padding:12px 14px;gap:12px;}
+.cate-right .cc-icon{flex-shrink:0;width:52px;height:52px;}
+.cate-right .cc-info{flex:1;min-width:0;}
+.cate-right .cc-name{margin-top:0;font-size:14px;}
+.cate-right .cc-count{margin-top:4px;}
+</style>
 {/block}
