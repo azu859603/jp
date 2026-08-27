@@ -15,7 +15,7 @@ class Index extends Base
         $categoryId = (int)$this->request->param('category_id', 0);
         $keyword = trim($this->request->param('keyword', ''));
         $sellerId = (int)$this->request->param('seller_id', 0);
-        $sort = $this->request->param('sort', 'end'); // end 即将结束 new 最新 price 价格
+        $sort = $this->request->param('sort', 'new'); // end 即将结束 new 最新 price 价格
         $page = max((int)$this->request->param('page', 1), 1);
         $limit = 10;
         $now = time();
