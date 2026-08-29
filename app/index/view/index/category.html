@@ -40,5 +40,13 @@
 .cate-right .cc-info{flex:1;min-width:0;}
 .cate-right .cc-name{margin-top:0;font-size:14px;}
 .cate-right .cc-count{margin-top:4px;}
+
+/* 修复部分手机浏览器下拉回弹时底部导航被拖走：
+   1) 100vh 按大视口计算会多出滚动空间，改用动态视口高度 dvh（不支持的浏览器回退 vh）
+   2) 禁止滚动越界回弹（橡皮筋），fixed 的底部导航不再跟随移动 */
+html, body{overscroll-behavior-y:none;}
+.page{min-height:100vh;min-height:100dvh;}
+/* 96px(顶部+底栏) 之外还要扣掉 52px 搜索框，否则会多出一段可滚动空白 */
+.cate-wrap{min-height:calc(100vh - 148px);min-height:calc(100dvh - 148px);}
 </style>
 {/block}

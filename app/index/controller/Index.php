@@ -8,9 +8,9 @@ use think\facade\View;
 class Index extends Base
 {
     /**
-     * 首页：拍卖头条列表
+     * 首页拍品列表查询（首页整页与 ajax 局部刷新共用）
      */
-    public function index()
+    protected function queryGoods()
     {
         $categoryId = (int)$this->request->param('category_id', 0);
         $keyword = trim($this->request->param('keyword', ''));
@@ -60,6 +60,54 @@ class Index extends Base
         }
         unset($g);
 
+        return [
+            'list'        => $list,
+            'total'       => $total,
+            'page'        => $page,
+            'limit'       => $limit,
+            'categoryId'  => $categoryId,
+            'sellerId'    => $sellerId,
+            'keyword'     => $keyword,
+            'sort'        => $sort,
+            'now'         => $now,
+        ];
+    }
+
+    /**
+     * 拍品列表片段（首页切换分类/排序时局部刷新，不整页重载）
+     */
+    public function goodsList()
+    {
+        $goods = $this->queryGoods();
+        View::assign([
+            'list'        => $goods['list'],
+            'total'       => $goods['total'],
+            'page'        => $goods['page'],
+            'limit'       => $goods['limit'],
+            'category_id' => $goods['categoryId'],
+            'seller_id'   => $goods['sellerId'],
+            'keyword'     => $goods['keyword'],
+            'sort'        => $goods['sort'],
+            'now'         => $goods['now'],
+        ]);
+        return View::fetch('goods_list');
+    }
+
+    /**
+     * 首页：拍卖头条列表
+     */
+    public function index()
+    {
+        $goods = $this->queryGoods();
+        $list       = $goods['list'];
+        $total      = $goods['total'];
+        $page       = $goods['page'];
+        $limit      = $goods['limit'];
+        $categoryId = $goods['categoryId'];
+        $sellerId   = $goods['sellerId'];
+        $keyword    = $goods['keyword'];
+        $sort       = $goods['sort'];
+        $now        = $goods['now'];
         $categories = Db::name('category')->where('status', 1)->order('sort', 'asc')->select()->toArray();
 
         // 多语言映射分类名

@@ -64,10 +64,10 @@
 {/if}
 
 <!-- 分类 tab -->
-<div class="cate-tabs">
-    <a href="/" {if $category_id==0}class="on"{/if}>{:lang('全部')}</a>
+<div class="cate-tabs" id="cateTabs">
+    <a href="/" data-cate="0" {if $category_id==0}class="on"{/if}>{:lang('全部')}</a>
     {foreach $categories as $c}
-    <a href="/?category_id={$c.id}" {if $category_id==$c.id}class="on"{/if}>{$c.name}</a>
+    <a href="/?category_id={$c.id}" data-cate="{$c.id}" {if $category_id==$c.id}class="on"{/if}>{$c.name}</a>
     {/foreach}
     <a class="more" href="/category">
         {:lang('更多')}
@@ -75,50 +75,117 @@
     </a>
 </div>
 
-<!-- 瀑布流商品 -->
-{if empty($list)}
-<div class="empty">
-    <div class="e-ico">🏺</div>
-    <div>{:lang('暂无可参与竞拍的拍品')}</div>
-    <a class="e-btn" href="/">{:lang('刷新看看')}</a>
+<!-- 瀑布流商品（切换分类/排序时仅刷新此区域） -->
+<div id="goodsWrap">
+    {include file="index/goods_list" /}
 </div>
-{else}
-<div class="goods-grid">
-    {foreach $list as $g}
-    <a class="grid-item" href="/goods/detail?id={$g.id}">
-        <div class="g-thumb">
-            {if !empty($g.cover)}
-            <img src="{$g.cover}" alt="{$g.title}">
-            {else}
-            <span class="noimg">🏺</span>
-            {/if}
-        </div>
-        <div class="g-body">
-            <div class="g-title">{$g.title}</div>
-            <div class="g-price"><small>¥ </small>{$g.price_str}</div>
-            <div class="g-meta">
-                <span class="time">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 13.5"/></svg>
-                    <b data-countdown="{$g.end_time}" data-format="short">--</b>
-                </span>
-                <span class="bid-btn">{:lang('去出价')}</span>
-            </div>
-        </div>
-    </a>
-    {/foreach}
-</div>
-{if $page*$limit < $total}
-<a class="load-more" href="/?page={$page+1}&category_id={$category_id}&seller_id={$seller_id}&keyword={$keyword|urlencode=###}&sort={$sort}">{:lang('加载更多')}</a>
-{else}
-<div class="no-more">{:lang('—— 没有更多数据了 ——')}</div>
-{/if}
-{/if}
 {/block}
 {block name="script"}
 <script>
-function switchSort(s) {
-    location.href = '/?sort=' + s + '&category_id={$category_id}';
+// 首页拍品列表：切换分类/排序、加载更多，均只刷新列表区域
+var goodsState = {
+    category_id: {$category_id},
+    seller_id: {$seller_id},
+    sort: '{$sort}',
+    keyword: '{$keyword}',
+    page: 1,
+    loading: false
+};
+
+function buildQuery(page) {
+    return '/goods/list?category_id=' + goodsState.category_id
+        + '&seller_id=' + goodsState.seller_id
+        + '&sort=' + encodeURIComponent(goodsState.sort)
+        + '&keyword=' + encodeURIComponent(goodsState.keyword)
+        + '&page=' + page;
 }
+
+// 拉取列表片段；append 为真时追加（加载更多），否则整块替换
+function loadGoods(page, append) {
+    if (goodsState.loading) return;
+    goodsState.loading = true;
+    var wrap = document.getElementById('goodsWrap');
+    if (!append) wrap.style.opacity = '.4';
+
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', buildQuery(page), true);
+    xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+    xhr.onload = function () {
+        goodsState.loading = false;
+        wrap.style.opacity = '';
+        if (xhr.status !== 200) { toast('加载失败，请重试'); return; }
+        if (append) {
+            // 追加时去掉旧的「加载更多/没有更多」，再接上新内容
+            var old = wrap.querySelector('.load-more, .no-more');
+            if (old) old.remove();
+            var box = document.createElement('div');
+            box.innerHTML = xhr.responseText;
+            var newGrid = box.querySelector('.goods-grid');
+            var grid = wrap.querySelector('.goods-grid');
+            if (newGrid && grid) {
+                while (newGrid.firstChild) grid.appendChild(newGrid.firstChild);
+            }
+            var tail = box.querySelector('.load-more, .no-more');
+            if (tail) wrap.appendChild(tail);
+        } else {
+            wrap.innerHTML = xhr.responseText;
+            // 仅当 tab 栏已滚出视野上方时，才把页面对齐到 tab 栏，避免用户找不到列表开头
+            var tabs = document.getElementById('cateTabs');
+            if (tabs && tabs.getBoundingClientRect().top < 0) {
+                tabs.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        }
+        goodsState.page = page;
+        initCountdowns();   // 新插入的节点需要重新启动倒计时
+        syncUrl();
+    };
+    xhr.onerror = function () {
+        goodsState.loading = false;
+        wrap.style.opacity = '';
+        toast('网络异常，请重试');
+    };
+    xhr.send();
+}
+
+// 地址栏同步，保证刷新/分享/后退仍能还原当前筛选
+function syncUrl() {
+    if (!window.history || !history.replaceState) return;
+    var qs = [];
+    if (goodsState.category_id) qs.push('category_id=' + goodsState.category_id);
+    if (goodsState.sort && goodsState.sort !== 'new') qs.push('sort=' + goodsState.sort);
+    history.replaceState(null, '', qs.length ? '/?' + qs.join('&') : '/');
+}
+
+function switchSort(s) {
+    if (goodsState.sort === s) return;
+    goodsState.sort = s;
+    document.querySelectorAll('.sort-tabs a').forEach(function (a) {
+        a.style.fontWeight = a.getAttribute('data-sort') === s ? '600' : '';
+    });
+    loadGoods(1, false);
+}
+
+// 分类 tab 点击
+document.querySelectorAll('#cateTabs a[data-cate]').forEach(function (a) {
+    a.addEventListener('click', function (e) {
+        e.preventDefault();
+        var id = parseInt(a.getAttribute('data-cate'));
+        if (goodsState.category_id === id) return;
+        goodsState.category_id = id;
+        document.querySelectorAll('#cateTabs a[data-cate]').forEach(function (x) {
+            x.classList.toggle('on', x === a);
+        });
+        loadGoods(1, false);
+    });
+});
+
+// 加载更多（列表区域会被替换，故绑定在容器上）
+document.getElementById('goodsWrap').addEventListener('click', function (e) {
+    var btn = e.target.closest('.load-more');
+    if (!btn) return;
+    e.preventDefault();
+    loadGoods(goodsState.page + 1, true);
+});
 
 // 成交记录：向上无缝循环滚动
 (function () {

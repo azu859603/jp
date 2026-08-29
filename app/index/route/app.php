@@ -2,6 +2,7 @@
 use think\facade\Route;
 
 Route::get('/', 'Index/index');
+Route::get('goods/list', 'Index/goodsList');
 Route::get('deals', 'Index/deals');
 Route::get('category', 'Index/category')->completeMatch();
 Route::get('search', 'Index/search');
