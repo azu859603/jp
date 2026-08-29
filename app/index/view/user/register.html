@@ -9,7 +9,7 @@
             <input class="lc-input" type="tel" id="mobile" maxlength="11" placeholder="" value="">
         </div>
         <div class="lc-group">
-            <label class="lc-label" for="invite">{:lang('邀请码（选填）')}</label>
+            <label class="lc-label" for="invite">{:lang('邀请码')}</label>
             <input class="lc-input" type="text" id="invite" placeholder="" value="">
         </div>
         <div class="lc-group">
@@ -133,6 +133,7 @@ function doRegister() {
     var pwd = document.getElementById('password').value.trim();
     var pwd2 = document.getElementById('password2').value.trim();
     if (!/^1\d{10}$/.test(mobile)) { toast('请输入正确的手机号'); return; }
+    if (!invite) { toast('请输入邀请码'); return; }
     if (pwd.length < 6) { toast('密码至少6位'); return; }
     if (pwd !== pwd2) { toast('两次密码不一致'); return; }
     ajaxPost('/user/doRegister', {mobile: mobile, password: pwd, password2: pwd2, invite_code: invite}, function(res){

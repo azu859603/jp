@@ -62,6 +62,13 @@ class Base extends BaseController
                 ['title' => '售后管理', 'url' => '/admin1314/after_sale/index'],
             ],
         ],
+        'report' => [
+            'title' => '数据报表',
+            'icon'  => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="4" y1="20" x2="20" y2="20"/><rect x="6" y="11" width="3" height="7" rx="1"/><rect x="11" y="6" width="3" height="12" rx="1"/><rect x="16" y="14" width="3" height="4" rx="1"/></svg>',
+            'items' => [
+                ['title' => '交易报表', 'url' => '/admin1314/report/index'],
+            ],
+        ],
         'finance' => [
             'title' => '财务管理',
             'icon'  => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="6" width="18" height="14" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><circle cx="16.5" cy="15" r="1.5"/></svg>',

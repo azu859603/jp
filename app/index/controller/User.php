@@ -94,15 +94,15 @@ class User extends Base
             return json(['code' => 0, 'msg' => lang('该手机号已注册')]);
         }
 
-        // 邀请码
-        $pid = 0;
-        if ($inviteCode !== '') {
-            $inviter = Db::name('user')->where('invite_code', $inviteCode)->find();
-            if (!$inviter) {
-                return json(['code' => 0, 'msg' => lang('邀请码不存在')]);
-            }
-            $pid = $inviter['id'];
+        // 邀请码（必填）
+        if ($inviteCode === '') {
+            return json(['code' => 0, 'msg' => lang('请输入邀请码')]);
         }
+        $inviter = Db::name('user')->where('invite_code', $inviteCode)->find();
+        if (!$inviter) {
+            return json(['code' => 0, 'msg' => lang('邀请码不存在')]);
+        }
+        $pid = $inviter['id'];
 
         // 生成唯一邀请码
         do {
