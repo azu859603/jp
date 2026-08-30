@@ -34,7 +34,7 @@
         </div>
         {foreach $categories as $c}
         <a class="cate-card" href="/category/list?category_id={$c.id}">
-            <div class="cc-icon"><span>{$c.name|mb_substr=0,1}</span>{if !empty($c.image)}<img src="{$c.image}" alt="" onerror="this.remove()">{/if}</div>
+            {if !empty($c.image)}<div class="cc-icon"><img src="{$c.image}" alt="" onerror="this.parentNode.remove()"></div>{/if}
             <div class="cc-info">
                 <div class="cc-name">{$c.name}</div>
                 <div class="cc-count"><b>{$c.goods_count}</b><span>{:lang('件拍品')}</span></div>
@@ -145,21 +145,13 @@ html, body{overscroll-behavior-y:none;}
     border-color:rgba(140,34,32,.22);
 }
 
-/* 印章字标：宣纸上盖下的闲章 */
-.cate-right .cc-icon{
-    position:relative;flex-shrink:0;width:54px;height:54px;border-radius:12px;overflow:hidden;
-    background:#FDF2F2;
-    display:flex;align-items:center;justify-content:center;
-    box-shadow:inset 0 0 0 1px rgba(140,34,32,.14);
+/* 分类图标：仅展示后台上传的图片；未上传或加载失败则整块不显示 */
+.cate-right .cc-icon{flex-shrink:0;width:54px;height:54px;font-size:0;line-height:0;}
+.cate-right .cc-icon img{
+    width:54px;height:54px;object-fit:cover;display:block;
+    border-radius:12px;   /* 圆角裁切在图片自身，任何浏览器都不会溢出容器 */
+    box-shadow:inset 0 0 0 1px rgba(26,26,26,.05);
 }
-.cate-right .cc-icon span{
-    font-family:"Kaiti SC","STKaiti","KaiTi","SimSun",serif;
-    font-size:24px;font-weight:700;
-    background:linear-gradient(160deg,#A93B32,#8C2220);
-    -webkit-background-clip:text;background-clip:text;color:transparent;
-}
-/* 有图分类：图片盖在印章之上；加载失败自动移除露出印章 */
-.cate-right .cc-icon img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;}
 
 .cate-right .cc-info{flex:1;min-width:0;}
 .cate-right .cc-name{font-size:15.5px;font-weight:600;color:#1A1A1A;margin:0;letter-spacing:.5px;}
