@@ -92,11 +92,6 @@
             </div>
         </div>
         <div class="form-group">
-            <label>注册邀请码</label>
-            <input type="text" class="form-control" name="invite_code" value="{$settings.invite_code}">
-            <div class="tip">注册时需填写的邀请码</div>
-        </div>
-        <div class="form-group">
             <label>竞拍默认延时（秒）</label>
             <input type="number" min="0" class="form-control" name="auction_delay" value="{$settings.auction_delay}">
             <div class="tip">竞拍结束前N秒内出价自动延长竞拍时间，0为不延时（商品发布时可单独设置）</div>
@@ -155,7 +150,7 @@
 <script>
 function saveAll(){
     var fd = new FormData();
-    ['site_name','site_url','site_logo','service_phone','service_qq','service_link','commission_rate','withdraw_fee','seller_check','goods_check','invite_code','auction_delay','user_protocol','privacy_policy','publish_protocol','user_protocol_tw','user_protocol_en','privacy_policy_tw','privacy_policy_en','publish_protocol_tw','publish_protocol_en','withdraw_min','withdraw_max','virtual_balance'].forEach(function(name){
+    ['site_name','site_url','site_logo','service_phone','service_qq','service_link','commission_rate','withdraw_fee','seller_check','goods_check','auction_delay','user_protocol','privacy_policy','publish_protocol','user_protocol_tw','user_protocol_en','privacy_policy_tw','privacy_policy_en','publish_protocol_tw','publish_protocol_en','withdraw_min','withdraw_max','virtual_balance'].forEach(function(name){
         var el = document.querySelector('[name="' + name + '"]');
         if(el) fd.append(name, el.value);
     });
