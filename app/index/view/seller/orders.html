@@ -1,7 +1,7 @@
 {extend name="layout" /}
 {block name="content"}
 <div class="order-tabs">
-    <a href="/seller/orders" {if $status==''}class="on"{/if}>{:lang('全部')}</a>
+    <a href="/seller/orders" {if $order_status==''}class="on"{/if}>{:lang('全部')}</a>
     <a href="/seller/orders?order_status=0" {if $order_status=='0'}class="on"{/if}>{:lang('待付款')}</a>
     <a href="/seller/orders?order_status=1" {if $order_status=='1'}class="on"{/if}>{:lang('待发货')}</a>
     <a href="/seller/orders?order_status=2" {if $order_status=='2'}class="on"{/if}>{:lang('待收货')}</a>
