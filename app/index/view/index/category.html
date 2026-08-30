@@ -1,11 +1,26 @@
 {extend name="layout" /}
 {block name="content"}
-<div class="cate-search">
-    <div class="sbox" onclick="location.href='/search'">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/></svg>
-        <input type="text" placeholder="{:lang('请输入搜索内容')}" readonly onclick="event.stopPropagation();location.href='/search'">
+<div class="cate-hero">
+    <div class="cate-search">
+        <div class="sbox" onclick="location.href='/search'">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/></svg>
+            <input type="text" placeholder="{:lang('请输入搜索内容')}" readonly onclick="event.stopPropagation();location.href='/search'">
+        </div>
     </div>
+
+    <!-- 全部拍品：主入口横幅 -->
+    <a class="cate-banner" href="/category/list">
+        <span class="cb-seal{if $current_lang=='en-us'} en{/if}">{:lang('全')}</span>
+        <div class="cb-info">
+            <div class="cb-title">{:lang('全部拍品')}</div>
+            <div class="cb-sub"><b>{$total_goods_count}</b><span>{:lang('件拍品')} {:lang('正在竞拍')}</span></div>
+        </div>
+        <span class="cb-go">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+        </span>
+    </a>
 </div>
+
 <div class="cate-wrap">
     <div class="cate-left">
         {foreach $categories as $c}
@@ -13,40 +28,152 @@
         {/foreach}
     </div>
     <div class="cate-right">
-        <a class="cate-card" href="/category/list">
-            <div class="cc-icon"><span>{:lang('全')}</span></div>
-            <div class="cc-info">
-                <div class="cc-name">{:lang('全部拍品')}</div>
-                <div class="cc-count"><b>{$total_goods_count}</b>{:lang('件拍品')}</div>
-            </div>
-        </a>
+        <div class="cate-sec">
+            <span class="cs-cn">{:lang('全部分类')}</span>
+            {if $current_lang!='en-us'}<span class="cs-en">CATEGORIES</span>{/if}
+        </div>
         {foreach $categories as $c}
         <a class="cate-card" href="/category/list?category_id={$c.id}">
-            <div class="cc-icon">{if !empty($c.image)}<img src="{$c.image}" alt="{$c.name}">{else}<span>{$c.name|mb_substr=0,1}</span>{/if}</div>
+            <div class="cc-icon"><span>{$c.name|mb_substr=0,1}</span>{if !empty($c.image)}<img src="{$c.image}" alt="" onerror="this.remove()">{/if}</div>
             <div class="cc-info">
                 <div class="cc-name">{$c.name}</div>
-                <div class="cc-count"><b>{$c.goods_count}</b>{:lang('件拍品')}</div>
+                <div class="cc-count"><b>{$c.goods_count}</b><span>{:lang('件拍品')}</span></div>
             </div>
+            <span class="cc-arrow">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+            </span>
         </a>
         {/foreach}
     </div>
 </div>
 <style>
-/* 分类卡片：隐藏左侧导航，一行一个，图标在左、文字在右 */
-.cate-left{display:none;}
-.cate-right{grid-template-columns:1fr;}
-.cate-right .cate-card{flex-direction:row;align-items:center;padding:12px 14px;gap:12px;}
-.cate-right .cc-icon{flex-shrink:0;width:52px;height:52px;}
-.cate-right .cc-info{flex:1;min-width:0;}
-.cate-right .cc-name{margin-top:0;font-size:14px;}
-.cate-right .cc-count{margin-top:4px;}
+/* ================================================================
+   分类页 · 新中式微雅风
+   宣纸暖白留白 / 朱砂红点睛 / 印章字标 / 画框细边 / 现代数字字体
+   ================================================================ */
 
-/* 修复部分手机浏览器下拉回弹时底部导航被拖走：
-   1) 100vh 按大视口计算会多出滚动空间，改用动态视口高度 dvh（不支持的浏览器回退 vh）
-   2) 禁止滚动越界回弹（橡皮筋），fixed 的底部导航不再跟随移动 */
+/* 视口修正：dvh 消除地址栏差值滚动；禁止越界回弹拖走底部导航 */
 html, body{overscroll-behavior-y:none;}
-.page{min-height:100vh;min-height:100dvh;}
-/* 96px(顶部+底栏) 之外还要扣掉 52px 搜索框，否则会多出一段可滚动空白 */
-.cate-wrap{min-height:calc(100vh - 148px);min-height:calc(100dvh - 148px);}
+.page{min-height:100vh;min-height:100dvh;background:#F7F5F0;}
+
+/* ---- 顶部：搜索 + 全部拍品横幅（同置于宣纸底上，仅横幅用朱砂点睛） ---- */
+.cate-hero{padding:12px 16px 4px;background:transparent;}
+.cate-search{height:auto;padding:0;background:transparent;}
+.cate-search .sbox{
+    height:40px;background:#fff;border:1px solid #EBE8E0;border-radius:20px;
+    box-shadow:0 2px 10px rgba(26,26,26,.03);
+}
+.cate-search .sbox svg{color:#8C2220;opacity:.75;}
+.cate-search .sbox input{color:#1A1A1A;}
+.cate-search .sbox input::placeholder{color:#B5B2AA;}
+
+.cate-banner{
+    margin-top:16px;position:relative;display:flex;align-items:center;gap:14px;
+    background:linear-gradient(135deg,#961C1C 0%,#8C2220 60%,#7C1D1B 100%);
+    border-radius:14px;padding:18px 16px;overflow:hidden;
+    box-shadow:0 10px 24px rgba(140,34,32,.18);
+}
+.cate-banner::after{
+    content:'';position:absolute;inset:5px;border:1px solid rgba(255,255,255,.16);
+    border-radius:10px;pointer-events:none;   /* 内描线：中式画框 */
+}
+.cate-banner:active{transform:scale(.985);}
+.cb-seal{
+    flex-shrink:0;width:46px;height:46px;border-radius:10px;
+    background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.28);
+    display:flex;align-items:center;justify-content:center;
+    font-family:"Kaiti SC","STKaiti","KaiTi","SimSun",serif;
+    font-size:24px;font-weight:700;color:#F7F5F0;
+    padding:0 4px;box-sizing:border-box;
+}
+/* 英文等多字符文案（如 All）自动缩小，避免撑出印章 */
+.cb-seal.en{font-size:15px;letter-spacing:0;}
+.cb-info{flex:1;min-width:0;}
+.cb-title{font-size:18px;font-weight:700;color:#FDFBF6;letter-spacing:3px;}
+.cb-sub{margin-top:5px;font-size:12px;color:rgba(253,251,246,.72);display:flex;align-items:baseline;gap:4px;}
+.cb-sub b{
+    font-family:"DIN Alternate","Bahnschrift","Montserrat","Helvetica Neue",Arial,sans-serif;
+    font-size:18px;font-weight:700;color:#FDFBF6;letter-spacing:.5px;
+}
+.cb-go{
+    position:relative;width:30px;height:30px;border-radius:50%;flex-shrink:0;
+    border:1px solid rgba(255,255,255,.35);
+    display:flex;align-items:center;justify-content:center;color:rgba(253,251,246,.9);
+}
+.cb-go svg{width:15px;height:15px;}
+
+/* ---- 分类列表 ---- */
+.cate-left{display:none;}
+.cate-wrap{
+    display:block;background:transparent;padding:0 16px 18px;
+    min-height:calc(100vh - 250px);min-height:calc(100dvh - 250px);
+}
+.cate-right{display:block;padding:0;background:transparent;}
+
+.cate-sec{
+    display:flex;align-items:baseline;gap:8px;margin:24px 2px 14px;
+    position:relative;padding-left:12px;
+}
+.cate-sec::before{
+    content:'';position:absolute;left:0;top:50%;transform:translateY(-54%);
+    width:3px;height:14px;border-radius:2px;background:#8C2220;
+}
+.cs-cn{font-size:16px;font-weight:700;color:#1A1A1A;letter-spacing:1px;}
+.cs-en{
+    font-family:"Montserrat","Helvetica Neue",Arial,sans-serif;
+    font-size:10px;color:#B5B2AA;letter-spacing:2px;
+}
+
+.cate-right .cate-card{
+    display:flex;flex-direction:row;align-items:center;gap:14px;
+    background:#FFFFFF;border:1px solid #EEEBE3;border-radius:14px;
+    padding:14px;margin-bottom:12px;
+    box-shadow:0 2px 14px rgba(26,26,26,.03);   /* 环境光微影 */
+    animation:cardIn .4s ease both;
+}
+.cate-right .cate-card:nth-child(2){animation-delay:.03s}
+.cate-right .cate-card:nth-child(3){animation-delay:.07s}
+.cate-right .cate-card:nth-child(4){animation-delay:.11s}
+.cate-right .cate-card:nth-child(5){animation-delay:.15s}
+.cate-right .cate-card:nth-child(6){animation-delay:.19s}
+.cate-right .cate-card:nth-child(7){animation-delay:.23s}
+.cate-right .cate-card:nth-child(8){animation-delay:.27s}
+.cate-right .cate-card:nth-child(9){animation-delay:.31s}
+@keyframes cardIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.cate-right .cate-card:active{
+    transform:scale(.98);transition:transform .15s ease;
+    border-color:rgba(140,34,32,.22);
+}
+
+/* 印章字标：宣纸上盖下的闲章 */
+.cate-right .cc-icon{
+    position:relative;flex-shrink:0;width:54px;height:54px;border-radius:12px;overflow:hidden;
+    background:#FDF2F2;
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:inset 0 0 0 1px rgba(140,34,32,.14);
+}
+.cate-right .cc-icon span{
+    font-family:"Kaiti SC","STKaiti","KaiTi","SimSun",serif;
+    font-size:24px;font-weight:700;
+    background:linear-gradient(160deg,#A93B32,#8C2220);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+}
+/* 有图分类：图片盖在印章之上；加载失败自动移除露出印章 */
+.cate-right .cc-icon img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;}
+
+.cate-right .cc-info{flex:1;min-width:0;}
+.cate-right .cc-name{font-size:15.5px;font-weight:600;color:#1A1A1A;margin:0;letter-spacing:.5px;}
+.cate-right .cc-count{margin-top:5px;font-size:12px;color:#A6A39B;display:flex;align-items:baseline;gap:4px;}
+.cate-right .cc-count b{
+    font-family:"DIN Alternate","Bahnschrift","Montserrat","Helvetica Neue",Arial,sans-serif;
+    font-size:15px;font-weight:700;color:#8C2220;letter-spacing:.3px;
+}
+
+.cc-arrow{
+    flex-shrink:0;width:26px;height:26px;border-radius:50%;
+    border:1px solid #EEEBE3;background:#FBFAF7;
+    display:flex;align-items:center;justify-content:center;color:#C3C0B8;
+}
+.cc-arrow svg{width:13px;height:13px;}
 </style>
 {/block}

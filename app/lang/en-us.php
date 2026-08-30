@@ -595,4 +595,5 @@ return [
     '语言' => 'Language',
     '实名认证审核中，请勿重复提交' => 'Verification under review, please do not resubmit',
     '您的入驻申请已提交，请耐心等待审核<br>（1-3 个工作日）' => 'Your application has been submitted, please wait<br>(1-3 working days)',
+    '全部分类' => 'All Categories',
 ];
