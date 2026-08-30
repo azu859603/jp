@@ -169,6 +169,20 @@
 </a>
 {/if}
 
+<!-- 代理中心（仅 is_agent=1 可见） -->
+{if $user.is_agent==1}
+<a class="seller-zone agent" href="/agent/index/index">
+    <span class="sz-ico">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><circle cx="17" cy="9" r="2.5"/><path d="M16.5 14.5a5 5 0 0 1 5 5"/></svg>
+    </span>
+    <span class="sz-txt">
+        <b>{:lang('代理中心')}</b>
+        <i>{:lang('查看团队会员 · 团队业绩报表')}</i>
+    </span>
+    <span class="sz-btn">{:lang('进入')} ›</span>
+</a>
+{/if}
+
 <div class="mine-footer">{$site_name} © 2026 · {:lang('竞拍出价需缴纳保证金，请理性出价')}</div>
 <style>
 /* 语言选择（个人中心头部） */

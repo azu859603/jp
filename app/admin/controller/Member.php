@@ -31,6 +31,10 @@ class Member extends Base
             if ($isSeller !== '') {
                 $query->where('is_seller', (int)$isSeller);
             }
+            $isAgent = $this->request->param('is_agent', '');
+            if ($isAgent !== '') {
+                $query->where('is_agent', (int)$isAgent);
+            }
             if ($status !== '') {
                 $query->where('status', (int)$status);
             }
@@ -48,7 +52,7 @@ class Member extends Base
             }
 
             $total = $query->count();
-            $list = $query->order('id', 'desc')->page($page, $limit)->field('id,mobile,nickname,avatar,invite_code,pid,is_seller,is_virtual,seller_check,balance,freeze_balance,points,commission_rate,total_buy,total_sell,status,reg_ip,reg_time,last_login_time,create_time')->select()->toArray();
+            $list = $query->order('id', 'desc')->page($page, $limit)->field('id,mobile,nickname,avatar,invite_code,pid,is_seller,is_agent,is_virtual,seller_check,balance,freeze_balance,points,commission_rate,total_buy,total_sell,status,reg_ip,reg_time,last_login_time,create_time')->select()->toArray();
 
             return json(['code' => 0, 'msg' => '', 'count' => $total, 'data' => $list]);
         }
@@ -496,5 +500,30 @@ class Member extends Base
         Db::name('user')->where('id', $id)->update(['password' => encrypt_password($password)]);
         admin_log('重置会员密码：' . $user['mobile']);
         return json(['code' => 1, 'msg' => '密码已重置']);
+    }
+    /**
+     * 设置/取消代理资格
+     * 代理中心（/agent）的准入开关：仅 is_agent=1 的会员可进入
+     */
+    public function setAgent()
+    {
+        if (!$this->request->isPost()) {
+            return json(['code' => 0, 'msg' => '请求方式错误']);
+        }
+        $id = (int)$this->request->post('id');
+        $isAgent = (int)$this->request->post('is_agent', 0);
+
+        $user = Db::name('user')->find($id);
+        if (!$user) {
+            return json(['code' => 0, 'msg' => '会员不存在']);
+        }
+
+        Db::name('user')->where('id', $id)->update([
+            'is_agent'    => $isAgent ? 1 : 0,
+            'agent_time'  => $isAgent ? ($user['agent_time'] > 0 ? $user['agent_time'] : time()) : 0,
+            'update_time' => time(),
+        ]);
+        admin_log(($isAgent ? '设置' : '取消') . '代理：' . $user['mobile']);
+        return json(['code' => 1, 'msg' => '操作成功']);
     }
 }

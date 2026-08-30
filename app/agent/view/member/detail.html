@@ -1,0 +1,136 @@
+{extend name="layout" /}
+
+{block name="title"}会员详情{/block}
+{block name="crumb"}会员管理 / <a href="/agent/member/index">我的会员</a> / <b>会员详情</b>{/block}
+
+{block name="content"}
+<div class="readonly-tip">
+    <span>👁</span>
+    <span><b>只读详情</b>：仅展示该会员的公开经营数据，实名信息、资金余额与联系方式不对代理开放。</span>
+</div>
+
+<!-- 基本信息 -->
+<div class="card">
+    <div class="card-head"><b>基本信息</b><span class="spacer"></span><a class="btn btn-sm" href="/agent/member/index">返回列表</a></div>
+    <div class="table-wrap">
+        <table class="table">
+            <tbody>
+            <tr><th style="width:140px;">会员ID</th><td>{$member.id}</td><th style="width:140px;">昵称</th><td>{$member.nickname|default='-'}</td></tr>
+            <tr><th>手机号</th><td>{$member.mobile_mask}</td><th>邀请码</th><td>{$member.invite_code|default='-'}</td></tr>
+            <tr>
+                <th>会员类型</th>
+                <td>
+                    {if $member.is_virtual==1}<span class="tag tag-purple">虚拟会员</span>
+                    {elseif $member.is_seller==1 && $member.seller_check==1 /}<span class="tag tag-orange">卖家</span>
+                    {else /}<span class="tag tag-gray">普通会员</span>{/if}
+                </td>
+                <th>账号状态</th>
+                <td>{if $member.status==1}<span class="tag tag-green">正常</span>{else /}<span class="tag tag-red">禁用</span>{/if}</td>
+            </tr>
+            <tr>
+                <th>实名认证</th>
+                <td>
+                    {if $member.auth_status==2}<span class="tag tag-green">已认证</span>
+                    {elseif $member.auth_status==1 /}<span class="tag tag-orange">审核中</span>
+                    {elseif $member.auth_status==3 /}<span class="tag tag-red">已拒绝</span>
+                    {else /}<span class="tag tag-gray">未认证</span>{/if}
+                </td>
+                <th>店铺名称</th>
+                <td>{$member.shop_name|default='-'}</td>
+            </tr>
+            <tr>
+                <th>注册时间</th><td>{if $member.reg_time>0}{$member.reg_time|date='Y-m-d H:i:s'}{else /}-{/if}</td>
+                <th>最后登录</th><td>{if $member.last_login_time>0}{$member.last_login_time|date='Y-m-d H:i:s'}{else /}<span class="gray">未登录</span>{/if}</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- 经营数据 -->
+<div class="stat-grid">
+    <div class="stat-card">
+        <div class="stat-icon bg-orange">💰</div>
+        <div class="stat-info"><div class="num">¥{$summary.amount|number_format=2}</div><div class="label">累计成交额</div></div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon bg-green">📦</div>
+        <div class="stat-info"><div class="num">{$summary.order_count}</div><div class="label">已支付订单</div></div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon bg-blue">🔨</div>
+        <div class="stat-info"><div class="num">{$summary.bid_total}</div><div class="label">累计出价</div></div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon bg-purple">🏆</div>
+        <div class="stat-info"><div class="num">{$summary.win_total}</div><div class="label">中标次数</div></div>
+    </div>
+</div>
+
+<!-- 订单 -->
+<div class="card">
+    <div class="card-head"><b>最近订单</b><span class="gray" style="margin-left:10px;font-size:12px;">最多展示 20 条</span></div>
+    <div class="table-wrap">
+        <table class="table">
+            <thead>
+            <tr><th>订单号</th><th>拍品</th><th>成交价</th><th>支付</th><th>订单状态</th><th>下单时间</th></tr>
+            </thead>
+            <tbody>
+            {empty name="orders"}
+            <tr><td colspan="6" class="empty">暂无订单</td></tr>
+            {else /}
+            {volist name="orders" id="o"}
+            <tr>
+                <td>{$o.order_no}</td>
+                <td>{$o.goods_title|default='-'}</td>
+                <td class="price">¥{$o.price|number_format=2}</td>
+                <td>{if $o.pay_status==1}<span class="tag tag-green">已支付</span>{else /}<span class="tag tag-gray">未支付</span>{/if}</td>
+                <td>
+                    {switch name="o.order_status"}
+                    {case value="0"}<span class="tag tag-orange">待付款</span>{/case}
+                    {case value="1"}<span class="tag tag-blue">待发货</span>{/case}
+                    {case value="2"}<span class="tag tag-blue">待收货</span>{/case}
+                    {case value="3"}<span class="tag tag-green">已完成</span>{/case}
+                    {case value="4"}<span class="tag tag-red">已取消</span>{/case}
+                    {default /}<span class="tag tag-gray">-</span>
+                    {/switch}
+                </td>
+                <td>{if $o.create_time>0}{$o.create_time|date='Y-m-d H:i'}{else /}-{/if}</td>
+            </tr>
+            {/volist}
+            {/empty}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- 出价记录 -->
+<div class="card">
+    <div class="card-head"><b>最近出价</b><span class="gray" style="margin-left:10px;font-size:12px;">最多展示 20 条</span></div>
+    <div class="table-wrap">
+        <table class="table">
+            <thead>
+            <tr><th>拍品</th><th>出价</th><th>结果</th><th>出价时间</th></tr>
+            </thead>
+            <tbody>
+            {empty name="bids"}
+            <tr><td colspan="4" class="empty">暂无出价记录</td></tr>
+            {else /}
+            {volist name="bids" id="b"}
+            <tr>
+                <td>{$b.title|default='拍品已删除'}</td>
+                <td class="price">¥{$b.price|number_format=2}</td>
+                <td>
+                    {if $b.is_winner==1}<span class="tag tag-green">已中标</span>
+                    {elseif $b.status==2 /}<span class="tag tag-gray">未中标</span>
+                    {else /}<span class="tag tag-orange">竞拍中</span>{/if}
+                </td>
+                <td>{if $b.create_time>0}{$b.create_time|date='Y-m-d H:i'}{else /}-{/if}</td>
+            </tr>
+            {/volist}
+            {/empty}
+            </tbody>
+        </table>
+    </div>
+</div>
+{/block}

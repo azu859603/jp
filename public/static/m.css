@@ -678,3 +678,5 @@ ul,ol{list-style:none;}
 .text-red{color:#E4393C;} .text-green{color:#2a7d3c;} .text-gray{color:#999;}
 .flex-between{display:flex;justify-content:space-between;align-items:center;}
 .pd14{padding:0 14px;}
+/* 代理中心入口 */
+.seller-zone.agent{background:linear-gradient(135deg,#2563eb,#60a5fa);box-shadow:0 4px 14px rgba(37,99,235,.28);}

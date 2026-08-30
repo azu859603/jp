@@ -1,0 +1,134 @@
+{extend name="layout" /}
+
+{block name="title"}我的会员{/block}
+{block name="crumb"}会员管理 / <b>我的会员</b>{/block}
+
+{block name="content"}
+<div class="readonly-tip">
+    <span>👁</span>
+    <span><b>只读列表</b>：仅包含注册时填写您邀请码 <b>{$agent.invite_code}</b> 的一级会员。手机号已脱敏，余额等资金信息不对代理开放。</span>
+</div>
+
+<div class="search-bar">
+    <div class="search-input">
+        <svg class="s-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/></svg>
+        <input type="text" class="form-control" id="keyword" placeholder="手机号/昵称/邀请码">
+    </div>
+    <select class="form-control" id="is_seller">
+        <option value="">全部类型</option>
+        <option value="0">普通会员</option>
+        <option value="1">卖家</option>
+    </select>
+    <select class="form-control" id="status">
+        <option value="">全部状态</option>
+        <option value="1">正常</option>
+        <option value="0">禁用</option>
+    </select>
+    <input type="date" class="form-control" id="reg_start" title="注册开始日期">
+    <span style="color:#94a3b8;">至</span>
+    <input type="date" class="form-control" id="reg_end" title="注册结束日期">
+    <button class="btn btn-primary" onclick="loadList(1)">查询</button>
+    <button class="btn" onclick="resetSearch()">重置</button>
+</div>
+
+<div class="card">
+    <div class="table-wrap">
+        <table class="table">
+            <thead>
+            <tr>
+                <th>ID</th><th>昵称</th><th>手机号</th><th>邀请码</th><th>类型</th>
+                <th>成交(买/卖)</th><th>状态</th><th>注册时间</th><th>最后登录</th><th>操作</th>
+            </tr>
+            </thead>
+            <tbody id="tbody"></tbody>
+        </table>
+    </div>
+    <div class="pagination" id="pagination"></div>
+</div>
+
+<script>
+var PAGE_SIZE = 15;
+var currentPage = 1;
+
+function loadList(page){
+    currentPage = page;
+    var qs = '/agent/member/index?page=' + page + '&limit=' + PAGE_SIZE
+        + '&keyword=' + encodeURIComponent(document.getElementById('keyword').value)
+        + '&is_seller=' + document.getElementById('is_seller').value
+        + '&status=' + document.getElementById('status').value
+        + '&reg_start=' + document.getElementById('reg_start').value
+        + '&reg_end=' + document.getElementById('reg_end').value;
+    fetch(qs, {headers:{'X-Requested-With':'XMLHttpRequest'}})
+        .then(function(r){ return r.json(); })
+        .then(function(res){
+            if(res.code === -1){ alert(res.msg || '登录已失效'); location.href = res.url || '/user/login'; return; }
+            var html = '';
+            if(!res.data || !res.data.length){
+                html = '<tr><td colspan="10" class="empty">暂无数据</td></tr>';
+            } else {
+                res.data.forEach(function(u){
+                    var typeHtml = (u.is_seller == 1 && u.seller_check == 1)
+                        ? '<span class="tag tag-orange">卖家</span>'
+                        : '<span class="tag tag-gray">普通会员</span>';
+                    if(u.is_virtual == 1) typeHtml = '<span class="tag tag-purple">虚拟会员</span>';
+                    var statusHtml = u.status == 1
+                        ? '<span class="tag tag-green">正常</span>'
+                        : '<span class="tag tag-red">禁用</span>';
+                    html += '<tr>'
+                        + '<td>' + u.id + '</td>'
+                        + '<td>' + esc(u.nickname || '-') + '</td>'
+                        + '<td>' + esc(u.mobile_mask || '-') + '</td>'
+                        + '<td>' + esc(u.invite_code || '-') + '</td>'
+                        + '<td>' + typeHtml + '</td>'
+                        + '<td>' + u.total_buy + ' / ' + u.total_sell + '</td>'
+                        + '<td>' + statusHtml + '</td>'
+                        + '<td>' + (u.reg_time ? fmtTime(u.reg_time) : '-') + '</td>'
+                        + '<td>' + (u.last_login_time ? fmtTime(u.last_login_time) : '<span class="gray">未登录</span>') + '</td>'
+                        + '<td><a class="btn btn-sm" href="/agent/member/detail?id=' + u.id + '">详情</a></td>'
+                        + '</tr>';
+                });
+            }
+            document.getElementById('tbody').innerHTML = html;
+            renderPagination(res.count, page);
+        })
+        .catch(function(){ alert('网络错误，请重试'); });
+}
+
+function renderPagination(total, page){
+    var pages = Math.ceil(total / PAGE_SIZE) || 1;
+    var html = '<span class="info">共 ' + total + ' 条，第 ' + page + '/' + pages + ' 页</span> ';
+    html += '<a class="' + (page <= 1 ? 'disabled' : '') + '" href="javascript:;" onclick="loadList(1)">首页</a>';
+    html += '<a class="' + (page <= 1 ? 'disabled' : '') + '" href="javascript:;" onclick="loadList(' + (page - 1) + ')">上一页</a>';
+    var start = Math.max(1, page - 2), end = Math.min(pages, page + 2);
+    for(var i = start; i <= end; i++){
+        html += i == page ? '<span class="current">' + i + '</span>' : '<a href="javascript:;" onclick="loadList(' + i + ')">' + i + '</a>';
+    }
+    html += '<a class="' + (page >= pages ? 'disabled' : '') + '" href="javascript:;" onclick="loadList(' + (page + 1) + ')">下一页</a>';
+    html += '<a class="' + (page >= pages ? 'disabled' : '') + '" href="javascript:;" onclick="loadList(' + pages + ')">末页</a>';
+    document.getElementById('pagination').innerHTML = html;
+}
+
+function resetSearch(){
+    document.getElementById('keyword').value = '';
+    document.getElementById('is_seller').value = '';
+    document.getElementById('status').value = '';
+    document.getElementById('reg_start').value = '';
+    document.getElementById('reg_end').value = '';
+    loadList(1);
+}
+
+function esc(s){
+    return String(s).replace(/[&<>"']/g, function(c){
+        return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+    });
+}
+
+function fmtTime(ts){
+    var d = new Date(ts * 1000);
+    function p(n){ return n < 10 ? '0' + n : n; }
+    return d.getFullYear() + '-' + p(d.getMonth()+1) + '-' + p(d.getDate()) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
+}
+
+loadList(1);
+</script>
+{/block}

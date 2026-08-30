@@ -14,6 +14,11 @@
         <option value="0">普通会员</option>
         <option value="1">卖家</option>
     </select>
+    <select class="form-control" id="is_agent">
+        <option value="">代理身份</option>
+        <option value="1">仅代理</option>
+        <option value="0">非代理</option>
+    </select>
     <select class="form-control" id="status">
         <option value="">全部状态</option>
         <option value="1">正常</option>
@@ -33,7 +38,7 @@
         <table class="table">
             <thead>
             <tr>
-                <th>ID</th><th>会员</th><th>手机号</th><th>类型</th>
+                <th>ID</th><th>会员</th><th>手机号</th><th>类型</th><th>代理</th>
                 <th>余额</th><th>冻结</th><th>成交(买/卖)</th><th>状态</th><th>注册时间</th><th>操作</th>
             </tr>
             </thead>
@@ -164,13 +169,14 @@ function loadList(page){
     fetch('/admin1314/member/index?page=' + page + '&limit=15&keyword=' + encodeURIComponent(document.getElementById('keyword').value)
         + '&is_seller=' + document.getElementById('is_seller').value
         + '&status=' + document.getElementById('status').value
+        + '&is_agent=' + document.getElementById('is_agent').value
         + '&reg_start=' + document.getElementById('reg_start').value
         + '&reg_end=' + document.getElementById('reg_end').value, {headers:{'X-Requested-With':'XMLHttpRequest'}})
         .then(function(r){ return r.json(); })
         .then(function(res){
             var html = '';
             if(!res.data || !res.data.length){
-                html = '<tr><td colspan="11" class="empty">暂无数据</td></tr>';
+                html = '<tr><td colspan="12" class="empty">暂无数据</td></tr>';
             } else {
                 res.data.forEach(function(u){
                     var typeHtml = u.is_seller == 1 ? '<span class="tag tag-orange">卖家</span>' : '<span class="tag tag-gray">普通会员</span>';
@@ -182,6 +188,7 @@ function loadList(page){
                         + '<td>' + u.mobile + '</td>'
                         // + '<td>' + u.invite_code + '</td>'
                         + '<td>' + typeHtml + '</td>'
+                        + '<td>' + (u.is_agent == 1 ? '<span class="tag tag-blue">代理</span>' : '<span class="gray">-</span>') + '</td>'
                         + '<td class="price">￥' + u.balance + '</td>'
                         + '<td>￥' + u.freeze_balance + '</td>'
                         + '<td>' + u.total_buy + ' / ' + u.total_sell + '</td>'
@@ -197,7 +204,10 @@ function loadList(page){
                             : '<a class="btn btn-sm btn-green" href="javascript:;" onclick="toggleStatus(' + u.id + ',1)">启用</a>') + ' '
                         + (u.is_seller == 1
                             ? '<a class="btn btn-sm btn-danger" href="javascript:;" onclick="toggleSeller(' + u.id + ',0)">取消卖家</a>'
-                            : '<a class="btn btn-sm" href="javascript:;" onclick="toggleSeller(' + u.id + ',1)">设为卖家</a>')
+                            : '<a class="btn btn-sm" href="javascript:;" onclick="toggleSeller(' + u.id + ',1)">设为卖家</a>') + ' '
+                        + (u.is_agent == 1
+                            ? '<a class="btn btn-sm btn-danger" href="javascript:;" onclick="toggleAgent(' + u.id + ',0)">取消代理</a>'
+                            : '<a class="btn btn-sm" href="javascript:;" onclick="toggleAgent(' + u.id + ',1)">设为代理</a>')
                         + '</td></tr>';
                 });
             }
@@ -224,6 +234,7 @@ function resetSearch(){
     document.getElementById('keyword').value = '';
     document.getElementById('is_seller').value = '';
     document.getElementById('status').value = '';
+    document.getElementById('is_agent').value = '';
     document.getElementById('reg_start').value = '';
     document.getElementById('reg_end').value = '';
     loadList(1);
@@ -289,6 +300,16 @@ function toggleStatus(id, status){
 function toggleSeller(id, val){
     confirmDialog('确定要' + (val == 1 ? '将该会员设为卖家' : '取消该会员的卖家资格') + '吗？', function(){
         ajaxPost('/admin1314/member/setSeller', {id:id, is_seller:val}, function(res){
+            alert(res.msg); if(res.code == 1) loadList(currentPage);
+        });
+    });
+}
+
+function toggleAgent(id, val){
+    confirmDialog(val == 1
+        ? '确定将该会员设为代理吗？<br><span style="color:#94a3b8;font-size:12px;">设为代理后，该会员可用前台账号登录 /agent 代理中心，查看其直接邀请的一级会员（只读）。</span>'
+        : '确定取消该会员的代理资格吗？<br><span style="color:#94a3b8;font-size:12px;">取消后将立即无法访问代理中心。</span>', function(){
+        ajaxPost('/admin1314/member/setAgent', {id:id, is_agent:val}, function(res){
             alert(res.msg); if(res.code == 1) loadList(currentPage);
         });
     });
