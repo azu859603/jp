@@ -29,6 +29,16 @@ function get_setting($name, $default = '')
 }
 
 /**
+ * 商品展示编号
+ * 规则：商品ID + 10000（纯展示，不落库）
+ * 若日后改为独立字段，只需改这里
+ */
+function goods_no($goodsId)
+{
+    return (int)$goodsId + 10000;
+}
+
+/**
  * 计算商品佣金比例
  */
 function goods_commission_rate($goods)

@@ -99,6 +99,9 @@ ul,ol{list-style:none;}
 .goods-grid .grid-item .g-thumb img{position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;}
 .goods-grid .grid-item .g-thumb .noimg{position:absolute;top:0;left:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:44px;color:#ddd;}
 .goods-grid .grid-item .g-body{padding:8px 8px 10px;}
+.goods-grid .grid-item .g-no{font-size:11px;color:#999;line-height:1.4;margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.detail-no{padding:12px 14px 0;font-size:12px;color:#999;background:#fff;}
+.detail-no + .detail-title{padding-top:4px;}
 .goods-grid .grid-item .g-title{font-size:13px;color:#333;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.4;}
 .goods-grid .grid-item .g-price{font-size:12px;color:#E4393C;font-weight:600;margin-top:4px;}
 .goods-grid .grid-item .g-price small{font-size:11px;font-weight:400;}

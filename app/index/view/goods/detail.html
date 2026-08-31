@@ -94,6 +94,7 @@
 </div>
 
 <!-- 标题与描述 -->
+<div class="detail-no">No.：{:goods_no($goods['id'])}</div>
 <div class="detail-title">{$goods.title}</div>
 <div class="detail-desc">
     <div class="txt" id="descTxt" style="max-height:70px;overflow:hidden;">{if !empty($goods.content)}{$goods.content}{else}{:lang('暂无描述')}{/if}</div>
