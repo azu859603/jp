@@ -17,7 +17,7 @@
         <div class="g-body">
             <div class="g-no">No.：{:goods_no($g['id'])}</div>
             <div class="g-title">{$g.title}</div>
-            {if !empty($g.desc_str)}<div class="g-desc">{$g.desc_str}</div>{/if}
+            <div class="g-desc">{$g.desc_str|default=''}</div>
             <div class="g-price"><small>¥ </small>{$g.price_str}</div>
             <div class="g-meta">
                 <span class="time">
