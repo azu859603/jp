@@ -28,6 +28,9 @@ class Goods extends Base
             Db::name('goods')->where('id', $id)->inc('view_count')->update();
         }
 
+        // 商品描述：含 HTML 标签的富文本原样渲染，纯文本保持原有转义输出（兼容旧数据）
+        $goods['content_is_html'] = (bool)preg_match('/<\w+[^>]*>/', (string)$goods['content']);
+
         // 图片（兼容数组与旧版逗号字符串两种存储）
         $images = json_decode($goods['images'], true);
         if (is_string($images)) {
