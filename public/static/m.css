@@ -93,8 +93,8 @@ ul,ol{list-style:none;}
 .cate-tabs .more{margin-left:auto;font-size:13px;color:#999;display:flex;align-items:center;flex-shrink:0;}
 
 /* ========== 瀑布流商品卡片（双列，参考站1:1） ========== */
-.goods-grid{padding:10px 14px 0;column-count:2;column-gap:10px;}
-.goods-grid .grid-item{display:block;width:100%;break-inside:avoid;-webkit-column-break-inside:avoid;background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.05);margin-bottom:10px;}
+.goods-grid{padding:10px 14px 0;display:grid;grid-template-columns:repeat(2,1fr);gap:10px;}
+.goods-grid .grid-item{display:block;min-width:0;background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.05);}
 .goods-grid .grid-item .g-thumb{width:100%;height:0;padding-bottom:100%;position:relative;background:#f7f7f7;}
 .goods-grid .grid-item .g-thumb img{position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;}
 .goods-grid .grid-item .g-thumb .noimg{position:absolute;top:0;left:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:44px;color:#ddd;}
