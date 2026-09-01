@@ -1,0 +1,32 @@
+{if empty($list)}
+<div class="empty"><div class="e-ico">🏺</div><div>{:lang('该分类下暂无拍卖中的拍品')}</div></div>
+{else}
+<div class="goods-grid">
+    {foreach $list as $g}
+    <a class="grid-item" href="/goods/detail?id={$g.id}">
+        <div class="g-thumb">
+            {if !empty($g.cover)}
+            <img src="{$g.cover}" alt="{$g.title}">
+            {else}
+            <span class="noimg">🏺</span>
+            {/if}
+        </div>
+        <div class="g-body">
+            <div class="g-no">No.：{:goods_no($g['id'])}</div>
+            <div class="g-title">{$g.title}</div>
+            <div class="g-desc">{$g.desc_str|default=''}</div>
+            <div class="g-price"><small>¥ </small>{$g.price_str}</div>
+            <div class="g-meta">
+                <span class="time" data-countdown="{$g.end_time}" data-format="short">--</span>
+                <span>{$g.bid_count}{:lang('次出价')}</span>
+            </div>
+        </div>
+    </a>
+    {/foreach}
+</div>
+{if $page*$limit < $total}
+<a class="load-more" href="/category/list?category_id={$category_id}&page={$page+1}">{:lang('加载更多')}</a>
+{else}
+<div class="no-more">{:lang('—— 没有更多数据了 ——')}</div>
+{/if}
+{/if}

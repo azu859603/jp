@@ -1,39 +1,71 @@
 {extend name="layout" /}
 {block name="title"}{$page_title}{/block}
 {block name="content"}
-{if empty($list)}
-<div class="empty"><div class="e-ico">🏺</div><div>{:lang('该分类下暂无拍卖中的拍品')}</div></div>
-{else}
-<div class="goods-grid">
-    {foreach $list as $g}
-    <a class="grid-item" href="/goods/detail?id={$g.id}">
-        <div class="g-thumb">
-            {if !empty($g.cover)}
-            <img src="{$g.cover}" alt="{$g.title}">
-            {else}
-            <span class="noimg">🏺</span>
-            {/if}
-        </div>
-        <div class="g-body">
-            <div class="g-no">No.：{:goods_no($g['id'])}</div>
-            <div class="g-title">{$g.title}</div>
-            <div class="g-desc">{$g.desc_str|default=''}</div>
-            <div class="g-price"><small>¥ </small>{$g.price_str}</div>
-            <div class="g-meta">
-                <span class="time" data-countdown="{$g.end_time}" data-format="short">--</span>
-                <span>{$g.bid_count}{:lang('次出价')}</span>
-            </div>
-        </div>
-    </a>
-    {/foreach}
+<div id="cateWrap">
+{include file="index/cate_list_items" /}
 </div>
-{if $page*$limit < $total}
-<a class="load-more" href="/category/list?category_id={$category_id}&page={$page+1}">{:lang('加载更多')}</a>
-{else}
-<div class="no-more">{:lang('—— 没有更多数据了 ——')}</div>
-{/if}
-{/if}
 {/block}
 {block name="script"}
-<script>initCountdowns();</script>
+<script>
+// 分类拍品列表：加载更多为追加，不替换已有内容
+var cateState = {
+    category_id: {$category_id},
+    page: {$page},
+    loading: false
+};
+
+document.getElementById('cateWrap').addEventListener('click', function (e) {
+    var link = e.target.closest ? e.target.closest('.load-more') : null;
+    if (!link) return;
+    e.preventDefault();
+    loadMoreCate();
+});
+
+function loadMoreCate() {
+    if (cateState.loading) return;
+    cateState.loading = true;
+
+    var wrap = document.getElementById('cateWrap');
+    var link = wrap.querySelector('.load-more');
+    var oldText = link ? link.textContent : '';
+    if (link) link.textContent = (typeof t === 'function' ? t('加载中') : '加载中') + '...';
+
+    var next = cateState.page + 1;
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', '/category/list?category_id=' + cateState.category_id + '&page=' + next, true);
+    xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+    xhr.onload = function () {
+        cateState.loading = false;
+        if (xhr.status !== 200) {
+            if (link) link.textContent = oldText;
+            toast('加载失败，请重试');
+            return;
+        }
+        // 去掉旧的「加载更多/没有更多」，把新卡片接到现有列表后面
+        var old = wrap.querySelector('.load-more, .no-more');
+        if (old) old.remove();
+
+        var box = document.createElement('div');
+        box.innerHTML = xhr.responseText;
+        var newGrid = box.querySelector('.goods-grid');
+        var grid = wrap.querySelector('.goods-grid');
+        if (newGrid && grid) {
+            while (newGrid.firstChild) grid.appendChild(newGrid.firstChild);
+        }
+        var tail = box.querySelector('.load-more, .no-more');
+        if (tail) wrap.appendChild(tail);
+
+        cateState.page = next;
+        initCountdowns();   // 新插入的节点需要重新启动倒计时
+    };
+    xhr.onerror = function () {
+        cateState.loading = false;
+        if (link) link.textContent = oldText;
+        toast('网络异常，请重试');
+    };
+    xhr.send();
+}
+
+initCountdowns();
+</script>
 {/block}

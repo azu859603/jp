@@ -287,6 +287,10 @@ class Index extends Base
             'page_title'  => $cate ? $cate['name'] : lang('全部拍品'),
             'tab_active'  => 'index',
         ]);
+        // 加载更多为 AJAX 追加：只返回列表片段，不带布局
+        if ($this->request->isAjax()) {
+            return View::fetch('cate_list_items');
+        }
         return View::fetch();
     }
 
