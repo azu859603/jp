@@ -95,9 +95,15 @@
 
 <!-- 标题与描述 -->
 <div class="detail-no">No.：{:goods_no($goods['id'])}</div>
+<style>
+/* 拍品目录式描述区块（导入的结构化详情使用） */
+.detail-desc .lot-sec{margin:10px 0 2px;font-size:13px;font-weight:700;color:#8C2220;display:flex;align-items:center;gap:6px;}
+.detail-desc .lot-sec::before{content:'';width:3px;height:12px;border-radius:2px;background:#8C2220;}
+.detail-desc .lot-txt{font-size:13px;color:#555;line-height:1.85;word-break:break-word;}
+</style>
 <div class="detail-title">{$goods.title}</div>
 <div class="detail-desc">
-    <div class="txt" id="descTxt" style="max-height:70px;overflow:hidden;">{if !empty($goods.content)}{$goods.content}{else}{:lang('暂无描述')}{/if}</div>
+    <div class="txt" id="descTxt">{if !empty($goods.content)}{if $goods.content_is_html}{$goods.content|raw}{else}{$goods.content}{/if}{else}{:lang('暂无描述')}{/if}</div>
     <a href="javascript:void(0)" class="more-btn" id="descMore" style="display:none;" onclick="toggleDesc()">{:lang('展开')}</a>
 </div>
 
@@ -433,15 +439,13 @@ function togglePvZoom(px, py) {
     }, {passive: true});
 })();
 
-// 描述全文（默认收起，超长才显示展开按钮）
+// 描述全文（默认展开，超长内容提供「收起」按钮）
 (function(){
     var txt = document.getElementById('descTxt');
-    if (txt) {
-        txt.style.maxHeight = '70px';
-        txt.style.overflow = 'hidden';
-        if (txt.scrollHeight > 70) {
-            document.getElementById('descMore').style.display = 'inline';
-        }
+    if (txt && txt.scrollHeight > 70) {
+        var more = document.getElementById('descMore');
+        more.style.display = 'inline';
+        more.textContent = '{:lang('收起')}';
     }
 })();
 function toggleDesc(){

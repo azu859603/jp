@@ -7,6 +7,26 @@ use think\facade\View;
 
 class Index extends Base
 {
+
+    /**
+     * 列表摘要：结构化详情取首个区块正文（媒材/尺寸），普通详情取纯文本前50字
+     */
+    protected function goodsDescStr($content)
+    {
+        $content = (string)$content;
+        if ($content === '') {
+            return '';
+        }
+        // 摘要优先级：赏析 → 来源 → 首个区块 → 纯文本
+        if (preg_match('/lot-sec">赏析<\/div><div class="lot-txt">(.*?)<\/div>/s', $content, $m)
+            || preg_match('/lot-sec">来源<\/div><div class="lot-txt">(.*?)<\/div>/s', $content, $m)
+            || preg_match('/lot-txt">(.*?)<\/div>/s', $content, $m)) {
+            $txt = strip_tags(str_replace('<br>', ' ', $m[1]));
+        } else {
+            $txt = strip_tags($content);
+        }
+        return trim($txt);
+    }
     /**
      * 首页拍品列表查询（首页整页与 ajax 局部刷新共用）
      */
@@ -43,7 +63,18 @@ class Index extends Base
                 $list = $query->order('g.start_price', 'desc')->order('g.id', 'desc')->page($page, $limit)->select()->toArray();
                 break;
             case 'new':
-                $list = $query->order('g.id', 'desc')->page($page, $limit)->select()->toArray();
+                // 分类轮流混排：同分类内按最新排名，排名相同的不同分类交替出现，
+                // 避免整批导入的同类商品在首页扎堆
+                $list = $query
+                    ->field('g.*, u.nickname as seller_name, (
+                        SELECT COUNT(*) FROM goods g2
+                        WHERE g2.category_id = g.category_id AND g2.status = 1
+                          AND g2.start_time <= ' . $now . ' AND g2.end_time > ' . $now . '
+                          AND g2.id > g.id
+                    ) AS cate_rank')
+                    ->order('cate_rank', 'asc')
+                    ->order('g.id', 'desc')
+                    ->page($page, $limit)->select()->toArray();
                 break;
             default:
                 $list = $query->order('g.end_time', 'asc')->order('g.id', 'desc')->page($page, $limit)->select()->toArray();
@@ -55,6 +86,7 @@ class Index extends Base
             $g['current_price'] = $top ? (float)$top : (float)$g['start_price'];
             $g['current_price'] = max($g['current_price'], (float)$g['start_price']);
             $g['price_str'] = number_format($g['current_price'], 2, '.', ',');
+            $g['desc_str'] = $this->goodsDescStr($g['content']);
             // 剩余时间（秒）
             $g['remain_sec'] = max($g['end_time'] - $now, 0);
         }
@@ -239,6 +271,7 @@ class Index extends Base
             $top = Db::name('bid_record')->where('goods_id', $g['id'])->where('status', 0)->max('price');
             $g['current_price'] = max((float)$top, (float)$g['start_price']);
             $g['price_str'] = number_format($g['current_price'], 2, '.', ',');
+            $g['desc_str'] = $this->goodsDescStr($g['content']);
             $g['remain_sec'] = max($g['end_time'] - $now, 0);
         }
         unset($g);
@@ -294,6 +327,7 @@ class Index extends Base
                     $top = Db::name('bid_record')->where('goods_id', $g['id'])->where('status', 0)->max('price');
                     $g['current_price'] = max((float)$top, (float)$g['start_price']);
                     $g['price_str'] = number_format($g['current_price'], 2, '.', ',');
+            $g['desc_str'] = $this->goodsDescStr($g['content']);
                     $g['remain_sec'] = max($g['end_time'] - $now, 0);
                 }
                 unset($g);
