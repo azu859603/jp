@@ -55,8 +55,13 @@ function clean_html($html)
     $html = preg_replace("#\son[a-z-]+\s*=\s*'[^']*'#i", '', $html);
     $html = preg_replace('#\son[a-z-]+\s*=\s*[^\s>]+#i', '', $html);
 
-    // 5) 清除危险协议（javascript: / vbscript: / data:text-html 等）
-    $html = preg_replace('#\s(href|src|xlink:href|formaction|action)\s*=\s*(["\']?)\s*(?:javascript|vbscript|livescript|mocha|data)\s*:[^"\'>\s]*\2#i', '', $html);
+    // 5) 清除任何承载危险协议的属性
+    //    不枚举属性名（background/poster/dynsrc/lowsrc 等遗留属性同样可执行脚本），
+    //    改为凡属性值以危险协议开头一律删除；data: 仅放行 data:image/ 用于内联图片。
+    $danger = 'javascript|vbscript|livescript|mocha|about|data(?!:image/)';
+    $html = preg_replace('#\s[a-zA-Z_:][\w:.-]*\s*=\s*"\s*(?:' . $danger . ')\s*:[^"]*"#i', '', $html);
+    $html = preg_replace("#\s[a-zA-Z_:][\w:.-]*\s*=\s*'\s*(?:" . $danger . ")\s*:[^']*'#i", '', $html);
+    $html = preg_replace('#\s[a-zA-Z_:][\w:.-]*\s*=\s*(?:' . $danger . ')\s*:[^\s>]*#i', '', $html);
 
     // 6) 清除 style 内联属性（可承载 expression()/url(javascript:)）
     $html = preg_replace('#\sstyle\s*=\s*"[^"]*"#i', '', $html);
