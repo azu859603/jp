@@ -15,3 +15,4 @@ DEBUG = true
 
 [LANG]
 default_lang = zh-cn
+detect_browser = false
