@@ -9,12 +9,12 @@ return [
     'path'      => '/',
     // cookie 有效域名
     'domain'    => '',
-    //  cookie 启用安全传输
+    //  cookie 启用安全传输 正式上线后改成true
     'secure'    => false,
     // httponly设置
-    'httponly'  => false,
+    'httponly'  => true,
     // 是否使用 setcookie
     'setcookie' => true,
     // samesite 设置，支持 'strict' 'lax'
-    'samesite'  => '',
+    'samesite'  => 'Lax',
 ];

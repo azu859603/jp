@@ -83,7 +83,7 @@ class Login extends BaseController
         session('agent_captcha', null);
 
         $user = Db::name('user')->where('mobile', $mobile)->find();
-        if (!$user || $user['password'] !== encrypt_password($password)) {
+        if (!$user || !verify_password($password, $user['password'])) {
             $this->markFail($lockKey, $fails);
             return json(['code' => 0, 'msg' => '手机号或密码错误']);
         }
@@ -98,6 +98,11 @@ class Login extends BaseController
         }
 
         Cache::delete($lockKey);
+
+        // 旧 md5 哈希在本次成功登录后静默升级为 bcrypt
+        if (password_is_legacy($user['password'])) {
+            Db::name('user')->where('id', $user['id'])->update(['password' => hash_password($password)]);
+        }
 
         Db::name('user')->where('id', $user['id'])->update([
             'last_login_time' => time(),

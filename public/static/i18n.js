@@ -11,7 +11,8 @@
         return m ? decodeURIComponent(m[2]) : '';
     }
     var metaLang = document.querySelector('meta[name="current-lang"]');
-    var LANG = getCookie(COOKIE_KEY) || w.localStorage.getItem(LS_KEY) || (metaLang ? metaLang.getAttribute('content') : '') || 'zh-tw';
+    // 以服务端实际渲染的语言（meta）为准，避免 ?lang= 切换后按钮标签与页面语言不一致
+var LANG = (metaLang ? metaLang.getAttribute('content') : '') || getCookie(COOKIE_KEY) || w.localStorage.getItem(LS_KEY) || 'zh-tw';
 
     /* ---------- JS 专用翻译字典（仅用于 toast/confirm 等内联消息） ---------- */
     var DICT = {
@@ -27,6 +28,25 @@
             '关注': ['關注', 'Follow'],
         '图片不能超过5M': ['圖片不能超過5M', 'Image must be under 5M'],
         '邀请码已复制': ['邀請碼已複製', 'Invite code copied'],
+        /* 补充：toast/confirm 文案 */
+        '加载中': ['載入中', 'Loading'],
+        '1个月': ['1個月', '1 month'],
+        '后': ['後', ' later'],
+        '如 TRC20 / ERC20': ['如 TRC20 / ERC20', 'e.g. TRC20 / ERC20'],
+        '加载失败，请重试': ['載入失敗，請重試', 'Loading failed, please retry'],
+        '网络异常，请重试': ['網路異常，請重試', 'Network error, please retry'],
+        '复制失败，请手动复制': ['複製失敗，請手動複製', 'Copy failed, please copy manually'],
+        '链接已复制': ['連結已複製', 'Link copied'],
+        '物流单号已复制': ['物流單號已複製', 'Tracking number copied'],
+        '已取消': ['已取消', 'Cancelled'],
+        '已确认收货': ['已確認收貨', 'Receipt confirmed'],
+        '支付成功': ['支付成功', 'Payment successful'],
+        '请先添加收货地址': ['請先新增收貨地址', 'Please add a shipping address first'],
+        '请填写售后理由（至少 5 个字）': ['請填寫售後理由（至少 5 個字）', 'Please enter a reason (at least 5 characters)'],
+        '请输入消息内容': ['請輸入訊息內容', 'Please enter a message'],
+        '请输入邀请码': ['請輸入邀請碼', 'Please enter an invite code'],
+        '请输入验证码': ['請輸入驗證碼', 'Please enter the captcha'],
+        '鉴定功能开发中': ['鑑定功能開發中', 'Appraisal feature coming soon'],
         '发送成功': ['發送成功', 'Sent'],
 
         // 登录 / 注册
@@ -150,14 +170,16 @@
 
     /* ---------- 语言切换（登录页右上角） ---------- */
     function initLangSwitcher() {
-        if (location.pathname.indexOf('/user/login') === -1) return;
+        // 登录页保持原有行为；其他页面只要放了 #langMount 挂载点就注入
+        var mount = document.getElementById('langMount');
+        if (!mount && location.pathname.indexOf('/user/login') === -1) return;
         var names = { 'zh-cn': '简', 'zh-tw': '繁', 'en-us': 'EN' };
         var labels = { 'zh-cn': '简体中文', 'zh-tw': '繁體中文', 'en-us': 'English' };
         var order = ['zh-tw', 'zh-cn', 'en-us'];
         if (!document.getElementById('lsStyle')) {
             var st = document.createElement('style');
             st.id = 'lsStyle';
-            st.textContent = '.ls-wrap{position:fixed;top:10px;right:12px;z-index:999;font-size:12px;}.ls-wrap.in-hd{position:static;margin-left:8px;}.ls-btn{display:inline-flex;align-items:center;gap:3px;padding:3px 10px;border:1px solid rgba(255,255,255,.75);border-radius:14px;color:#fff;background:rgba(0,0,0,.28);line-height:1.6;cursor:pointer;-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);}.ls-wrap.in-hd .ls-btn{color:#666;background:#f5f5f5;border-color:#ddd;}.ls-menu{position:absolute;top:32px;right:0;background:#fff;border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.15);min-width:96px;overflow:hidden;display:none;z-index:999;}.ls-wrap.in-hd .ls-menu{top:30px;}.ls-menu a{display:block;padding:9px 14px;color:#333;font-size:13px;text-decoration:none;border-bottom:1px solid #f5f5f5;text-align:left;}.ls-menu a:last-child{border-bottom:none;}.ls-menu a.on{color:#E4393C;font-weight:600;}.ls-menu a:active{background:#fafafa;}';
+            st.textContent = '.ls-wrap{position:fixed;top:10px;right:12px;z-index:999;font-size:12px;}.ls-wrap.in-hd{position:static;margin-left:8px;}.ls-wrap.in-mount{position:relative;top:auto;right:auto;flex-shrink:0;}.ls-btn{display:inline-flex;align-items:center;gap:3px;padding:3px 10px;border:1px solid rgba(255,255,255,.75);border-radius:14px;color:#fff;background:rgba(0,0,0,.28);line-height:1.6;cursor:pointer;-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);}.ls-wrap.in-hd .ls-btn{color:#666;background:#f5f5f5;border-color:#ddd;}.ls-menu{position:absolute;top:32px;right:0;background:#fff;border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.15);min-width:96px;overflow:hidden;display:none;z-index:999;}.ls-wrap.in-hd .ls-menu{top:30px;}.ls-menu a{display:block;padding:9px 14px;color:#333;font-size:13px;text-decoration:none;border-bottom:1px solid #f5f5f5;text-align:left;}.ls-menu a:last-child{border-bottom:none;}.ls-menu a.on{color:#E4393C;font-weight:600;}.ls-menu a:active{background:#fafafa;}';
             document.head.appendChild(st);
         }
         var box = document.createElement('div');
@@ -185,7 +207,10 @@
         };
         document.addEventListener('click', function () { menu.style.display = 'none'; });
         var hd = document.querySelector('.hd');
-        if (hd) {
+        if (mount) {
+            box.classList.add('in-mount');
+            mount.appendChild(box);
+        } else if (hd) {
             box.classList.add('in-hd');
             hd.appendChild(box);
         } else {

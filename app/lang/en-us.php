@@ -600,4 +600,17 @@ return [
     // 代理中心
     '代理中心' => 'Agent Center',
     '查看团队会员 · 团队业绩报表' => 'Team members · Performance report',
+
+    // 登录防爆破
+    '登录失败次数过多，请 ' => 'Too many failed logins, try again in ',
+    ' 分钟后再试' => ' minutes',
+
+    // 登录验证码
+    '验证码' => 'Captcha',
+    '点击刷新' => 'Click to refresh',
+    '请输入验证码' => 'Please enter the captcha',
+    '返回首页' => 'Back to Home',
+    '卖家' => 'Seller',
+    '审核未通过，请联系管理员' => 'Application rejected, please contact the administrator',
+    '用户' => 'User',
 ];

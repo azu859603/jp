@@ -48,7 +48,7 @@ class AdminUser extends Base
             }
             Db::name('admin_user')->insert([
                 'username'    => $username,
-                'password'    => encrypt_password($password),
+                'password'    => hash_password($password),
                 'real_name'   => $realName,
                 'role'        => $role ?: 2,
                 'status'      => $status ? 1 : 0,
@@ -79,7 +79,7 @@ class AdminUser extends Base
             if (strlen($password) < 6) {
                 return json(['code' => 0, 'msg' => '密码至少6位']);
             }
-            $data['password'] = encrypt_password($password);
+            $data['password'] = hash_password($password);
         }
         Db::name('admin_user')->where('id', $id)->update($data);
         admin_log('编辑管理员：' . $admin['username']);

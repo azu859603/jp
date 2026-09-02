@@ -2,11 +2,17 @@
 namespace app\admin\controller;
 
 use app\BaseController;
+use think\facade\Cache;
 use think\facade\Db;
 use think\facade\View;
 
 class Login extends BaseController
 {
+    /** 连续失败上限 */
+    const MAX_FAIL = 5;
+
+    /** 锁定时长（秒） */
+    const LOCK_TTL = 600;
     /**
      * 登录页面
      */
@@ -16,6 +22,14 @@ class Login extends BaseController
             return redirect('/admin1314/index/index');
         }
         return View::fetch();
+    }
+
+    /**
+     * 记一次登录失败
+     */
+    protected function markFail($lockKey, $fails)
+    {
+        Cache::set($lockKey, $fails + 1, self::LOCK_TTL);
     }
 
     /**
@@ -31,28 +45,47 @@ class Login extends BaseController
         $password = trim($this->request->post('password', ''));
         $captcha  = trim($this->request->post('captcha', ''));
 
+        // 同一 IP 连续失败达上限则临时锁定，防止口令爆破
+        $lockKey = 'admin_login_fail_' . md5($this->request->ip());
+        $fails   = (int)Cache::get($lockKey, 0);
+        if ($fails >= self::MAX_FAIL) {
+            return json(['code' => 0, 'msg' => '失败次数过多，请 ' . ceil(self::LOCK_TTL / 60) . ' 分钟后再试']);
+        }
+
         if (empty($username) || empty($password)) {
             return json(['code' => 0, 'msg' => '请输入用户名和密码']);
         }
         if (empty($captcha) || strtolower($captcha) !== strtolower((string)session('admin_captcha'))) {
+            $this->markFail($lockKey, $fails);
+            session('admin_captcha', null);
             return json(['code' => 0, 'msg' => '验证码错误']);
         }
 
         $admin = Db::name('admin_user')->where('username', $username)->find();
-        if (!$admin || $admin['password'] !== encrypt_password($password)) {
+        if (!$admin || !verify_password($password, $admin['password'])) {
+            $this->markFail($lockKey, $fails);
             return json(['code' => 0, 'msg' => '用户名或密码错误']);
         }
         if ($admin['status'] != 1) {
+            $this->markFail($lockKey, $fails);
             return json(['code' => 0, 'msg' => '账号已被禁用']);
         }
+
+        // 登录成功，清空失败计数
+        Cache::delete($lockKey);
 
         // 写入登录信息
         session('admin', $admin);
         session('admin_captcha', null);
-        Db::name('admin_user')->where('id', $admin['id'])->update([
+        $loginUpdate = [
             'last_login_ip'   => $this->request->ip(),
             'last_login_time' => time(),
-        ]);
+        ];
+        // 旧 md5 哈希在本次成功登录后静默升级为 bcrypt
+        if (password_is_legacy($admin['password'])) {
+            $loginUpdate['password'] = hash_password($password);
+        }
+        Db::name('admin_user')->where('id', $admin['id'])->update($loginUpdate);
         admin_log('登录后台', $admin['id']);
 
         return json(['code' => 1, 'msg' => '登录成功', 'url' => '/admin1314/index/index']);

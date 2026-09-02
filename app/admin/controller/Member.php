@@ -317,7 +317,7 @@ class Member extends Base
         try {
             $userId = Db::name('user')->insertGetId([
                 'mobile'      => $mobile,
-                'password'    => encrypt_password($password),
+                'password'    => hash_password($password),
                 'nickname'    => $nickname,
                 'invite_code' => $myCode,
                 'balance'     => $virtualBalance,
@@ -497,7 +497,7 @@ class Member extends Base
             return json(['code' => 0, 'msg' => '会员不存在']);
         }
 
-        Db::name('user')->where('id', $id)->update(['password' => encrypt_password($password)]);
+        Db::name('user')->where('id', $id)->update(['password' => hash_password($password)]);
         admin_log('重置会员密码：' . $user['mobile']);
         return json(['code' => 1, 'msg' => '密码已重置']);
     }

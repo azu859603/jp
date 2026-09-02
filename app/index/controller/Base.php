@@ -22,15 +22,7 @@ class Base extends BaseController
         } catch (\Throwable $e) {
         }
 
-        // 手动检测并切换语言（URL参数 ?lang= 优先，其次 Cookie）
-        $allowLang = ['zh-cn', 'zh-tw', 'en-us'];
-        $detectLang = $this->request->param('lang', '');
-        if (!$detectLang || !in_array($detectLang, $allowLang)) {
-            $detectLang = $this->request->cookie('think_lang', '');
-        }
-        if ($detectLang && in_array($detectLang, $allowLang) && $detectLang != Lang::getLangSet()) {
-            Lang::switchLangSet($detectLang);
-        }
+        // 语言检测统一由 app\middleware\LangDetect 处理，此处不再重复判断
 
         // 登录用户
         $user = session('user');
@@ -49,7 +41,7 @@ class Base extends BaseController
         View::assign([
             'user'     => $user,
             'settings' => $settings,
-            'site_name'=> !empty($settings['site_name']) ? $settings['site_name'] : '竞拍商城',
+            'site_name'=> !empty($settings['site_name']) ? $settings['site_name'] : lang('竞拍商城'),
             'current_lang' => Lang::getLangSet(),
         ]);
     }
@@ -108,7 +100,7 @@ class Base extends BaseController
         } else {
             $script = 'alert(' . $jsMsg . ');history.back(-1);';
         }
-        return response('<html><head><meta charset="utf-8"><title>提示</title></head><body><script>' . $script . '</script></body></html>');
+        return response('<html><head><meta charset="utf-8"><title>' . lang('提示') . '</title></head><body><script>' . $script . '</script></body></html>');
     }
 
     /**

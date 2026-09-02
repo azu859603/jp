@@ -35,6 +35,7 @@ class News extends Base
         }
 
         // 含 HTML 标签的内容原样渲染，纯文本内容按原有方式转义并保留换行
+        $news['content'] = clean_html($news['content']);
         if (preg_match('/<\w+[^>]*>/', $news['content'])) {
             $news['content_html'] = $news['content'];
         } else {

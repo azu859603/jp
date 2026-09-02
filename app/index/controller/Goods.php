@@ -29,6 +29,8 @@ class Goods extends Base
         }
 
         // 商品描述：含 HTML 标签的富文本原样渲染，纯文本保持原有转义输出（兼容旧数据）
+        // 富文本先净化再判定，净化后仍含标签才走 |raw 渲染，杜绝存储型 XSS
+        $goods['content'] = clean_html($goods['content']);
         $goods['content_is_html'] = (bool)preg_match('/<\w+[^>]*>/', (string)$goods['content']);
 
         // 图片（兼容数组与旧版逗号字符串两种存储）
@@ -66,7 +68,7 @@ class Goods extends Base
             ->select()
             ->toArray();
         foreach ($bids as &$b) {
-            $b['display_name'] = !empty($b['nickname']) ? $b['nickname'] : (!empty($b['mobile']) ? substr($b['mobile'], 0, 3) . '****' . substr($b['mobile'], -4) : lang('拍友') . $b['user_id']);
+            $b['display_name'] = !empty($b['nickname']) ? translate_nickname($b['nickname']) : (!empty($b['mobile']) ? substr($b['mobile'], 0, 3) . '****' . substr($b['mobile'], -4) : lang('拍友') . $b['user_id']);
         }
         unset($b);
 
@@ -333,7 +335,7 @@ class Goods extends Base
             ->select()
             ->toArray();
         foreach ($list as &$b) {
-            $b['display_name'] = !empty($b['nickname']) ? $b['nickname'] : (!empty($b['mobile']) ? substr($b['mobile'], 0, 3) . '****' . substr($b['mobile'], -4) : lang('拍友') . $b['user_id']);
+            $b['display_name'] = !empty($b['nickname']) ? translate_nickname($b['nickname']) : (!empty($b['mobile']) ? substr($b['mobile'], 0, 3) . '****' . substr($b['mobile'], -4) : lang('拍友') . $b['user_id']);
         }
         unset($b);
 

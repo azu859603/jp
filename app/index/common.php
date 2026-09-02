@@ -29,6 +29,23 @@ function get_setting($name, $default = '')
 }
 
 /**
+ * 昵称展示层翻译
+ * 注册时自动生成的昵称形如「用户1234」，已入库不便改动；
+ * 这里只在展示时翻译前缀，保留手机尾号。用户自定义的昵称原样返回。
+ */
+function translate_nickname($nickname)
+{
+    $nickname = (string)$nickname;
+    if ($nickname === '') {
+        return $nickname;
+    }
+    if (preg_match('/^用户(\d+)$/u', $nickname, $m)) {
+        return lang('用户') . $m[1];
+    }
+    return $nickname;
+}
+
+/**
  * 商品展示编号
  * 规则：商品ID + 10000（纯展示，不落库）
  * 若日后改为独立字段，只需改这里

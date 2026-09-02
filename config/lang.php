@@ -5,7 +5,10 @@
 
 return [
     // 默认语言
-    'default_lang'    => env('lang.default_lang', 'zh-tw'),
+    // 首次访问使用的语言（无 cookie 时生效），取自 .env 的 [LANG] default_lang
+    'default_lang'    => env('lang.default_lang', 'zh-cn'),
+    // 首次访问是否跟随浏览器语言：false 时一律使用上面的 default_lang
+    'detect_browser'  => (bool) env('lang.detect_browser', false),
     // 允许的语言列表
     'allow_lang_list' => ['zh-cn', 'zh-tw', 'en-us'],
     // 多语言自动侦测变量名

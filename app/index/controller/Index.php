@@ -372,7 +372,7 @@ class Index extends Base
         $list = $query->order('o.id', 'desc')->page($page, $limit)->select()->toArray();
 
         foreach ($list as &$d) {
-            $d['seller_name'] = !empty($d['seller_shop']) ? $d['seller_shop'] : ($d['seller_nick'] ?: '卖家');
+            $d['seller_name'] = !empty($d['seller_shop']) ? $d['seller_shop'] : (translate_nickname($d['seller_nick']) ?: lang('卖家'));
             $d['buyer_name']  = !empty($d['buyer_nick']) ? mb_substr($d['buyer_nick'], 0, 1) . '***' : '匿***';
             $d['deal_time']   = $d['pay_time'] ?: $d['create_time'];
         }

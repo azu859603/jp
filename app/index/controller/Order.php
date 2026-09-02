@@ -30,7 +30,7 @@ class Order extends Base
         // 状态名
             $statusMap = [0 => lang('待付款'), 1 => lang('待发货'), 2 => lang('待收货'), 3 => lang('已完成'), 4 => lang('已取消'), 5 => lang('售后中')];
         foreach ($list as &$o) {
-            $o['status_name'] = $statusMap[$o['order_status']] ?? '未知';
+            $o['status_name'] = $statusMap[$o['order_status']] ?? lang('未知');
         }
         unset($o);
 

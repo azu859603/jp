@@ -1,0 +1,30 @@
+es.msg);
+            // 验证码一次一验，失败后必须换新图
+            refreshCaptcha();
+            document.getElementById(
+es.msg);
+        }
+    });
+}
+
+// 关注店铺
+var sellerId = {$goods.seller_id};
+function toggleFollow(){
+    ajaxPost(
+es.msg);
+        }
+    });
+}
+
+// 出价记录展开/收起
+function toggleBidMore(){
+    var rows = document.querySelectorAll(
+es.msg);
+        }
+    });
+}
+// 分享
+function shareGoods() {
+    if (navigator.share) {
+        navigator.share({
+            title: 

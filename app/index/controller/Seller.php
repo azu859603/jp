@@ -18,7 +18,7 @@ class Seller extends Base
         if ($this->user['seller_check'] == 1 || $this->user['is_seller'] == 1) {
             $apply = ['status' => 1];
         } elseif ($this->user['seller_check'] == 2) {
-            $apply = ['status' => 2, 'reason' => '审核未通过，请联系管理员'];
+            $apply = ['status' => 2, 'reason' => lang('审核未通过，请联系管理员')];
         } elseif (!empty($this->user['shop_name'])) {
             // 已提交申请，待审核
             $apply = ['status' => 0];
@@ -101,7 +101,7 @@ class Seller extends Base
         if ($this->request->isPost()) {
             $title = trim($this->request->post('title', ''));
             $categoryId = (int)$this->request->post('category_id', 0);
-            $content = trim($this->request->post('content', ''));
+            $content = clean_html(trim($this->request->post('content', '')));
             $startPrice = round((float)$this->request->post('start_price', 0), 2);
             $raisePrice = round((float)$this->request->post('raise_price', 0), 2);
             $reservePrice = round((float)$this->request->post('reserve_price', 0), 2);
@@ -342,10 +342,10 @@ class Seller extends Base
         // 状态名 + 买家名
         $statusMap = [0 => lang('待付款'), 1 => lang('待发货'), 2 => lang('待收货'), 3 => lang('已完成'), 4 => lang('已取消'), 5 => lang('售后中')];
         foreach ($list as &$o) {
-            $o['status_name'] = $statusMap[$o['order_status']] ?? '未知';
+            $o['status_name'] = $statusMap[$o['order_status']] ?? lang('未知');
             if (empty($o['buyer_name'])) {
                 $buyer = Db::name('user')->where('id', $o['buyer_id'])->field('nickname')->find();
-                $o['buyer_name'] = $buyer ? $buyer['nickname'] : '匿名';
+                $o['buyer_name'] = $buyer ? $buyer['nickname'] : lang('匿名');
             }
         }
         unset($o);

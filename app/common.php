@@ -25,6 +25,81 @@ function encrypt_password($password, $salt = '')
 }
 
 /**
+ * 富文本净化：用于所有以 |raw 原样输出的用户/后台提交内容
+ *
+ * 策略：先整段移除会执行脚本的标签及其内容，再用白名单 strip_tags 去掉其余标签，
+ * 最后清除残留的事件属性与危险协议。宁可少留标签，也不放过一个执行点。
+ */
+function clean_html($html)
+{
+    $html = (string)$html;
+    if ($html === '') {
+        return '';
+    }
+
+    // 1) 连内容一起删除的标签（留着文本也没意义，且可能是脚本源码）
+    $html = preg_replace('#<\s*(script|style|iframe|frameset|frame|object|embed|applet|form|link|meta|base|svg|math)\b[^>]*>.*?<\s*/\s*\1\s*>#is', '', $html);
+    // 2) 上述标签的自闭合/未闭合写法
+    $html = preg_replace('#<\s*/?\s*(script|style|iframe|frameset|frame|object|embed|applet|form|link|meta|base|svg|math)\b[^>]*>#i', '', $html);
+
+    // 3) 白名单：仅保留排版类标签
+    $allow = '<p><br><hr><div><span><b><strong><i><em><u><s><del><sub><sup>'
+           . '<ul><ol><li><dl><dt><dd><blockquote><pre><code>'
+           . '<h1><h2><h3><h4><h5><h6>'
+           . '<table><thead><tbody><tfoot><tr><td><th><caption><col><colgroup>'
+           . '<img><a><figure><figcaption>';
+    $html = strip_tags($html, $allow);
+
+    // 4) 清除所有事件处理属性（onclick / onerror / onload ...）
+    $html = preg_replace('#\son[a-z-]+\s*=\s*"[^"]*"#i', '', $html);
+    $html = preg_replace("#\son[a-z-]+\s*=\s*'[^']*'#i", '', $html);
+    $html = preg_replace('#\son[a-z-]+\s*=\s*[^\s>]+#i', '', $html);
+
+    // 5) 清除危险协议（javascript: / vbscript: / data:text-html 等）
+    $html = preg_replace('#\s(href|src|xlink:href|formaction|action)\s*=\s*(["\']?)\s*(?:javascript|vbscript|livescript|mocha|data)\s*:[^"\'>\s]*\2#i', '', $html);
+
+    // 6) 清除 style 内联属性（可承载 expression()/url(javascript:)）
+    $html = preg_replace('#\sstyle\s*=\s*"[^"]*"#i', '', $html);
+    $html = preg_replace("#\sstyle\s*=\s*'[^']*'#i", '', $html);
+
+    return $html;
+}
+
+/**
+ * 生成密码哈希（bcrypt）
+ * 旧的 encrypt_password() 仅保留用于校验历史数据，新写入一律走这里
+ */
+function hash_password($password)
+{
+    return password_hash((string)$password, PASSWORD_DEFAULT);
+}
+
+/**
+ * 校验密码：同时兼容 bcrypt 新哈希与历史的 md5(md5(pwd)) 旧哈希
+ */
+function verify_password($password, $stored)
+{
+    $stored = (string)$stored;
+    if ($stored === '') {
+        return false;
+    }
+    // bcrypt / argon 等标准哈希
+    if (strlen($stored) > 32 && $stored[0] === '$') {
+        return password_verify((string)$password, $stored);
+    }
+    // 历史遗留：md5(md5(pwd))，用 hash_equals 防时序侧信道
+    return hash_equals($stored, encrypt_password($password));
+}
+
+/**
+ * 该哈希是否为需要升级的旧格式（md5 系）
+ */
+function password_is_legacy($stored)
+{
+    $stored = (string)$stored;
+    return !(strlen($stored) > 32 && $stored !== '' && $stored[0] === '$');
+}
+/**
  * 后台操作日志
  * @param string $action 操作描述
  * @param int $adminId

@@ -115,7 +115,7 @@ function quickEnd(days) {
     function pad(n){ return n < 10 ? '0' + n : n; }
     var v = d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + 'T' + pad(d.getHours()) + ':' + pad(d.getMinutes());
     document.getElementById('end_time').value = v;
-    toast('截拍时间已设为' + (days >= 30 ? '1个月' : days + '天') + '后');
+    toast(t('截拍时间已设为') + (days >= 30 ? t('1个月') : days + t('天')) + t('后'));
 }
 
 // 发布协议弹窗

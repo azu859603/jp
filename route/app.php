@@ -28,6 +28,7 @@ Route::get('chat/list', 'Chat/list');
 Route::get('user/login', 'User/login');
 Route::get('user/register', 'User/register');
 Route::post('user/doLogin', 'User/doLogin');
+Route::get('user/captcha', 'User/captcha');
 Route::post('user/doRegister', 'User/doRegister');
 Route::get('user/center', 'User/center');
 Route::get('user/logout', 'User/logout');

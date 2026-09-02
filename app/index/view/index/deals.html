@@ -28,7 +28,7 @@ if (page * limit < total) {
     var btn = document.createElement('div');
     btn.className = 'empty';
     btn.style.padding = '20px 0';
-    btn.innerHTML = '<a class="e-btn" href="/deals?page=' + (page+1) + '">加载更多</a>';
+    btn.innerHTML = '<a class="e-btn" href="/deals?page=' + (page+1) + '">' + t('加载更多') + '</a>';
     document.querySelector('.page').appendChild(btn);
 }
 </script>

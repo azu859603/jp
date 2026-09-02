@@ -1,12 +1,21 @@
 <?php
 namespace app\index\controller;
 
+use think\facade\Cache;
 use think\facade\Db;
 use think\facade\Lang;
 use think\facade\View;
 
 class User extends Base
 {
+    /** 同一账号连续失败上限 */
+    const MAX_FAIL_ACCOUNT = 5;
+
+    /** 同一 IP 连续失败上限（放宽，避免误伤 NAT 后的正常用户） */
+    const MAX_FAIL_IP = 20;
+
+    /** 锁定时长（秒） */
+    const LOCK_TTL = 600;
     /**
      * 登录页
      */
@@ -22,6 +31,59 @@ class User extends Base
     /**
      * 登录处理
      */
+    /**
+     * 登录图形验证码
+     */
+    public function captcha()
+    {
+        $code  = '';
+        $chars = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';   // 去掉易混淆的 0O1I
+        for ($i = 0; $i < 4; $i++) {
+            $code .= $chars[mt_rand(0, strlen($chars) - 1)];
+        }
+        session('user_captcha', $code);
+
+        $width  = 120;
+        $height = 40;
+        $img = imagecreatetruecolor($width, $height);
+        $bg  = imagecolorallocate($img, 245, 247, 250);
+        imagefill($img, 0, 0, $bg);
+
+        for ($i = 0; $i < 5; $i++) {
+            $lineColor = imagecolorallocate($img, mt_rand(150, 220), mt_rand(150, 220), mt_rand(150, 220));
+            imageline($img, mt_rand(0, $width), mt_rand(0, $height), mt_rand(0, $width), mt_rand(0, $height), $lineColor);
+        }
+        for ($i = 0; $i < 80; $i++) {
+            $pixColor = imagecolorallocate($img, mt_rand(120, 200), mt_rand(120, 200), mt_rand(120, 200));
+            imagesetpixel($img, mt_rand(0, $width - 1), mt_rand(0, $height - 1), $pixColor);
+        }
+        for ($i = 0; $i < 4; $i++) {
+            $textColor = imagecolorallocate($img, mt_rand(30, 120), mt_rand(30, 120), mt_rand(30, 120));
+            imagechar($img, 5, 12 + $i * 26, mt_rand(8, 20), $code[$i], $textColor);
+        }
+
+        // 走 TP 响应管线输出，避免直接 header() 造成的 headers already sent
+        ob_start();
+        imagepng($img);
+        $content = ob_get_clean();
+        imagedestroy($img);
+
+        return response($content, 200, [
+            'Content-Type'  => 'image/png',
+            'Cache-Control' => 'no-store, no-cache, must-revalidate',
+            'Pragma'        => 'no-cache',
+        ]);
+    }
+
+    /**
+     * 记一次登录失败（账号维度 + IP 维度同时累加）
+     */
+    protected function markLoginFail($acctKey, $acctFails, $ipKey, $ipFails)
+    {
+        Cache::set($acctKey, $acctFails + 1, self::LOCK_TTL);
+        Cache::set($ipKey, $ipFails + 1, self::LOCK_TTL);
+    }
+
     public function doLogin()
     {
         if (!$this->request->isPost()) {
@@ -29,23 +91,52 @@ class User extends Base
         }
         $mobile = trim($this->request->post('mobile', ''));
         $password = trim($this->request->post('password', ''));
+        $captcha  = trim($this->request->post('captcha', ''));
 
         if (empty($mobile) || empty($password)) {
             return json(['code' => 0, 'msg' => lang('请输入手机号和密码')]);
         }
 
+        // 防爆破：账号维度与 IP 维度双重限制，任一触发即拒绝
+        $acctKey = 'login_fail_acct_' . md5($mobile);
+        $ipKey   = 'login_fail_ip_' . md5($this->request->ip());
+        $acctFails = (int)Cache::get($acctKey, 0);
+        $ipFails   = (int)Cache::get($ipKey, 0);
+        if ($acctFails >= self::MAX_FAIL_ACCOUNT || $ipFails >= self::MAX_FAIL_IP) {
+            return json(['code' => 0, 'msg' => lang('登录失败次数过多，请 ') . ceil(self::LOCK_TTL / 60) . lang(' 分钟后再试')]);
+        }
+
+        // 图形验证码：一次一验，无论成败都作废，杜绝重放
+        $expect = (string)session('user_captcha');
+        session('user_captcha', null);
+        if ($captcha === '' || $expect === '' || strtolower($captcha) !== strtolower($expect)) {
+            $this->markLoginFail($acctKey, $acctFails, $ipKey, $ipFails);
+            return json(['code' => 0, 'msg' => lang('验证码错误')]);
+        }
+
         $user = Db::name('user')->where('mobile', $mobile)->find();
-        if (!$user || $user['password'] !== encrypt_password($password)) {
+        if (!$user || !verify_password($password, $user['password'])) {
+            $this->markLoginFail($acctKey, $acctFails, $ipKey, $ipFails);
             return json(['code' => 0, 'msg' => lang('手机号或密码错误')]);
         }
         if ($user['status'] != 1) {
+            $this->markLoginFail($acctKey, $acctFails, $ipKey, $ipFails);
             return json(['code' => 0, 'msg' => lang('账号已被禁用')]);
         }
 
-        Db::name('user')->where('id', $user['id'])->update([
+        // 登录成功，清空两个维度的失败计数
+        Cache::delete($acctKey);
+        Cache::delete($ipKey);
+
+        $loginUpdate = [
             'last_login_time' => time(),
             'update_time'     => time(),
-        ]);
+        ];
+        // 旧 md5 哈希在本次成功登录后静默升级为 bcrypt（用户无感）
+        if (password_is_legacy($user['password'])) {
+            $loginUpdate['password'] = hash_password($password);
+        }
+        Db::name('user')->where('id', $user['id'])->update($loginUpdate);
         unset($user['password']);
         session('user', $user);
 
@@ -74,6 +165,7 @@ class User extends Base
         }
         $mobile = trim($this->request->post('mobile', ''));
         $password = trim($this->request->post('password', ''));
+        $captcha  = trim($this->request->post('captcha', ''));
         $password2 = trim($this->request->post('password2', ''));
         $nickname = trim($this->request->post('nickname', ''));
         $inviteCode = trim($this->request->post('invite_code', ''));
@@ -112,7 +204,7 @@ class User extends Base
         $now = time();
         $userId = Db::name('user')->insertGetId([
             'mobile'      => $mobile,
-            'password'    => encrypt_password($password),
+            'password'    => hash_password($password),
             'nickname'    => $nickname,
             'invite_code' => $myCode,
             'pid'         => $pid,
@@ -444,7 +536,7 @@ class User extends Base
             $newPwd = trim($this->request->post('new_password', ''));
             $newPwd2 = trim($this->request->post('new_password2', ''));
 
-            if ($this->user['password'] !== encrypt_password($oldPwd)) {
+            if (!verify_password($oldPwd, $this->user['password'])) {
                 return json(['code' => 0, 'msg' => lang('原密码错误')]);
             }
             if (strlen($newPwd) < 6) {
@@ -454,7 +546,7 @@ class User extends Base
                 return json(['code' => 0, 'msg' => lang('两次密码不一致')]);
             }
             Db::name('user')->where('id', $this->user['id'])->update([
-                'password'    => encrypt_password($newPwd),
+                'password'    => hash_password($newPwd),
                 'update_time' => time(),
             ]);
             return json(['code' => 1, 'msg' => lang('密码已修改')]);
@@ -1071,7 +1163,7 @@ class User extends Base
         unset($user['password']);
         View::assign([
             'user'       => $user,
-            'page_title' => '我的邀请码',
+            'page_title' => lang('我的邀请码'),
             'center_tab' => 'seller',
             'tab_active' => 'mine',
             'hide_tabbar'=> true,

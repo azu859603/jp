@@ -27,7 +27,7 @@ ul,ol{list-style:none;}
 .home-header .brand{display:flex;align-items:center;gap:6px;min-width:0;flex-shrink:0;}
 .home-header .logo-img{height:30px;width:auto;max-width:110px;object-fit:contain;display:block;flex-shrink:0;}
 .home-header .logo{font-size:15px;font-weight:600;letter-spacing:1px;white-space:nowrap;flex-shrink:0;}
-.home-header .search-capsule{display:flex;align-items:center;background:rgba(254,254,254,0.2);border-radius:36px;height:30px;padding:0 12px;min-width:160px;flex-shrink:0;}
+.home-header .search-capsule{display:flex;align-items:center;background:rgba(254,254,254,0.2);border-radius:36px;height:30px;padding:0 12px;min-width:110px;flex:1;}
 .home-header .search-capsule svg{width:14px;height:14px;color:rgba(255,255,255,.6);margin-right:6px;flex-shrink:0;}
 .home-header .search-capsule input{flex:1;height:28px;font-size:12px;color:#fff;background:none;}
 .home-header .search-capsule input::placeholder{color:rgba(255,255,255,.5);}
