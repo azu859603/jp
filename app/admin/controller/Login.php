@@ -55,6 +55,8 @@ class Login extends BaseController
         if (empty($username) || empty($password)) {
             return json(['code' => 0, 'msg' => '请输入用户名和密码']);
         }
+        var_dump($captcha);
+        var_dump(session('admin_captcha'));exit;
         if (empty($captcha) || strtolower($captcha) !== strtolower((string)session('admin_captcha'))) {
             $this->markFail($lockKey, $fails);
             session('admin_captcha', null);
