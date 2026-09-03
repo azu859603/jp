@@ -113,11 +113,34 @@ function admin_log($action, $adminId = 0)
 {
     try {
         Db::name('admin_log')->insert([
-            'admin_id'    => $adminId ?: session('admin_id'),
+            // 登录时写入的是 session('admin')，此前误读 session('admin_id') 导致所有不传 id 的日志静默丢失
+            'admin_id'    => $adminId ?: (int)((session('admin') ?: [])['id'] ?? 0),
             'action'      => $action,
             'ip'          => request()->ip(),
             'create_time' => time(),
         ]);
     } catch (\Throwable $e) {
     }
+}
+
+function arraySort($arr, $keys, $type = 'asc')
+{
+    if (count($arr) <= 1) {
+        return $arr;
+    }
+
+    $keysValue = [];
+    $newArray = [];
+
+    foreach ($arr as $k => $v) {
+        $keysValue[$k] = $v[$keys];
+    }
+
+    $type == 'asc' ? asort($keysValue) : arsort($keysValue);
+    reset($keysValue);
+    foreach ($keysValue as $k => $v) {
+        $newArray[$k] = $arr[$k];
+    }
+
+    return $newArray;
 }

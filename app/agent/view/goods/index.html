@@ -1,9 +1,10 @@
 {extend name="layout" /}
 
-{block name="title"}商品列表{/block}
-{block name="crumb"}商品管理 / <b>商品列表</b>{/block}
+{block name="title"}产品列表{/block}
+{block name="crumb"}产品管理 / <b>产品列表</b>{/block}
 
 {block name="content"}
+<div class="readonly-tip"><span>🔒</span><span><b>数据范围</b>：仅包含您直接邀请的会员所发布的产品，代发布只能发到团队内已审核的卖家店铺。</span></div>
 <div class="search-bar">
     <div class="search-input">
         <svg class="s-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/></svg>
@@ -34,7 +35,7 @@
     <button class="btn btn-primary" onclick="loadList(1)">查询</button>
     <button class="btn" onclick="resetSearch()">重置</button>
     <span class="spacer"></span>
-    <button class="btn btn-green" onclick="openAddGoods()">＋ 发布商品</button>
+    <button class="btn btn-green" onclick="openAddGoods()">＋ 代发布产品</button>
 </div>
 
 <div class="card">
@@ -64,7 +65,7 @@
 <!-- 发布商品弹层 -->
 <div class="mask" id="addMask">
     <div class="dialog" style="width:760px;">
-        <div class="dialog-title">发布商品（发到指定卖家店铺）</div>
+        <div class="dialog-title">代发布产品（发到团队内卖家店铺）</div>
         <div class="dialog-body">
             <div class="g-row">
                 <div class="g-col" style="flex:1;">
@@ -75,7 +76,7 @@
                         <option value="{$s.id}">{$s.nickname}（{$s.mobile}）</option>
                         {/volist}
                     </select>
-                    {if empty($sellers)}<div style="font-size:12px;color:#e11d48;margin-top:6px;">暂无卖家，请先在会员管理中设置卖家</div>{/if}
+                    {if empty($sellers)}<div style="font-size:12px;color:#e11d48;margin-top:6px;">您的团队中暂无已审核通过的卖家</div>{/if}
                 </div>
                 <div class="g-col" style="width:46%;">
                     <label>商品分类 <span class="req">*</span></label>
@@ -200,7 +201,7 @@ var statusMap = {
 
 function loadList(page){
     currentPage = page;
-    fetch('/admin1314/goods/index?page=' + page + '&limit=15'
+    fetch('/agent/goods/index?page=' + page + '&limit=15'
         + '&keyword=' + encodeURIComponent(document.getElementById('keyword').value)
         + '&seller_kw=' + encodeURIComponent(document.getElementById('seller_kw').value)
         + '&category_id=' + document.getElementById('category_id').value
@@ -230,7 +231,7 @@ function loadList(page){
                         + '<td>' + g.bid_count + '</td>'
                         + '<td>' + (g.end_time ? fmtTime(g.end_time) : '-') + '</td>'
                         + '<td style="white-space:nowrap;">'
-                        + '<a class="btn btn-sm" href="/admin1314/goods/detail?id=' + g.id + '">详情</a> '
+                        + '<a class="btn btn-sm" href="/agent/goods/detail?id=' + g.id + '">详情</a> '
                         + ((g.status == 0 || g.status == 1)
                             ? '<a class="btn btn-sm" href="javascript:;" onclick="openTime(' + g.id + ',' + g.start_time + ',' + g.end_time + ')">改时间</a> '
                             : '')
@@ -328,7 +329,7 @@ function uploadGoodsImg(){
         if(!file) return;
         var fd = new FormData();
         fd.append('file', file);
-        fetch('/admin1314/upload/image', {method:'POST', headers:{'X-Requested-With':'XMLHttpRequest'}, body:fd})
+        fetch('/agent/upload/image', {method:'POST', headers:{'X-Requested-With':'XMLHttpRequest'}, body:fd})
             .then(function(r){ return r.json(); })
             .then(function(res){
                 if(res.code === 1){
@@ -371,7 +372,7 @@ function doAddGoods(){
     if(!raisePrice || parseFloat(raisePrice) <= 0){ alert('加价幅度必须大于0'); return; }
     if(!endTime){ alert('请选择截拍时间'); return; }
     if(goodsImgs.length === 0){ alert('请至少上传一张商品图片'); return; }
-    ajaxPost('/admin1314/goods/add', {
+    ajaxPost('/agent/goods/add', {
         seller_id: sellerId,
         title: title,
         category_id: categoryId,
@@ -428,7 +429,7 @@ function batchDel(){
     var ids = getCheckedIds();
     if(!ids.length){ alert('请先选择商品'); return; }
     confirmDialog('确定删除选中的 ' + ids.length + ' 个商品吗？（已成交商品自动跳过）', function(){
-        ajaxPost('/admin1314/goods/delete', {ids: ids.join(',')}, function(res){
+        ajaxPost('/agent/goods/delete', {ids: ids.join(',')}, function(res){
             alert(res.msg);
             if(res.code == 1) loadList(currentPage);
         });
@@ -437,7 +438,7 @@ function batchDel(){
 
 function audit(id, action){
     confirmDialog(action == 'pass' ? '通过后商品将进入拍卖中，确定通过吗？' : '确定拒绝该商品吗？', function(){
-        ajaxPost('/admin1314/goods/audit', {id:id, action:action}, function(res){
+        ajaxPost('/agent/goods/audit', {id:id, action:action}, function(res){
             alert(res.msg); if(res.code == 1) loadList(currentPage);
         });
     });
@@ -452,7 +453,7 @@ function openReject(id){
 function doReject(){
     var reason = document.getElementById('rejectReason').value.trim();
     if(!reason){ alert('请填写拒绝原因'); return; }
-    ajaxPost('/admin1314/goods/audit', {id:currentId, action:'reject', reason:reason}, function(res){
+    ajaxPost('/agent/goods/audit', {id:currentId, action:'reject', reason:reason}, function(res){
         alert(res.msg);
         if(res.code == 1){
             document.getElementById('rejectMask').classList.remove('show');
@@ -464,7 +465,7 @@ function doReject(){
 function toggleStatus(id, status){
     var tip = status == 1 ? '确定上架该商品吗？' : '下架后商品将停止竞拍，确定下架吗？';
     confirmDialog(tip, function(){
-        ajaxPost('/admin1314/goods/setStatus', {id:id, status:status}, function(res){
+        ajaxPost('/agent/goods/setStatus', {id:id, status:status}, function(res){
             alert(res.msg); if(res.code == 1) loadList(currentPage);
         });
     });
@@ -472,7 +473,7 @@ function toggleStatus(id, status){
 
 function del(id){
     confirmDialog('删除后不可恢复，确定删除该商品吗？', function(){
-        ajaxPost('/admin1314/goods/delete', {id:id}, function(res){
+        ajaxPost('/agent/goods/delete', {id:id}, function(res){
             alert(res.msg); if(res.code == 1) loadList(currentPage);
         });
     });
@@ -499,7 +500,7 @@ function doSetTime(){
     if(!et){ alert('请选择结束时间'); return; }
     if(new Date(et).getTime() <= new Date(st).getTime()){ alert('结束时间必须晚于开始时间'); return; }
     if(new Date(et).getTime() <= Date.now() + 60000){ alert('结束时间必须晚于当前时间 1 分钟以上'); return; }
-    ajaxPost('/admin1314/goods/setTime', {id:id, start_time:st, end_time:et}, function(res){
+    ajaxPost('/agent/goods/setTime', {id:id, start_time:st, end_time:et}, function(res){
         alert(res.msg);
         if(res.code == 1){
             document.getElementById('timeMask').classList.remove('show');

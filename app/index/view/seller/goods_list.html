@@ -16,7 +16,12 @@
         <span>ID: {$g.id}</span>
         <span class="st s{$g.status}">{if $g.status==0}{:lang('待审核')}{elseif $g.status==1}{:lang('竞拍中')}{elseif $g.status==2}{:lang('已成交')}{elseif $g.status==3}{:lang('已流拍')}{elseif $g.status==4}{:lang('已下架')}{elseif $g.status==5}{:lang('已拒绝')}{else}{:lang('已结束')}{/if}</span>
     </div>
+    {if $g.status==1 && ($status=='' || $status==1)}
+    <!-- 「全部」「竞拍中」分类下，竞拍中的产品可点击进入详情 -->
+    <a class="g-body g-link" href="/goods/detail?id={$g.id}">
+    {else}
     <div class="g-body">
+    {/if}
         <div class="thumb">
             {if !empty($g.cover)}
             <img src="{$g.cover}" alt="">
@@ -29,7 +34,11 @@
             <div class="gprice">¥{$g.start_price|number_format=2}</div>
             <div class="gmeta">{$g.view_count}{:lang('次浏览 · ')}{$g.bid_count}{:lang('次出价')}</div>
         </div>
+    {if $g.status==1 && ($status=='' || $status==1)}
+    </a>
+    {else}
     </div>
+    {/if}
     <div class="g-foot">
         {if $g.status==4}
         <a class="btn-sm solid-red" href="javascript:void(0)" onclick="putOnSale({$g.id})">{:lang('上架')}</a>
@@ -79,6 +88,10 @@
 .rs-hint{font-size:11px;color:#bbb;margin-bottom:14px;}
 .rs-btn{display:block;height:44px;line-height:44px;text-align:center;background:linear-gradient(135deg,#ff4d4f,#E4393C);color:#fff;border-radius:22px;font-size:15px;font-weight:600;box-shadow:0 4px 12px rgba(228,57,60,.3);}
 .g-reject{font-size:12px;color:#E4393C;line-height:22px;}
+/* 竞拍中产品：整块可点进详情，右侧箭头作为可点击提示 */
+.gmanage .g-body.g-link{position:relative;padding-right:30px;color:inherit;text-decoration:none;}
+.gmanage .g-body.g-link::after{content:'›';position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:24px;line-height:1;color:#ccc;}
+.gmanage .g-body.g-link:active{background:#fafafa;}
 </style>
 {/block}
 {block name="script"}

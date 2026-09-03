@@ -1,0 +1,90 @@
+{extend name="layout" /}
+
+{block name="title"}产品详情{/block}
+{block name="crumb"}产品管理 / <a href="/agent/goods/index">产品列表</a> / <b>产品详情</b>{/block}
+
+{block name="content"}
+<div class="card">
+    <div class="card-title">商品信息</div>
+    <div style="display:flex;gap:24px;flex-wrap:wrap;">
+        <div>
+            <img src="{$goods.cover}" style="width:220px;height:220px;border-radius:10px;object-fit:cover;border:1px solid #f1f5f9;" onerror="this.style.display='none'">
+            <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
+                {volist name="goods.images_arr" id="img"}
+                <img src="{$img}" style="width:56px;height:56px;border-radius:6px;object-fit:cover;border:1px solid #f1f5f9;" onerror="this.style.display='none'">
+                {/volist}
+            </div>
+        </div>
+        <div style="flex:1;min-width:300px;">
+            <table class="detail-list">
+                <tr><td>商品ID</td><td>{$goods.id}</td></tr>
+                <tr><td>标题</td><td>{$goods.title}</td></tr>
+                <tr><td>分类</td><td>{$goods.category_name ?: '-'}</td></tr>
+                <tr><td>卖家</td><td>{$goods.seller_name ?: $goods.seller_mobile}（ID:{$goods.seller_id}）</td></tr>
+                <tr><td>起拍价</td><td class="price">￥{$goods.start_price}</td></tr>
+                <tr><td>加价幅度</td><td>￥{$goods.raise_price}</td></tr>
+                <tr><td>保留价</td><td>{if $goods.reserve_price > 0}￥{$goods.reserve_price}{else /}无{/if}</td></tr>
+                <tr><td>保证金</td><td>￥{$goods.deposit}</td></tr>
+                <tr><td>佣金比例</td><td>{$goods.commission_rate > 0 ? $goods.commission_rate . '%' : '系统默认'}</td></tr>
+                <tr><td>拍卖时间</td><td>{$goods.start_time_text} ~ {$goods.end_time_text}</td></tr>
+                <tr><td>延时机制</td><td>{if $goods.delay_seconds > 0}结束前{$goods.delay_seconds}秒出价自动延时{else /}无{/if}</td></tr>
+                <tr><td>浏览量</td><td>{$goods.view_count}</td></tr>
+                <tr><td>状态</td><td><span class="tag {$goods.status_text.1}">{$goods.status_text.0}</span>
+                    {if $goods.status == 5 && $goods.refuse_reason}<span class="tag tag-red">拒绝原因：{$goods.refuse_reason}</span>{/if}
+                </td></tr>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-title">商品详情内容</div>
+    <div style="line-height:1.8;color:#475569;">{$goods.content ?: '暂无描述'}</div>
+</div>
+
+<div class="card">
+    <div class="card-title">出价记录（按价格降序）</div>
+    <div class="table-wrap">
+        <table class="table">
+            <thead><tr><th>出价人</th><th>出价金额</th><th>是否得标</th><th>时间</th></tr></thead>
+            <tbody>
+            {empty name="bids"}
+            <tr><td colspan="4" class="empty">暂无出价记录</td></tr>
+            {else /}
+            {volist name="bids" id="b"}
+            <tr>
+                <td>{$b.nickname ?: $b.mobile}</td>
+                <td class="price">￥{$b.price}</td>
+                <td>{if $b.is_winner == 1}<span class="tag tag-green">得标</span>{elseif $b.status == 2 /}<span class="tag tag-gray">已退回</span>{else /}<span class="tag tag-blue">竞拍中</span>{/if}</td>
+                <td>{$b.create_time|date='Y-m-d H:i:s'}</td>
+            </tr>
+            {/volist}
+            {/empty}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{if $order}
+<div class="card">
+    <div class="card-title">成交订单</div>
+    <table class="detail-list">
+        <tr><td>订单号</td><td>{$order.order_no}</td></tr>
+        <tr><td>成交价</td><td class="price">￥{$order.price}</td></tr>
+        <tr><td>佣金</td><td>￥{$order.commission}（{$order.commission_rate}%）</td></tr>
+        <tr><td>卖家实收</td><td>￥{$order.seller_income}</td></tr>
+        <tr><td>买家</td><td>ID:{$order.buyer_id}</td></tr>
+        <tr><td>支付状态</td><td>{if $order.pay_status == 1}<span class="tag tag-green">已支付</span>{else /}<span class="tag tag-orange">未支付</span>{/if}</td></tr>
+        <tr><td>订单状态</td>
+            <td>
+                {if $order.order_status == 0}<span class="tag tag-orange">待付款</span>
+                {elseif $order.order_status == 1 /}<span class="tag tag-blue">待发货</span>
+                {elseif $order.order_status == 2 /}<span class="tag tag-purple">待收货</span>
+                {elseif $order.order_status == 3 /}<span class="tag tag-green">已完成</span>
+                {else /}<span class="tag tag-gray">已取消</span>{/if}
+            </td>
+        </tr>
+    </table>
+</div>
+{/if}
+{/block}

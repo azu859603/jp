@@ -1,0 +1,131 @@
+{extend name="layout" /}
+
+{block name="title"}产品审核{/block}
+{block name="crumb"}产品管理 / <b>产品审核</b>{/block}
+
+{block name="content"}
+<div class="readonly-tip"><span>🔒</span><span><b>数据范围</b>：仅包含您直接邀请的会员所发布的产品，代发布只能发到团队内已审核的卖家店铺。</span></div>
+<div class="search-bar">
+    <select class="form-control" id="status" onchange="loadList(1)">
+        <option value="0">待审核</option>
+        <option value="5">审核拒绝</option>
+    </select>
+    <span class="tip">通过后商品将进入拍卖中，请仔细审核商品信息</span>
+</div>
+
+<div class="card">
+    <div class="table-wrap">
+        <table class="table">
+            <thead>
+            <tr>
+                <th>ID</th><th>封面</th><th>商品标题</th><th>卖家</th><th>起拍价</th>
+                <th>加价幅度</th><th>保证金</th><th>拍卖时间</th><th>状态</th><th>操作</th>
+            </tr>
+            </thead>
+            <tbody id="tbody"></tbody>
+        </table>
+    </div>
+    <div class="pagination" id="pagination"></div>
+</div>
+
+<!-- 拒绝弹层 -->
+<div class="mask" id="rejectMask">
+    <div class="dialog">
+        <div class="dialog-title">填写拒绝原因</div>
+        <div class="dialog-body">
+            <textarea class="form-control" id="rejectReason" placeholder="请输入拒绝原因"></textarea>
+        </div>
+        <div class="dialog-footer">
+            <button class="btn" onclick="document.getElementById('rejectMask').classList.remove('show')">取消</button>
+            <button class="btn btn-primary" onclick="doReject()">确定拒绝</button>
+        </div>
+    </div>
+</div>
+
+<script>
+var currentPage = 1;
+var currentId = 0;
+
+function loadList(page){
+    currentPage = page;
+    fetch('/agent/goods/check?page=' + page + '&limit=15&status=' + document.getElementById('status').value, {headers:{'X-Requested-With':'XMLHttpRequest'}})
+        .then(function(r){ return r.json(); })
+        .then(function(res){
+            var html = '';
+            if(!res.data || !res.data.length){
+                html = '<tr><td colspan="10" class="empty">暂无数据</td></tr>';
+            } else {
+                res.data.forEach(function(g){
+                    var cover = g.cover ? '<img class="thumb" src="' + g.cover + '" onerror="this.style.visibility=\'hidden\'">' : '-';
+                    html += '<tr>'
+                        + '<td>' + g.id + '</td>'
+                        + '<td>' + cover + '</td>'
+                        + '<td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + g.title + '">' + g.title + '</td>'
+                        + '<td>' + (g.seller_name || g.seller_mobile || g.seller_id) + '</td>'
+                        + '<td class="price">￥' + g.start_price + '</td>'
+                        + '<td>￥' + g.raise_price + '</td>'
+                        + '<td>￥' + g.deposit + '</td>'
+                        + '<td>' + (g.start_time ? fmtTime(g.start_time) : '-') + '<br>' + (g.end_time ? fmtTime(g.end_time) : '-') + '</td>'
+                        + '<td><span class="tag ' + (g.status == 0 ? 'tag-orange">待审核' : 'tag-red">已拒绝') + '</span></td>'
+                        + '<td style="white-space:nowrap;">'
+                        + '<a class="btn btn-sm" href="/agent/goods/detail?id=' + g.id + '">详情</a> '
+                        + (g.status == 5
+                            ? '<a class="btn btn-sm btn-danger" href="javascript:;" onclick="delGoods(' + g.id + ')">删除</a>'
+                            : '<a class="btn btn-sm btn-green" href="javascript:;" onclick="audit(' + g.id + ',\'pass\')">通过</a> '
+                            + '<a class="btn btn-sm btn-danger" href="javascript:;" onclick="openReject(' + g.id + ')">拒绝</a>'
+                        )
+                        + '</td></tr>';
+                });
+            }
+            document.getElementById('tbody').innerHTML = html;
+            var pages = Math.ceil(res.count / 15) || 1;
+            var ph = '<span class="info">共 ' + res.count + ' 条，第 ' + page + '/' + pages + ' 页</span> ';
+            ph += '<a class="' + (page <= 1 ? 'disabled' : '') + '" href="javascript:;" onclick="loadList(' + (page - 1) + ')">上一页</a>';
+            ph += '<a class="' + (page >= pages ? 'disabled' : '') + '" href="javascript:;" onclick="loadList(' + (page + 1) + ')">下一页</a>';
+            document.getElementById('pagination').innerHTML = ph;
+        });
+}
+
+function audit(id, action){
+    confirmDialog('通过后商品将进入拍卖中，确定通过吗？', function(){
+        ajaxPost('/agent/goods/audit', {id:id, action:action}, function(res){
+            alert(res.msg); if(res.code == 1) loadList(currentPage);
+        });
+    });
+}
+
+function delGoods(id){
+    confirmDialog('确定删除该商品吗？删除后不可恢复', function(){
+        ajaxPost('/agent/goods/delete', {id:id}, function(res){
+            alert(res.msg); if(res.code == 1) loadList(currentPage);
+        });
+    });
+}
+
+function openReject(id){
+    currentId = id;
+    document.getElementById('rejectReason').value = '';
+    document.getElementById('rejectMask').classList.add('show');
+}
+
+function doReject(){
+    var reason = document.getElementById('rejectReason').value.trim();
+    if(!reason){ alert('请填写拒绝原因'); return; }
+    ajaxPost('/agent/goods/audit', {id:currentId, action:'reject', reason:reason}, function(res){
+        alert(res.msg);
+        if(res.code == 1){
+            document.getElementById('rejectMask').classList.remove('show');
+            loadList(currentPage);
+        }
+    });
+}
+
+function fmtTime(ts){
+    var d = new Date(ts * 1000);
+    function p(n){ return n < 10 ? '0' + n : n; }
+    return d.getFullYear() + '-' + p(d.getMonth()+1) + '-' + p(d.getDate()) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
+}
+
+loadList(1);
+</script>
+{/block}

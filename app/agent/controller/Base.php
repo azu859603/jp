@@ -40,6 +40,16 @@ class Base extends BaseController
             'icon'  => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><circle cx="17" cy="9" r="2.5"/><path d="M16.5 14.5a5 5 0 0 1 5 5"/></svg>',
             'items' => [
                 ['title' => '我的会员', 'url' => '/agent/member/index'],
+                ['title' => '实名认证', 'url' => '/agent/member/auth'],
+                ['title' => '卖家审核', 'url' => '/agent/member/seller'],
+            ],
+        ],
+        'goods' => [
+            'title' => '产品管理',
+            'icon'  => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 8 12 3 3 8v8l9 5 9-5V8z"/><path d="M3 8l9 5 9-5"/><path d="M12 13v8"/></svg>',
+            'items' => [
+                ['title' => '产品列表', 'url' => '/agent/goods/index'],
+                ['title' => '产品审核', 'url' => '/agent/goods/check'],
             ],
         ],
         'report' => [
@@ -161,6 +171,61 @@ class Base extends BaseController
         }
         unset($member['password']);
         return $member;
+    }
+
+    // ------------------------------------------------------------------
+    // 产品范围收口（卖家 ∈ 我的下级）
+    // ------------------------------------------------------------------
+
+    /**
+     * 我的下级中已审核通过的卖家ID（代发布产品只能发到这些店铺）
+     * @return array
+     */
+    protected function sellerIds()
+    {
+        return array_map('intval', $this->memberQuery()
+            ->where('is_seller', 1)
+            ->where('seller_check', 1)
+            ->column('id'));
+    }
+
+    /**
+     * 团队产品查询构造器：卖家必须是我的下级
+     * 无下级时返回恒为空的查询，避免 whereIn 空数组产生意外全表匹配
+     * @param string $alias 表别名（需要 join 时传入）
+     * @return \think\db\Query
+     */
+    protected function goodsQuery($alias = '')
+    {
+        $q = Db::name('goods');
+        if ($alias !== '') {
+            $q->alias($alias);
+        }
+        $prefix = $alias !== '' ? $alias . '.' : '';
+        $ids = $this->memberIds();
+        if (empty($ids)) {
+            return $q->where($prefix . 'id', -1);
+        }
+        return $q->whereIn($prefix . 'seller_id', $ids);
+    }
+
+    /**
+     * 归属校验：该产品的卖家必须是我的下级，否则直接拒绝
+     * 所有按 id 操作产品的入口（详情/审核/上下架/删除）必须先过这里
+     * @param int $id
+     * @return array 产品数据
+     */
+    protected function assertMyGoods($id)
+    {
+        $id = (int)$id;
+        $goods = $id > 0 ? $this->goodsQuery()->where('id', $id)->find() : null;
+        if (empty($goods)) {
+            if ($this->request->isAjax()) {
+                throw new HttpResponseException(json(['code' => 0, 'msg' => '该产品不属于您的团队']));
+            }
+            throw new HttpResponseException(response('', 302, ['Location' => '/agent/goods/index']));
+        }
+        return $goods;
     }
 
     // ------------------------------------------------------------------

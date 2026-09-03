@@ -162,15 +162,184 @@ function settle_goods($goodsId)
 }
 
 /**
+ * 取消待付款订单（超时自动取消 / 买家主动取消 共用）
+ *
+ * 动作：订单置为已取消并记录原因 → 按 $mode 处理冻结的保证金 → 商品回到流拍(3)
+ * 供卖家「重新上架」→ 中标出价记录降为流拍 → 给买卖双方发站内信。全程事务。
+ *
+ * @param int    $orderId
+ * @param string $reason  取消原因（写入 order.remark 与站内信）
+ * @param string $mode    保证金处理：forfeit_platform 没收归平台 | to_seller 赔付卖家 | refund_buyer 退还买家
+ * @return string|false   成功返回保证金处理结果描述；订单不存在或状态不符返回 false
+ */
+function cancel_unpaid_order($orderId, $reason, $mode = 'forfeit_platform')
+{
+    if (!in_array($mode, ['forfeit_platform', 'to_seller', 'refund_buyer'], true)) {
+        $mode = 'forfeit_platform';
+    }
+    $order = Db::name('order')->where('id', (int)$orderId)->lock(true)->find();
+    if (!$order || (int)$order['pay_status'] !== 0 || (int)$order['order_status'] !== 0) {
+        return false;
+    }
+
+    Db::startTrans();
+    try {
+        $now     = time();
+        $deposit = round((float)$order['deposit'], 2);
+        $title   = (string)$order['goods_title'];
+        $note    = '无保证金';
+
+        if ($deposit > 0) {
+            $buyer = Db::name('user')->where('id', $order['buyer_id'])->lock(true)->find();
+            if ($buyer) {
+                $newFreeze = round(max($buyer['freeze_balance'] - $deposit, 0), 2);
+                if ($mode === 'refund_buyer') {
+                    $newBalance = round($buyer['balance'] + $deposit, 2);
+                    Db::name('user')->where('id', $buyer['id'])->update([
+                        'balance' => $newBalance, 'freeze_balance' => $newFreeze, 'update_time' => $now,
+                    ]);
+                    Db::name('balance_log')->insert([
+                        'user_id' => $buyer['id'], 'type' => 'refund', 'amount' => $deposit,
+                        'balance' => $newBalance, 'remark' => '订单取消，保证金退回（' . $title . '）', 'create_time' => $now,
+                    ]);
+                    $note = '保证金已退还买家';
+                } else {
+                    // 没收：冻结额扣除，可用余额不变（出价时已扣），记一笔资产减少
+                    Db::name('user')->where('id', $buyer['id'])->update([
+                        'freeze_balance' => $newFreeze, 'update_time' => $now,
+                    ]);
+                    Db::name('balance_log')->insert([
+                        'user_id' => $buyer['id'], 'type' => 'forfeit', 'amount' => -$deposit,
+                        'balance' => $buyer['balance'], 'remark' => '订单超时未付款，保证金没收（' . $title . '）', 'create_time' => $now,
+                    ]);
+                    $note = '保证金已没收';
+                    if ($mode === 'to_seller') {
+                        $seller = Db::name('user')->where('id', $order['seller_id'])->lock(true)->find();
+                        if ($seller) {
+                            $sellerBalance = round($seller['balance'] + $deposit, 2);
+                            Db::name('user')->where('id', $seller['id'])->update([
+                                'balance' => $sellerBalance, 'update_time' => $now,
+                            ]);
+                            Db::name('balance_log')->insert([
+                                'user_id' => $seller['id'], 'type' => 'income', 'amount' => $deposit,
+                                'balance' => $sellerBalance, 'remark' => '买家超时未付款，保证金赔付（' . $title . '）', 'create_time' => $now,
+                            ]);
+                            $note = '保证金已赔付卖家';
+                        }
+                    }
+                }
+            }
+        }
+
+        Db::name('order')->where('id', $order['id'])->update([
+            'order_status' => 4, 'remark' => $reason, 'update_time' => $now,
+        ]);
+        // 商品回到流拍：卖家可在「我的商品」重新上架（该流程会清理旧出价）
+        Db::name('goods')->where('id', $order['goods_id'])->update([
+            'status' => 3, 'winner_id' => 0, 'order_id' => 0, 'final_price' => 0, 'update_time' => $now,
+        ]);
+        Db::name('bid_record')->where('goods_id', $order['goods_id'])->where('is_winner', 1)->update([
+            'status' => 2, 'is_winner' => 0,
+        ]);
+
+        Db::name('sys_message')->insertAll([
+            ['user_id' => $order['buyer_id'], 'admin_id' => 0, 'title' => '订单取消通知',
+             'content' => '您的订单 ' . $order['order_no'] . '（' . $title . '）已取消：' . $reason . '。' . $note . '。',
+             'is_read' => 0, 'create_time' => $now],
+            ['user_id' => $order['seller_id'], 'admin_id' => 0, 'title' => '买家未付款通知',
+             'content' => '商品「' . $title . '」的买家未付款，订单 ' . $order['order_no'] . ' 已取消，商品已回到可重新上架状态。' . $note . '。',
+             'is_read' => 0, 'create_time' => $now],
+        ]);
+
+        Db::commit();
+        return $note;
+    } catch (\Throwable $e) {
+        Db::rollback();
+        return false;
+    }
+}
+
+/**
+ * 完成待收货订单（自动确认收货用）
+ * 卖家收入在付款时已结算，此处不涉及资金；完成后买家方可申请售后。
+ *
+ * @param int    $orderId
+ * @param string $reason  完成原因（追加到 order.remark，并写入买家站内信）
+ * @return bool
+ */
+function complete_order($orderId, $reason)
+{
+    $order = Db::name('order')->where('id', (int)$orderId)->lock(true)->find();
+    if (!$order || (int)$order['order_status'] !== 2) {
+        return false;
+    }
+    Db::startTrans();
+    try {
+        $now    = time();
+        $remark = trim((string)$order['remark']);
+        $remark = $remark === '' ? $reason : $remark . '；' . $reason;
+        Db::name('order')->where('id', $order['id'])->update([
+            'order_status' => 3, 'finish_time' => $now, 'remark' => $remark, 'update_time' => $now,
+        ]);
+        Db::name('sys_message')->insert([
+            'user_id' => $order['buyer_id'], 'admin_id' => 0, 'title' => '自动确认收货通知',
+            'content' => '您的订单 ' . $order['order_no'] . '（' . $order['goods_title'] . '）' . $reason . '，交易已完成。如商品有问题，可在订单中申请售后。',
+            'is_read' => 0, 'create_time' => $now,
+        ]);
+        Db::commit();
+        return true;
+    } catch (\Throwable $e) {
+        Db::rollback();
+        return false;
+    }
+}
+
+/**
+ * 催发货提醒：给卖家发站内信
+ * 同一订单 24 小时内只提醒一次，避免手动重复执行时刷屏。
+ *
+ * @param int $orderId
+ * @return string|false  'sent' 已发送 | 'skip' 24小时内已提醒 | false 订单不存在或不是待发货
+ */
+function remind_unshipped_order($orderId)
+{
+    $order = Db::name('order')->where('id', (int)$orderId)->find();
+    if (!$order || (int)$order['order_status'] !== 1) {
+        return false;
+    }
+    $now = time();
+    $dup = Db::name('sys_message')
+        ->where('user_id', $order['seller_id'])
+        ->where('title', '发货提醒')
+        ->where('content', 'like', '%' . $order['order_no'] . '%')
+        ->where('create_time', '>', $now - 86400)
+        ->count();
+    if ($dup > 0) {
+        return 'skip';
+    }
+    $waited = max(1, (int)floor(($now - (int)$order['pay_time']) / 86400));
+    Db::name('sys_message')->insert([
+        'user_id' => $order['seller_id'], 'admin_id' => 0, 'title' => '发货提醒',
+        'content' => '订单 ' . $order['order_no'] . '（' . $order['goods_title'] . '）买家已于 '
+                   . date('m-d H:i', (int)$order['pay_time']) . ' 付款，至今 ' . $waited . ' 天未发货，请尽快处理。',
+        'is_read' => 0, 'create_time' => $now,
+    ]);
+    return 'sent';
+}
+
+/**
  * 扫描并结算所有到期商品
  */
 function settle_expired_goods()
 {
     $now = time();
     $list = Db::name('goods')->where('status', 1)->where('end_time', '<=', $now)->column('id');
+    // 返回 [商品ID => '成交'|'流拍'|false]，供定时任务输出统计；原有调用方忽略返回值即可
+    $results = [];
     foreach ($list as $id) {
-        settle_goods($id);
+        $results[$id] = settle_goods($id);
     }
+    return $results;
 }
 
 /**
@@ -213,6 +382,9 @@ function translate_remark($remark)
     }
     // 前缀按长度降序匹配（含标点的完整前缀优先）
     $prefixes = [
+        '买家超时未付款，保证金赔付（',
+        '订单超时未付款，保证金没收（',
+        '订单取消，保证金退回（',
         '拍卖流拍，保证金退回（',
         '未拍中，保证金退回（',
         '拍卖成交收入：',

@@ -96,6 +96,34 @@
             <input type="number" min="0" class="form-control" name="auction_delay" value="{$settings.auction_delay}">
             <div class="tip">竞拍结束前N秒内出价自动延长竞拍时间，0为不延时（商品发布时可单独设置）</div>
         </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label>待付款超时（小时）</label>
+                <input type="number" min="0" class="form-control" name="order_pay_timeout_hours" value="{$settings.order_pay_timeout_hours}">
+                <div class="tip">拍下后超过该小时数未付款，系统自动取消订单并让商品回到可重新上架状态；0 为不启用。由定时任务 <code>php think order:timeout</code> 每 5 分钟执行</div>
+            </div>
+            <div class="form-group">
+                <label>未付款订单的保证金处理</label>
+                <select class="form-control" name="order_timeout_deposit">
+                    <option value="forfeit_platform" {if $settings.order_timeout_deposit=='forfeit_platform'}selected{/if}>没收（归平台）</option>
+                    <option value="to_seller" {if $settings.order_timeout_deposit=='to_seller'}selected{/if}>赔付给卖家</option>
+                    <option value="refund_buyer" {if $settings.order_timeout_deposit=='refund_buyer'}selected{/if}>退还给买家</option>
+                </select>
+                <div class="tip">超时自动取消与买家主动取消待付款订单时均按此规则处理</div>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label>自动确认收货天数</label>
+                <input type="number" min="0" class="form-control" name="order_auto_confirm_days" value="{$settings.order_auto_confirm_days}">
+                <div class="tip">发货后超过该天数买家未确认收货，系统自动完成订单（不涉及资金，完成后买家可申请售后）；0 为不启用。定时任务 <code>php think order:confirm</code> 每小时执行</div>
+            </div>
+            <div class="form-group">
+                <label>未发货提醒天数</label>
+                <input type="number" min="0" class="form-control" name="order_ship_remind_days" value="{$settings.order_ship_remind_days}">
+                <div class="tip">买家付款后超过该天数卖家仍未发货，每天给卖家发一条站内信催发货；0 为不启用。定时任务 <code>php think order:remind</code> 每天执行</div>
+            </div>
+        </div>
     </form>
 </div>
 
@@ -150,7 +178,7 @@
 <script>
 function saveAll(){
     var fd = new FormData();
-    ['site_name','site_url','site_logo','service_phone','service_qq','service_link','commission_rate','withdraw_fee','seller_check','goods_check','auction_delay','user_protocol','privacy_policy','publish_protocol','user_protocol_tw','user_protocol_en','privacy_policy_tw','privacy_policy_en','publish_protocol_tw','publish_protocol_en','withdraw_min','withdraw_max','virtual_balance'].forEach(function(name){
+    ['site_name','site_url','site_logo','service_phone','service_qq','service_link','commission_rate','withdraw_fee','seller_check','goods_check','auction_delay','user_protocol','privacy_policy','publish_protocol','user_protocol_tw','user_protocol_en','privacy_policy_tw','privacy_policy_en','publish_protocol_tw','publish_protocol_en','withdraw_min','withdraw_max','virtual_balance','order_pay_timeout_hours','order_timeout_deposit','order_auto_confirm_days','order_ship_remind_days'].forEach(function(name){
         var el = document.querySelector('[name="' + name + '"]');
         if(el) fd.append(name, el.value);
     });

@@ -201,11 +201,13 @@ class Order extends Base
             return json(['code' => 0, 'msg' => lang('订单状态不正确')]);
         }
 
-        Db::name('order')->where('id', $orderId)->update([
-            'order_status' => 4,
-            'update_time'  => time(),
-        ]);
-        return json(['code' => 1, 'msg' => lang('订单已取消（已缴纳的保证金不予退还）')]);
+        // 与超时自动取消共用同一套处理：取消订单、按后台配置处理保证金、商品回到可重拍状态
+        $mode   = (string)get_setting('order_timeout_deposit', 'forfeit_platform');
+        $result = cancel_unpaid_order($orderId, '买家主动取消', $mode);
+        if ($result === false) {
+            return json(['code' => 0, 'msg' => lang('订单状态不正确')]);
+        }
+        return json(['code' => 1, 'msg' => lang('订单已取消') . '（' . lang($result) . '）']);
     }
 
     /**

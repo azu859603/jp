@@ -3,6 +3,7 @@ namespace app\index\controller;
 
 use app\BaseController;
 use think\exception\HttpResponseException;
+use think\facade\Cache;
 use think\facade\Db;
 use think\facade\Lang;
 use think\facade\View;
@@ -16,9 +17,14 @@ class Base extends BaseController
     {
         parent::initialize();
 
-        // 结算到期商品
+        // 结算到期商品：正式由定时任务 `php think settle` 负责（app/command/Settle.php，每分钟）。
+        // 这里只保留一个每 5 分钟最多触发一次的兜底，防止定时任务未部署或挂掉时拍卖永远不结算；
+        // 正常情况下定时任务已先一步结算完毕，兜底扫描命中 0 条，开销可忽略。
         try {
-            settle_expired_goods();
+            if (!Cache::has('settle_fallback_lock')) {
+                Cache::set('settle_fallback_lock', 1, 300);
+                settle_expired_goods();
+            }
         } catch (\Throwable $e) {
         }
 

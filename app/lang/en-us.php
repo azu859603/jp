@@ -613,4 +613,20 @@ return [
     '卖家' => 'Seller',
     '审核未通过，请联系管理员' => 'Application rejected, please contact the administrator',
     '用户' => 'User',
+
+    // 待付款超时取消
+    '订单取消通知' => 'Order Cancelled',
+    '买家未付款通知' => 'Buyer Did Not Pay',
+    '订单已取消' => 'Order cancelled',
+    '无保证金' => 'No deposit',
+    '保证金已退还买家' => 'Deposit refunded to buyer',
+    '保证金已没收' => 'Deposit forfeited',
+    '保证金已赔付卖家' => 'Deposit paid to seller',
+    '买家超时未付款，保证金赔付（' => 'Buyer did not pay in time, deposit compensation (',
+    '订单超时未付款，保证金没收（' => 'Order unpaid past deadline, deposit forfeited (',
+    '订单取消，保证金退回（' => 'Order cancelled, deposit refunded (',
+
+    // 自动确认收货 / 催发货
+    '自动确认收货通知' => 'Receipt Auto-confirmed',
+    '发货提醒' => 'Shipping Reminder',
 ];

@@ -18,19 +18,25 @@ class Setting extends Base
                 'service_qq', 'service_link', 'auction_delay', 'user_protocol', 'privacy_policy', 'publish_protocol',
                 'user_protocol_tw', 'user_protocol_en', 'privacy_policy_tw', 'privacy_policy_en', 'publish_protocol_tw', 'publish_protocol_en',
                 'withdraw_min', 'withdraw_max', 'virtual_balance',
+                'order_pay_timeout_hours', 'order_timeout_deposit', 'order_auto_confirm_days', 'order_ship_remind_days',
             ];
             $data = [];
             foreach ($fields as $field) {
+                // 只处理本次实际提交的字段：否则任何只提交部分字段的请求都会把其余设置清空
+                if (!$this->request->has($field, 'post')) {
+                    continue;
+                }
                 $value = trim($this->request->post($field, ''));
                 if (in_array($field, ['commission_rate', 'withdraw_fee', 'withdraw_min', 'withdraw_max', 'virtual_balance'])) {
                     $value = (string)max(0, (float)$value);
                 }
                 $data[$field] = $value;
             }
-            if ($data['commission_rate'] > 100) {
+            if (isset($data['commission_rate']) && (float)$data['commission_rate'] > 100) {
                 return json(['code' => 0, 'msg' => '佣金比例不能超过100%']);
             }
-            if ((float)$data['withdraw_max'] > 0 && (float)$data['withdraw_min'] > (float)$data['withdraw_max']) {
+            if (isset($data['withdraw_min'], $data['withdraw_max'])
+                && (float)$data['withdraw_max'] > 0 && (float)$data['withdraw_min'] > (float)$data['withdraw_max']) {
                 return json(['code' => 0, 'msg' => '提现最低金额不能大于最高金额']);
             }
 
@@ -63,6 +69,7 @@ class Setting extends Base
             'service_qq' => '', 'service_link' => '', 'auction_delay' => '0', 'user_protocol' => '', 'privacy_policy' => '', 'publish_protocol' => '',
             'user_protocol_tw' => '', 'user_protocol_en' => '', 'privacy_policy_tw' => '', 'privacy_policy_en' => '', 'publish_protocol_tw' => '', 'publish_protocol_en' => '',
             'withdraw_min' => '0', 'withdraw_max' => '0', 'virtual_balance' => '10000',
+            'order_pay_timeout_hours' => '0', 'order_timeout_deposit' => 'forfeit_platform', 'order_auto_confirm_days' => '0', 'order_ship_remind_days' => '0',
         ];
         $settings = array_merge($defaults, $settings);
         View::assign(['settings' => $settings, 'menu_active' => '/admin1314/setting/index']);

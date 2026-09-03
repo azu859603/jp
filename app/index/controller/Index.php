@@ -156,11 +156,17 @@ class Index extends Base
             ->field('b.price, b.create_time, g.title, u.nickname')
             ->where('b.status', 1)
             ->order('b.id', 'desc')
-            ->limit(5)->select()->toArray();
+            ->limit(10)
+            ->order('b.create_time', 'desc')
+            ->select()
+            ->toArray();
+
         foreach ($deals as &$d) {
-            $d['display_name'] = mb_substr($d['nickname'], 0, 1) . '***';
+            $d['display_name'] = '***'.mb_substr($d['nickname'], -4);
+//            $d['display_name'] = mb_substr($d['nickname'], 0, 2) . '***';
         }
         unset($d);
+//        var_dump($deals);exit;
 
         // 拍卖头条（对接新闻模块：最新3条已发布新闻）
         $langField = Lang::getLangSet() === 'zh-tw' ? 'title_tw' : (Lang::getLangSet() === 'en-us' ? 'title_en' : 'title');
@@ -377,6 +383,8 @@ class Index extends Base
             $d['deal_time']   = $d['pay_time'] ?: $d['create_time'];
         }
         unset($d);
+        // 根据成交时间排序
+        $list = arraySort($list,'deal_time','desc');
 
         View::assign([
             'list'       => $list,
