@@ -48,9 +48,9 @@ class Login extends BaseController
         // 同一 IP 连续失败达上限则临时锁定，防止口令爆破
         $lockKey = 'admin_login_fail_' . md5($this->request->ip());
         $fails   = (int)Cache::get($lockKey, 0);
-        if ($fails >= self::MAX_FAIL) {
-            return json(['code' => 0, 'msg' => '失败次数过多，请 ' . ceil(self::LOCK_TTL / 60) . ' 分钟后再试']);
-        }
+//        if ($fails >= self::MAX_FAIL) {
+//            return json(['code' => 0, 'msg' => '失败次数过多，请 ' . ceil(self::LOCK_TTL / 60) . ' 分钟后再试']);
+//        }
 
         if (empty($username) || empty($password)) {
             return json(['code' => 0, 'msg' => '请输入用户名和密码']);
