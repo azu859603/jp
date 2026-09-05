@@ -684,3 +684,18 @@ ul,ol{list-style:none;}
 .pd14{padding:0 14px;}
 /* 代理中心入口 */
 .seller-zone.agent{background:linear-gradient(135deg,#2563eb,#60a5fa);box-shadow:0 4px 14px rgba(37,99,235,.28);}
+/* 首页「关于我们」卡片：背景图 + 白字 + 正文 3 行截断 */
+.home-about{position:relative;margin:10px 14px 0;padding:15px 0 0;border-radius:8px;overflow:hidden;background:#3a3a3a center/cover no-repeat;color:#fff;}
+.home-about::before{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.30),rgba(0,0,0,.55));pointer-events:none;}
+.home-about.no-img{background:linear-gradient(135deg,#8b2a26,#BE2F2B);}
+.home-about.no-img::before{display:none;}
+.home-about>*{position:relative;}
+.home-about .ha-title{text-align:center;font-size:20px;font-weight:600;padding:0 10px 10px;letter-spacing:1px;}
+.home-about .ha-content{margin:16px 15px;font-size:16px;line-height:1.8;text-align:justify;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;}
+.home-about .ha-content p{margin:0;color:inherit;text-indent:2em;}
+.home-about .ha-more{display:block;text-align:right;padding:0 15px 12px;font-size:15px;color:#fff;}
+/* 关于我们 落地页 */
+.about-page{background:#fff;min-height:60vh;}
+.about-page .ap-cover img{width:100%;display:block;}
+.about-page .ap-body{padding:16px 18px 30px;font-size:15px;line-height:1.9;color:#333;text-align:justify;}
+.about-page .ap-body p{margin:0 0 12px;text-indent:2em;}

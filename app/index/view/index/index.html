@@ -23,6 +23,15 @@
     <img src="/static/index.png" alt="" style="width:100%;display:block;">
 </div>
 
+<!-- 关于我们（后台「基础设置」可编辑三语内容与背景图；内容为空时不显示） -->
+{if !empty($about.html)}
+<div class="home-about{if empty($about.image)} no-img{/if}"{if !empty($about.image)} style="background-image:url('{$about.image}');"{/if}>
+    <div class="ha-title">{:lang('关于我们')}</div>
+    <div class="ha-content">{$about.html|raw}</div>
+    <a class="ha-more" href="/about">{:lang('更多')} ›</a>
+</div>
+{/if}
+
 <!-- 拍卖头条 -->
 <div class="home-head">
     <div class="hh1">

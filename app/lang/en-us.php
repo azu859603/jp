@@ -629,4 +629,5 @@ return [
     // 自动确认收货 / 催发货
     '自动确认收货通知' => 'Receipt Auto-confirmed',
     '发货提醒' => 'Shipping Reminder',
+    '暂无内容' => 'No content yet',
 ];

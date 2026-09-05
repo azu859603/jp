@@ -46,6 +46,41 @@ function translate_nickname($nickname)
 }
 
 /**
+ * 首页「关于我们」内容（后台「基础设置」可编辑，支持三语）
+ * 取值优先级：当前语言版本 → 简体版本；内容含 HTML 标签时经 clean_html() 净化后原样输出，
+ * 纯文本则按换行分段。返回 ['text'=>原文, 'html'=>可 |raw 输出的 HTML, 'image'=>背景图]。
+ */
+function about_us_content()
+{
+    $set  = Lang::getLangSet();
+    $key  = $set === 'zh-tw' ? 'about_us_tw' : ($set === 'en-us' ? 'about_us_en' : '');
+    $text = $key !== '' ? (string)get_setting($key, '') : '';
+    if (trim($text) === '') {
+        $text = (string)get_setting('about_us', '');
+    }
+    $text = trim($text);
+    if ($text === '') {
+        $html = '';
+    } elseif (preg_match('/<\w+[^>]*>/', $text)) {
+        $html = clean_html($text);
+    } else {
+        $paras = preg_split('/\r\n|\r|\n/', $text);
+        $html  = '';
+        foreach ($paras as $p) {
+            $p = trim($p);
+            if ($p !== '') {
+                $html .= '<p>' . htmlspecialchars($p, ENT_QUOTES, 'UTF-8') . '</p>';
+            }
+        }
+    }
+    return [
+        'text'  => $text,
+        'html'  => $html,
+        'image' => (string)get_setting('about_us_image', ''),
+    ];
+}
+
+/**
  * 商品展示编号
  * 规则：商品ID + 10000（纯展示，不落库）
  * 若日后改为独立字段，只需改这里

@@ -18,6 +18,7 @@ Route::post('order/confirm', 'Order/confirm');
 Route::post('order/afterSaleApply', 'Order/afterSaleApply');
 Route::get('shop/detail', 'Shop/detail');
 Route::get('news/detail', 'News/detail');
+Route::get('about', 'Index/about');
 Route::get('category/list', 'Index/cateList');
 Route::get('chat/detail', 'Chat/detail');
 Route::post('chat/send', 'Chat/send');

@@ -127,6 +127,34 @@
     </form>
 </div>
 
+<div class="card">
+    <div class="card-title">关于我们（首页展示）</div>
+    <form onsubmit="return false;">
+        <div class="form-group">
+            <label>背景图（建议 750×400 左右，留空则使用品牌色背景）</label>
+            <div class="upload-box">
+                <div class="up-item" id="aboutImgBox" {if empty($settings.about_us_image)}style="display:none;"{/if} onclick="uploadAboutImg()">
+                    {if !empty($settings.about_us_image)}<img src="{$settings.about_us_image}" style="height:60px;object-fit:cover;"><span class="del" onclick="event.stopPropagation();removeAboutImg()">×</span>{/if}
+                </div>
+                <div class="up-item add" id="aboutImgAdd" {if !empty($settings.about_us_image)}style="display:none;"{/if} onclick="uploadAboutImg()">+</div>
+            </div>
+            <input type="hidden" name="about_us_image" id="about_us_image" value="{$settings.about_us_image}">
+        </div>
+        <div class="form-group">
+            <label>关于我们（简体）</label>
+            <textarea class="form-control" name="about_us" style="min-height:160px;" placeholder="每段一行；首页卡片只显示前 3 行，点「更多」查看全文。内容为空时首页不显示该区块">{$settings.about_us}</textarea>
+        </div>
+        <div class="form-group">
+            <label>关于我们（繁体）</label>
+            <textarea class="form-control" name="about_us_tw" style="min-height:120px;" placeholder="不填则默认使用简体内容">{$settings.about_us_tw}</textarea>
+        </div>
+        <div class="form-group">
+            <label>关于我们（英文）</label>
+            <textarea class="form-control" name="about_us_en" style="min-height:120px;" placeholder="不填则默认使用简体内容">{$settings.about_us_en}</textarea>
+        </div>
+    </form>
+</div>
+
 <div class="card" style="max-width:760px;">
     <div class="card-title">协议与政策</div>
     <form id="settingForm3" onsubmit="return false;">
@@ -178,7 +206,7 @@
 <script>
 function saveAll(){
     var fd = new FormData();
-    ['site_name','site_url','site_logo','service_phone','service_qq','service_link','commission_rate','withdraw_fee','seller_check','goods_check','auction_delay','user_protocol','privacy_policy','publish_protocol','user_protocol_tw','user_protocol_en','privacy_policy_tw','privacy_policy_en','publish_protocol_tw','publish_protocol_en','withdraw_min','withdraw_max','virtual_balance','order_pay_timeout_hours','order_timeout_deposit','order_auto_confirm_days','order_ship_remind_days'].forEach(function(name){
+    ['site_name','site_url','site_logo','service_phone','service_qq','service_link','commission_rate','withdraw_fee','seller_check','goods_check','auction_delay','user_protocol','privacy_policy','publish_protocol','user_protocol_tw','user_protocol_en','privacy_policy_tw','privacy_policy_en','publish_protocol_tw','publish_protocol_en','withdraw_min','withdraw_max','virtual_balance','order_pay_timeout_hours','order_timeout_deposit','order_auto_confirm_days','order_ship_remind_days','about_us','about_us_tw','about_us_en','about_us_image'].forEach(function(name){
         var el = document.querySelector('[name="' + name + '"]');
         if(el) fd.append(name, el.value);
     });
@@ -192,6 +220,19 @@ function saveAll(){
 }
 
 /* Logo 上传 */
+function uploadAboutImg(){
+    var input = document.createElement('input'); input.type = 'file'; input.accept = 'image/*';
+    input.onchange = function(e){ var file = e.target.files[0]; if(!file) return; var fd = new FormData(); fd.append('file', file);
+        fetch('/admin1314/setting/upload', {method:'POST', headers:{'X-Requested-With':'XMLHttpRequest'}, body:fd})
+            .then(function(r){ return r.json(); }).then(function(res){
+                if(res.code == 1){ document.getElementById('about_us_image').value = res.url;
+                    var box = document.getElementById('aboutImgBox'); box.innerHTML = '<img src="' + res.url + '" style="height:60px;object-fit:cover;"><span class="del" onclick="event.stopPropagation();removeAboutImg()">×</span>';
+                    box.style.display = ''; document.getElementById('aboutImgAdd').style.display = 'none';
+                } else { alert(res.msg || '上传失败'); }
+            }).catch(function(){ alert('网络错误，请重试'); }); };
+    input.click();
+}
+function removeAboutImg(){ document.getElementById('about_us_image').value = ''; document.getElementById('aboutImgBox').style.display = 'none'; document.getElementById('aboutImgAdd').style.display = ''; }
 function uploadLogo(){
     var input = document.createElement('input');
     input.type = 'file';

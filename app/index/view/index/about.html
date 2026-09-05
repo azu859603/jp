@@ -1,0 +1,15 @@
+{extend name="layout" /}
+{block name="content"}
+<div class="about-page">
+    {if !empty($about.image)}
+    <div class="ap-cover"><img src="{$about.image}" alt=""></div>
+    {/if}
+    <div class="ap-body">
+        {if !empty($about.html)}
+        {$about.html|raw}
+        {else}
+        <div class="empty"><div class="e-ico">🏛</div><div>{:lang('暂无内容')}</div></div>
+        {/if}
+    </div>
+</div>
+{/block}

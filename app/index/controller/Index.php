@@ -106,6 +106,19 @@ class Index extends Base
     }
 
     /**
+     * 关于我们（首页卡片「更多」的落地页，展示完整内容）
+     */
+    public function about()
+    {
+        View::assign([
+            'about'      => about_us_content(),
+            'page_title' => lang('关于我们'),
+            'tab_active' => 'index',
+        ]);
+        return View::fetch();
+    }
+
+    /**
      * 拍品列表片段（首页切换分类/排序时局部刷新，不整页重载）
      */
     public function goodsList()
@@ -206,6 +219,7 @@ class Index extends Base
             'site_logo'   => get_setting('site_logo', ''),
             'homeCates'   => $homeCates,
             'banners'     => $banners,
+            'about'       => about_us_content(),
         ]);
         return View::fetch();
     }
