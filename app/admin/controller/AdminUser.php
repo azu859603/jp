@@ -20,6 +20,7 @@ class AdminUser extends Base
         return View::fetch();
     }
 
+
     /**
      * 新增/编辑管理员
      */
