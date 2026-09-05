@@ -2,3 +2,8 @@
 */5 * * * * cd /www/wwwroot/jp && php think order:timeout >> runtime/log/order_timeout-cron.log 2>&1
 0 * * * * cd /www/wwwroot/jp && php think order:confirm >> runtime/log/order_confirm-cron.log 2>&1
 0 9 * * * cd /www/wwwroot/jp && php think order:remind  >> runtime/log/order_remind-cron.log 2>&1
+
+
+
+清空用户数据
+php think user:init --force
