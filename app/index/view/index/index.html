@@ -18,9 +18,24 @@
 </div>
 {/block}
 {block name="content"}
-<!-- 首页顶部图 -->
+<!-- 首页轮播（后台「轮播管理」维护；无数据时回退静态图） -->
 <div class="home-banner">
+    {if !empty($banners)}
+    <div id="bannerSlider">
+        {foreach $banners as $b}
+        <a href="{$b.url|default='javascript:void(0)'}">
+            <img src="{$b.image}" alt="{$b.title|default=''}">
+        </a>
+        {/foreach}
+    </div>
+    {if count($banners) > 1}
+    <div class="dots">
+        {foreach $banners as $k=>$b}<i class="{if $k==0}on{/if}"></i>{/foreach}
+    </div>
+    {/if}
+    {else}
     <img src="/static/index.png" alt="" style="width:100%;display:block;">
+    {/if}
 </div>
 
 <!-- 关于我们（后台「基础设置」可编辑三语内容与背景图；内容为空时不显示） -->
