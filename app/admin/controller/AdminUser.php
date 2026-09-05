@@ -9,7 +9,6 @@ class AdminUser extends Base
     /**
      * 管理员列表
      */
-
     public function index()
     {
         if ($this->request->isAjax()) {
