@@ -15,5 +15,7 @@ return [
         'order:remind'  => \app\command\OrderRemind::class,
         // 初始化前台用户数据（手动执行，TRUNCATE 清空会员及衍生数据）：php think user:init --force
         'user:init'     => \app\command\UserInit::class,
+        // 采集远端商品并下载图片到本地（手动执行）：php think goods:collect [--start=11] [--end=N] [--limit=N] [--update]
+        'goods:collect' => \app\command\GoodsCollect::class,
     ],
 ];
