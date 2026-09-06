@@ -47,7 +47,7 @@ class UserInit extends Command
 
     /** 明确保护、绝不清空的平台数据表 */
     private $protectedTables = [
-        'admin_user', 'admin_log', 'setting', 'category', 'banner', 'news', 'goods',
+        'admin_user', 'setting', 'category', 'banner', 'news', 'goods',
     ];
 
     protected function configure()
@@ -111,7 +111,6 @@ class UserInit extends Command
         }
 
         $output->writeln('  商品已重置引用并恢复可竞拍状态（影响 ' . $reset . ' 条）');
-        admin_log('执行 user:init 初始化前台用户数据（TRUNCATE ' . count($this->truncateTables) . ' 张表）', 0);
         $output->writeln('');
         $output->writeln('<info>完成：前台用户数据已初始化。</info>');
         return 0;
