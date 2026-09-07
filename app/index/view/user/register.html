@@ -2,6 +2,11 @@
 {block name="header"}{/block}
 {block name="content"}
 <div class="login-hero">
+    <div class="lh-brand">
+        {if !empty($settings.site_logo)}<img src="{$settings.site_logo}" alt="">{/if}
+        <b>{$site_name}</b>
+        <span>{:lang('发现好物，参与竞拍')}</span>
+    </div>
     <div class="login-card">
         <h2 class="lc-title">{:lang('建立账户')}</h2>
         <div class="lc-group">

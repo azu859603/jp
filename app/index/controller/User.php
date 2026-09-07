@@ -661,9 +661,13 @@ class User extends Base
         $query = Db::name('recharge')->where('user_id', $this->user['id']);
         $total = $query->count();
         $records = $query->order('id', 'desc')->page($page, $limit)->select()->toArray();
+        // 顶部汇总：已到账的累计金额与笔数
+        $doneQ = Db::name('recharge')->where('user_id', $this->user['id'])->where('status', 1);
         View::assign([
             'records'     => $records,
             'total'       => $total,
+            'sum_done'    => (float)(clone $doneQ)->sum('amount'),
+            'count_done'  => (int)$doneQ->count(),
             'page'        => $page,
             'limit'       => $limit,
             'page_title'  => lang('充值记录'),
@@ -689,9 +693,13 @@ class User extends Base
             $r['account_type_name'] = isset($r['account_type']) ? lang($typeNames[$r['account_type'] - 1] ?? '未知') : '';
         }
         unset($r);
+        // 顶部汇总：已打款的累计金额与笔数
+        $doneQ = Db::name('withdraw')->where('user_id', $this->user['id'])->where('status', 1);
         View::assign([
             'records'     => $records,
             'total'       => $total,
+            'sum_done'    => (float)(clone $doneQ)->sum('amount'),
+            'count_done'  => (int)$doneQ->count(),
             'page'        => $page,
             'limit'       => $limit,
             'page_title'  => lang('提现记录'),

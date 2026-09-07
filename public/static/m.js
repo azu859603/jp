@@ -265,7 +265,7 @@ function toggleSellerDrawer(open, force) {
         if (box) return box;
         box = document.createElement('div');
         box.className = 'page-loading';
-        box.innerHTML = '<div class="pl-spin"></div><div class="pl-txt">' + (typeof t === 'function' ? t('加载中...') : '加载中...') + '</div>';
+        box.innerHTML = '<div class="pl-card"><div class="pl-spin"><i></i></div><div class="pl-txt">' + (typeof t === 'function' ? t('加载中...') : '加载中...') + '</div></div>';
         document.body.appendChild(box);
         return box;
     }
@@ -291,7 +291,7 @@ function toggleSellerDrawer(open, force) {
         // 仅锚点变化（同页）不显示
         if (a.pathname === location.pathname && a.search === location.search && a.hash) return;
         show();
-    }, true);
+    }, false); // 冒泡阶段：页面自己的点击处理（如首页分类 tab 的 AJAX 局部刷新）先执行并 preventDefault，这里就不会误显示等待层
 
     // 头部返回按钮（onclick 里走 history.back）
     document.addEventListener('click', function (e) {

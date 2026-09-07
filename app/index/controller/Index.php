@@ -30,6 +30,19 @@ class Index extends Base
     /**
      * 首页拍品列表查询（首页整页与 ajax 局部刷新共用）
      */
+    protected function dropMissingImages(array $categories)
+    {
+        // 分类图片文件已不存在时置空：模板回退为彩色圆底首字，避免浏览器显示裂图 / alt 文字
+        $root = app()->getRootPath() . 'public';
+        foreach ($categories as &$c) {
+            if (!empty($c['image']) && strpos($c['image'], '/') === 0 && !is_file($root . $c['image'])) {
+                $c['image'] = '';
+            }
+        }
+        unset($c);
+        return $categories;
+    }
+
     protected function queryGoods()
     {
         $categoryId = (int)$this->request->param('category_id', 0);
@@ -172,7 +185,14 @@ class Index extends Base
         $keyword    = $goods['keyword'];
         $sort       = $goods['sort'];
         $now        = $goods['now'];
-        $categories = Db::name('category')->where('status', 1)->order('sort', 'asc')->select()->toArray();
+        $categories = $this->dropMissingImages(Db::name('category')->where('status', 1)->order('sort', 'asc')->select()->toArray());
+
+        // 首页数据条：在拍拍品 / 累计成交 / 注册会员
+        $stats = [
+            'hot'     => (int)Db::name('goods')->where('status', 1)->where('start_time', '<=', $now)->where('end_time', '>', $now)->count(),
+            'deals'   => (int)Db::name('goods')->where('status', 2)->count(),
+            'members' => (int)Db::name('user')->count(),
+        ];
 
         // 多语言映射分类名
         $langField = Lang::getLangSet() === 'zh-tw' ? 'name_tw' : (Lang::getLangSet() === 'en-us' ? 'name_en' : 'name');
@@ -230,6 +250,7 @@ class Index extends Base
             'keyword'     => $keyword,
             'sort'        => $sort,
             'now'         => $now,
+            'stats'       => $stats,
             'page_title'  => lang('首页'),
             'tab_active'  => 'index',
             'hide_header' => true,
@@ -248,7 +269,7 @@ class Index extends Base
      */
     public function category()
     {
-        $categories = Db::name('category')->where('status', 1)->order('sort', 'asc')->select()->toArray();
+        $categories = $this->dropMissingImages(Db::name('category')->where('status', 1)->order('sort', 'asc')->select()->toArray());
         // 多语言映射分类名
         $langField = Lang::getLangSet() === 'zh-tw' ? 'name_tw' : (Lang::getLangSet() === 'en-us' ? 'name_en' : 'name');
         foreach ($categories as &$c) {
@@ -256,8 +277,11 @@ class Index extends Base
         }
         unset($c);
         $ids = array_column($categories, 'id');
+        // 口径与首页「在拍拍品」一致：拍卖中且在开拍～截拍时间窗内（已过截拍待结算的不算）
+        $now = time();
         $counts = $ids
-            ? Db::name('goods')->where('status', 1)->whereIn('category_id', $ids)->group('category_id')->column('COUNT(*)', 'category_id')
+            ? Db::name('goods')->where('status', 1)->where('start_time', '<=', $now)->where('end_time', '>', $now)
+                ->whereIn('category_id', $ids)->group('category_id')->column('COUNT(*)', 'category_id')
             : [];
         $totalCount = 0;
         foreach ($categories as &$c) {
@@ -300,7 +324,9 @@ class Index extends Base
         $q = Db::name('goods')->alias('g')
             ->leftJoin('user u', 'g.seller_id = u.id')
             ->field('g.*, u.nickname as seller_name')
-            ->where('g.status', 1);
+            ->where('g.status', 1)
+            ->where('g.start_time', '<=', $now)
+            ->where('g.end_time', '>', $now);
         if ($categoryId > 0) {
             $q->where('g.category_id', $categoryId);
         }

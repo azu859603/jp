@@ -38,6 +38,27 @@
     {/if}
 </div>
 
+<!-- 分类宫格（彩色圆底图标，取分类图片） -->
+{if !empty($categories)}
+<div class="home-cates">
+    {foreach $categories as $i => $c}{if $i < 7}
+    <a href="/?category_id={$c.id}" data-cate="{$c.id}" class="hc-item">
+        <span class="cate-icon c{$i % 6}">{if !empty($c.image)}<img src="{$c.image}" alt="{$c.name}">{else}{$c.name|mb_substr=0,1}{/if}</span>
+        <span class="cate-name">{$c.name}</span>
+    </a>
+    {/if}{/foreach}
+    <a href="/category" class="hc-item">
+        <span class="cate-icon all"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/></svg></span>
+        <span class="cate-name">{:lang('全部分类')}</span>
+    </a>
+</div>
+{/if}
+<!-- 数据条 -->
+<div class="home-stats">
+    <div class="hs-item"><b>{$stats.hot}</b><span>{:lang('在拍拍品')}</span></div>
+    <div class="hs-item"><b>{$stats.deals}</b><span>{:lang('累计成交')}</span></div>
+    <div class="hs-item"><b>{$stats.members}</b><span>{:lang('注册会员')}</span></div>
+</div>
 <!-- 关于我们（后台「基础设置」可编辑三语内容与背景图；内容为空时不显示） -->
 {if !empty($about.html)}
 <div class="home-about{if empty($about.image)} no-img{/if}"{if !empty($about.image)} style="background-image:url('{$about.image}');"{/if}>
@@ -47,23 +68,14 @@
 </div>
 {/if}
 
-<!-- 拍卖头条 -->
-<div class="home-head">
-    <div class="hh1">
-<!--        <span class="t">{:lang('关于我们')}</span>-->
-<!--        <span class="sub">我们</span>-->
-<!--        <span style="flex:1;font-size:12px;color:#898989;margin-left:8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{$site_name} · 每日精选</span>-->
-        <!-- <a class="rec" href="/?sort=end">成交记录 ></a> -->
+<!-- 精选拍品：标题 + 排序 -->
+<div class="home-sec">
+    <div class="hs-title"><b>{:lang('精选拍品')}</b><span>{:lang('发现好物，参与竞拍')}</span></div>
+    <div class="sort-tabs">
+        <a href="javascript:;" data-sort="new" class="{if $sort=='new'}on{/if}" onclick="switchSort('new')">{:lang('最新')}</a>
+        <a href="javascript:;" data-sort="end" class="{if $sort=='end'}on{/if}" onclick="switchSort('end')">{:lang('即将截拍')}</a>
     </div>
-    <!-- <div class="hh2">
-        <span class="date">{$now|date='Y-m-d'}</span>
-        <span class="r">
-            <a href="/?sort=new" {if $sort=='new'}style="font-weight:600;"{/if}>最新</a>
-            <a href="/?sort=price" {if $sort=='price'}style="font-weight:600;"{/if}>高价</a>
-        </span>
-    </div> -->
 </div>
-
 <!-- 拍卖头条（最新3条新闻） -->
 {if !empty($headlines)}
 <div style="background:#fff;padding:4px 14px 10px;border-bottom:8px solid #f5f5f5;display: none">
@@ -79,7 +91,7 @@
 <!-- 成交记录：标题 + 向上循环滚动 -->
 {if !empty($deals)}
 <div class="deal-wrap">
-    <div class="deal-title">{:lang('成交记录')}<a class="deal-more" href="/deals">{:lang('更多')} ›</a></div>
+    <div class="deal-title"><i class="dt-ico">🔔</i>{:lang('成交记录')}<a class="deal-more" href="/deals">{:lang('更多')} ›</a></div>
     <div class="deal-bar" id="dealBar">
         <div class="deal-track" id="dealTrack">
             {foreach $deals as $d}<div class="deal-item"><span class="deal-txt">{:lang('恭喜 %s 以 ¥%s 成交「%s」', [$d.display_name, number_format($d.price, 2), $d.title])}</span><span class="deal-time">{$d.create_time|date='m-d H:i'}</span></div>{/foreach}
@@ -179,32 +191,44 @@ function loadGoods(page, append) {
 }
 
 // 地址栏同步，保证刷新/分享/后退仍能还原当前筛选
+// 切换分类/排序时不再改写地址栏（history.replaceState）：
+// 有些浏览器扩展/调试工具会监听地址变化并读取新地址的页面计时对象，读不到就报
+// "Cannot read properties of undefined (reading 'startTime')"。改为把当前筛选记在本地，刷新时恢复。
 function syncUrl() {
-    if (!window.history || !history.replaceState) return;
-    var qs = [];
-    if (goodsState.category_id) qs.push('category_id=' + goodsState.category_id);
-    if (goodsState.sort && goodsState.sort !== 'new') qs.push('sort=' + goodsState.sort);
-    history.replaceState(null, '', qs.length ? '/?' + qs.join('&') : '/');
+    try { sessionStorage.setItem('home_filter', JSON.stringify({ category_id: goodsState.category_id, sort: goodsState.sort })); } catch (e) {}
 }
+// 刷新首页时恢复上次的分类/排序（仅当地址栏没带参数时）
+(function () {
+    if (location.search) return;
+    var saved = null;
+    try { saved = JSON.parse(sessionStorage.getItem('home_filter') || 'null'); } catch (e) {}
+    if (!saved) return;
+    var cid = parseInt(saved.category_id) || 0, sort = saved.sort || 'new';
+    if (cid === goodsState.category_id && sort === goodsState.sort) return;
+    goodsState.category_id = cid; goodsState.sort = sort;
+    document.querySelectorAll('#cateTabs a[data-cate]').forEach(function (x) { x.classList.toggle('on', parseInt(x.getAttribute('data-cate')) === cid); });
+    document.querySelectorAll('.sort-tabs a').forEach(function (a) { a.classList.toggle('on', a.getAttribute('data-sort') === sort); });
+    loadGoods(1, false);
+})();
 
 function switchSort(s) {
     if (goodsState.sort === s) return;
     goodsState.sort = s;
     document.querySelectorAll('.sort-tabs a').forEach(function (a) {
-        a.style.fontWeight = a.getAttribute('data-sort') === s ? '600' : '';
+        a.classList.toggle('on', a.getAttribute('data-sort') === s);
     });
     loadGoods(1, false);
 }
 
-// 分类 tab 点击
-document.querySelectorAll('#cateTabs a[data-cate]').forEach(function (a) {
+// 分类 tab / 分类宫格 点击
+document.querySelectorAll('#cateTabs a[data-cate], .home-cates a[data-cate]').forEach(function (a) {
     a.addEventListener('click', function (e) {
         e.preventDefault();
         var id = parseInt(a.getAttribute('data-cate'));
         if (goodsState.category_id === id) return;
         goodsState.category_id = id;
         document.querySelectorAll('#cateTabs a[data-cate]').forEach(function (x) {
-            x.classList.toggle('on', x === a);
+            x.classList.toggle('on', parseInt(x.getAttribute('data-cate')) === id);
         });
         loadGoods(1, false);
     });
