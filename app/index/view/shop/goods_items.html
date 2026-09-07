@@ -1,0 +1,27 @@
+<div class="goods-grid" style="background:#fff;padding-bottom:10px;">
+    {foreach $goods as $g}
+    <a class="grid-item" href="/goods/detail?id={$g.id}">
+        <div class="g-thumb">
+            {if !empty($g.cover)}
+            <img src="{$g.cover}" alt="{$g.title}">
+            {else}
+            <span class="noimg">🏺</span>
+            {/if}
+        </div>
+        <div class="g-body">
+            <div class="g-no">No.：{:goods_no($g['id'])}</div>
+            <div class="g-title">{$g.title}</div>
+            <div class="g-price"><small>¥ </small>{$g.price_str}</div>
+            <div class="g-meta">
+                <span class="time" data-countdown="{$g.end_time}" data-format="short">--</span>
+                <span class="bid-btn">{:lang('去出价')}</span>
+            </div>
+        </div>
+    </a>
+    {/foreach}
+</div>
+{if $page*$limit < $total}
+<a class="load-more" href="/shop/detail?id={$seller.id}&page={$page+1}"><span class="lm-spin"></span><span class="lm-txt" data-loading="{:lang('加载中...')}">{:lang('上拉加载更多')}</span></a>
+{else}
+<div class="no-more">{:lang('—— 没有更多数据了 ——')}</div>
+{/if}

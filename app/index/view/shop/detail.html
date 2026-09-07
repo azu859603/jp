@@ -57,31 +57,12 @@
 </div>
 
 <!-- 店铺拍品 -->
-<div class="shop-goods-t">{:lang('店铺拍品')}{if !empty($goods)}<span class="more">{:lang('共 ')}{$goods|count}{:lang(' 件')}</span>{/if}</div>
-{if empty($goods)}
+<div class="shop-goods-t">{:lang('店铺拍品')}{if $total > 0}<span class="more">{:lang('共 ')}{$total}{:lang(' 件')}</span>{/if}</div>
+{if $total == 0}
 <div class="empty"><div class="e-ico">🏺</div><div>{:lang('该店铺暂无拍卖中的拍品')}</div></div>
 {else}
-<div class="goods-grid" style="background:#fff;padding-bottom:10px;">
-    {foreach $goods as $g}
-    <a class="grid-item" href="/goods/detail?id={$g.id}">
-        <div class="g-thumb">
-            {if !empty($g.cover)}
-            <img src="{$g.cover}" alt="{$g.title}">
-            {else}
-            <span class="noimg">🏺</span>
-            {/if}
-        </div>
-        <div class="g-body">
-            <div class="g-no">No.：{:goods_no($g['id'])}</div>
-            <div class="g-title">{$g.title}</div>
-            <div class="g-price"><small>¥ </small>{$g.price_str}</div>
-            <div class="g-meta">
-                <span class="time" data-countdown="{$g.end_time}" data-format="short">--</span>
-                <span class="bid-btn">{:lang('去出价')}</span>
-            </div>
-        </div>
-    </a>
-    {/foreach}
+<div id="shopWrap">
+{include file="shop/goods_items" /}
 </div>
 {/if}
 {/block}
@@ -106,6 +87,40 @@ function toggleFollow() {
         }
     });
 }
+// 店铺拍品：上拉到底自动追加下一页（m.js autoLoadMore），点击底部文字也可触发
+var shopState = {sellerId: {$seller.id}, page: {$page}, loading: false};
+function loadMoreShop() {
+    if (shopState.loading) return;
+    var wrap = document.getElementById('shopWrap');
+    if (!wrap) return;
+    shopState.loading = true;
+    var link = wrap.querySelector('.load-more');
+    var txtEl = link ? link.querySelector('.lm-txt') : null;
+    var oldText = txtEl ? txtEl.textContent : '';
+    if (link) link.classList.add('loading');
+    if (txtEl) txtEl.textContent = txtEl.getAttribute('data-loading') || oldText;
+    var next = shopState.page + 1;
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', '/shop/detail?id=' + shopState.sellerId + '&page=' + next, true);
+    xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+    xhr.onload = function () {
+        shopState.loading = false;
+        if (xhr.status !== 200) { if (link) link.classList.remove('loading'); if (txtEl) txtEl.textContent = oldText; toast('加载失败，请重试'); return; }
+        var old = wrap.querySelector('.load-more, .no-more'); if (old) old.remove();
+        var box = document.createElement('div'); box.innerHTML = xhr.responseText;
+        var newGrid = box.querySelector('.goods-grid'), grid = wrap.querySelector('.goods-grid');
+        if (newGrid && grid) { while (newGrid.firstChild) grid.appendChild(newGrid.firstChild); }
+        var tail = box.querySelector('.load-more, .no-more'); if (tail) wrap.appendChild(tail);
+        shopState.page = next;
+        initCountdowns();
+    };
+    xhr.onerror = function () { shopState.loading = false; if (link) link.classList.remove('loading'); if (txtEl) txtEl.textContent = oldText; toast('网络异常，请重试'); };
+    xhr.send();
+}
+(function(){ var w = document.getElementById('shopWrap'); if (!w) return;
+    w.addEventListener('click', function (e) { var l = e.target.closest ? e.target.closest('.load-more') : null; if (!l) return; e.preventDefault(); loadMoreShop(); });
+    if (typeof autoLoadMore === 'function') autoLoadMore(w, loadMoreShop);
+})();
 initCountdowns();
 </script>
 {/block}
