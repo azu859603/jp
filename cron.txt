@@ -7,3 +7,6 @@
 
 清空用户数据
 php think user:init --force
+
+改了表结构（加字段/加表）后需 执行
+php think clear --schema
