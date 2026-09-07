@@ -56,8 +56,9 @@ class Shop extends Base
             ->where('g.end_time', '>', $now);
         $total = (clone $goodsQuery)->count();
         $goods = $goodsQuery->field('g.*')->order('g.id', 'desc')->page($page, $limit)->select()->toArray();
+        $tops = bid_top_prices(array_column($goods, 'id'));
         foreach ($goods as &$g) {
-            $top = Db::name('bid_record')->where('goods_id', $g['id'])->where('status', 0)->max('price');
+            $top = $tops[(int)$g['id']] ?? 0;
             $g['current_price'] = max((float)$top, (float)$g['start_price']);
             $g['price_str'] = number_format($g['current_price'], 2, '.', ',');
             $g['remain_sec'] = max($g['end_time'] - $now, 0);

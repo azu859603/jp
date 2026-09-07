@@ -225,8 +225,9 @@ class Seller extends Base
         $list = $query->order('id', 'desc')->page($page, $limit)->select()->toArray();
 
         // 当前价
+        $tops = bid_top_prices(array_column($list, 'id'));
         foreach ($list as &$g) {
-            $top = Db::name('bid_record')->where('goods_id', $g['id'])->where('status', 0)->max('price');
+            $top = $tops[(int)$g['id']] ?? 0;
             $g['current_price'] = max((float)$top, (float)$g['start_price']);
         }
         unset($g);

@@ -70,6 +70,25 @@ function message_rate_ok($userId, $seconds = 3)
     return true;
 }
 
+/**
+ * 批量取一组商品的当前最高有效出价（status=0），返回 [goods_id => price]
+ * 列表页用一条 GROUP BY 代替逐条 MAX 查询（走 bid_record(goods_id,status,price) 覆盖索引）
+ */
+function bid_top_prices(array $goodsIds)
+{
+    $goodsIds = array_values(array_unique(array_map('intval', $goodsIds)));
+    if (empty($goodsIds)) {
+        return [];
+    }
+    $rows = Db::name('bid_record')->field('goods_id, MAX(price) AS top')
+        ->whereIn('goods_id', $goodsIds)->where('status', 0)->group('goods_id')->select()->toArray();
+    $map = [];
+    foreach ($rows as $r) {
+        $map[(int)$r['goods_id']] = (float)$r['top'];
+    }
+    return $map;
+}
+
 function about_dept_content()
 {
     $set  = Lang::getLangSet();

@@ -112,10 +112,10 @@ class Index extends Base
         }
 
         // 当前价 = 最高出价（无出价则起拍价）
+        $tops = bid_top_prices(array_column($list, 'id'));
         foreach ($list as &$g) {
-            $top = Db::name('bid_record')->where('goods_id', $g['id'])->where('status', 0)->max('price');
-            $g['current_price'] = $top ? (float)$top : (float)$g['start_price'];
-            $g['current_price'] = max($g['current_price'], (float)$g['start_price']);
+            $top = $tops[(int)$g['id']] ?? 0;
+            $g['current_price'] = max((float)$top, (float)$g['start_price']);
             $g['price_str'] = number_format($g['current_price'], 2, '.', ',');
             $g['desc_str'] = $this->goodsDescStr($g['content']);
             // 剩余时间（秒）
@@ -332,8 +332,9 @@ class Index extends Base
         }
         $total = $q->count();
         $list = $q->order('g.id', 'desc')->page($page, $limit)->select()->toArray();
+        $tops = bid_top_prices(array_column($list, 'id'));
         foreach ($list as &$g) {
-            $top = Db::name('bid_record')->where('goods_id', $g['id'])->where('status', 0)->max('price');
+            $top = $tops[(int)$g['id']] ?? 0;
             $g['current_price'] = max((float)$top, (float)$g['start_price']);
             $g['price_str'] = number_format($g['current_price'], 2, '.', ',');
             $g['desc_str'] = $this->goodsDescStr($g['content']);
@@ -392,8 +393,9 @@ class Index extends Base
                     ->whereLike('g.title', "%{$keyword}%");
                 $total = $q->count();
                 $list = $q->order('g.id', 'desc')->page($page, $limit)->select()->toArray();
+                $tops = bid_top_prices(array_column($list, 'id'));
                 foreach ($list as &$g) {
-                    $top = Db::name('bid_record')->where('goods_id', $g['id'])->where('status', 0)->max('price');
+                    $top = $tops[(int)$g['id']] ?? 0;
                     $g['current_price'] = max((float)$top, (float)$g['start_price']);
                     $g['price_str'] = number_format($g['current_price'], 2, '.', ',');
             $g['desc_str'] = $this->goodsDescStr($g['content']);

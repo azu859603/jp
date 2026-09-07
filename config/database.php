@@ -43,6 +43,9 @@ return [
             'deploy'            => 0,
             // 数据库读写是否分离 主从式有效
             'rw_separate'       => false,
+            // 字段信息缓存：关闭调试模式后缓存表结构，省掉每次请求对每张表的 SHOW FULL COLUMNS
+            // 注意：改了表结构（加字段/加表）后需清理 runtime/schema 目录或执行 php think clear --schema
+            'fields_cache'      => !env('APP_DEBUG', false),
             // 读写分离后 主服务器数量
             'master_num'        => 1,
             // 指定从服务器序号
