@@ -18,7 +18,7 @@
         <table class="table">
             <thead>
             <tr>
-                <th>ID</th><th>申请人</th><th>店铺/企业</th><th>营业执照</th><th>注册时间</th><th>当前状态</th><th>操作</th>
+                <th>ID</th><th>申请人</th><th>店铺/企业</th><th>星级/信誉分</th><th>营业执照</th><th>注册时间</th><th>当前状态</th><th>操作</th>
             </tr>
             </thead>
             <tbody id="tbody"></tbody>
@@ -54,6 +54,7 @@ function loadList(page){
                         + '<td>' + u.id + '</td>'
                         + '<td>' + (u.nickname || '-') + '<br><span style="color:#94a3b8;font-size:12px;">' + u.mobile + (u.real_name ? ' ｜ ' + u.real_name : '') + '</span></td>'
                         + '<td>' + (u.shop_name || '-') + '<br><span style="color:#94a3b8;font-size:12px;">' + (u.company_name || '') + '</span></td>'
+                        + '<td><span style="color:#f59e0b;">' + '★'.repeat(Math.round(u.shop_score || 0)) + '</span><span style="color:#cbd5e1;">' + '★'.repeat(5 - Math.round(u.shop_score || 0)) + '</span><br><span style="font-size:12px;color:' + (u.credit_score >= 90 ? '#16a34a' : (u.credit_score >= 60 ? '#f59e0b' : '#dc2626')) + ';">信誉 ' + (u.credit_score == null ? '-' : u.credit_score) + '</span></td>'
                         + '<td>' + licHtml + '</td>'
                         + '<td>' + (u.reg_time ? fmtTime(u.reg_time) : '-') + '</td>'
                         + '<td>' + stHtml + '</td>'

@@ -102,3 +102,30 @@ function fmtMoney(n) {
 })();
 document.addEventListener('DOMContentLoaded', initCountdowns);
 
+
+/**
+ * 上拉自动加载更多：容器内出现 .load-more 且滚入视口底部附近时自动触发 loader()
+ * loader 需自行处理 loading 状态与节点替换；容器内容整块替换后仍然有效（每次滚动重新查找）
+ */
+function autoLoadMore(wrap, loader) {
+    if (!wrap) return;
+    var ticking = false;
+    function check() {
+        ticking = false;
+        var el = wrap.querySelector('.load-more');
+        if (!el || el.classList.contains('loading')) return;
+        var vh = window.innerHeight || document.documentElement.clientHeight;
+        if (el.getBoundingClientRect().top < vh + 120) {
+            el.classList.add('loading');
+            loader();
+        }
+    }
+    // 用 setTimeout 而不是 requestAnimationFrame：后台标签页里 rAF 不会执行，setTimeout 仍会
+    function onScroll() { if (!ticking) { ticking = true; setTimeout(check, 60); } }
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll);
+    // 内容变化（切换分类/追加完成）后再查一次：一屏装不下时继续拉
+    if (window.MutationObserver) new MutationObserver(onScroll).observe(wrap, { childList: true, subtree: true });
+    onScroll();
+    return check;
+}

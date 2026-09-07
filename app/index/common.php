@@ -50,6 +50,46 @@ function translate_nickname($nickname)
  * 取值优先级：当前语言版本 → 简体版本；内容含 HTML 标签时经 clean_html() 净化后原样输出，
  * 纯文本则按换行分段。返回 ['text'=>原文, 'html'=>可 |raw 输出的 HTML, 'image'=>背景图]。
  */
+/**
+ * 「关于我们」业务部门（按当前语言取 about_dept / _tw / _en，缺省回退简体）
+ *
+ * 文本格式：每个部门一段，段间空一行；段内第一行为部门名称，其余每行「岗位：姓名 姓名」。
+ * 返回 [['title'=>部门, 'roles'=>[['label'=>岗位, 'names'=>姓名文本], ...]], ...]
+ */
+function about_dept_content()
+{
+    $set  = Lang::getLangSet();
+    $key  = $set === 'zh-tw' ? 'about_dept_tw' : ($set === 'en-us' ? 'about_dept_en' : '');
+    $text = $key !== '' ? (string)get_setting($key, '') : '';
+    if (trim($text) === '') {
+        $text = (string)get_setting('about_dept', '');
+    }
+    $text = str_replace(["\r\n", "\r"], "\n", trim($text));
+    if ($text === '') {
+        return [];
+    }
+    $depts = [];
+    foreach (preg_split('/\n\s*\n+/', $text) as $block) {
+        $lines = array_values(array_filter(array_map('trim', explode("\n", $block)), 'strlen'));
+        if (empty($lines)) {
+            continue;
+        }
+        $title = array_shift($lines);
+        $roles = [];
+        foreach ($lines as $line) {
+            $parts = preg_split('/[：:]/u', $line, 2);
+            $label = trim($parts[0]);
+            $names = isset($parts[1]) ? trim(preg_replace('/\s+/u', ' ', $parts[1])) : '';
+            if ($label === '' && $names === '') {
+                continue;
+            }
+            $roles[] = ['label' => $label, 'names' => $names];
+        }
+        $depts[] = ['title' => $title, 'roles' => $roles];
+    }
+    return $depts;
+}
+
 function about_us_content()
 {
     $set  = Lang::getLangSet();
@@ -93,12 +133,10 @@ function goods_no($goodsId)
 /**
  * 计算商品佣金比例
  */
-function goods_commission_rate($goods)
+function goods_commission_rate($goods = null)
 {
-    if (!empty($goods['commission_rate']) && $goods['commission_rate'] > 0) {
-        return (float)$goods['commission_rate'];
-    }
-    return (float)get_setting('commission_rate', 10);
+    // 佣金比例统一由后台「基础设置」配置；0 表示不收佣金，卖家实收 = 成交价
+    return max(0, (float)get_setting('commission_rate', 0));
 }
 
 /**
@@ -353,10 +391,22 @@ function remind_unshipped_order($orderId)
         return 'skip';
     }
     $waited = max(1, (int)floor(($now - (int)$order['pay_time']) / 86400));
+
+    // 卖家信誉分：每次催发货扣 1 分（同一订单 24 小时内只提醒一次，即每天最多扣 1 分），最低 0 分
+    $credit = Db::name('user')->where('id', $order['seller_id'])->value('credit_score');
+    $creditText = '';
+    if ($credit !== null) {
+        $newCredit = max(0, (int)$credit - 1);
+        if ($newCredit !== (int)$credit) {
+            Db::name('user')->where('id', $order['seller_id'])->update(['credit_score' => $newCredit, 'update_time' => $now]);
+        }
+        $creditText = '因未按时发货，您的信誉分已扣 1 分，当前 ' . $newCredit . ' 分。';
+    }
+
     Db::name('sys_message')->insert([
         'user_id' => $order['seller_id'], 'admin_id' => 0, 'title' => '发货提醒',
         'content' => '订单 ' . $order['order_no'] . '（' . $order['goods_title'] . '）买家已于 '
-                   . date('m-d H:i', (int)$order['pay_time']) . ' 付款，至今 ' . $waited . ' 天未发货，请尽快处理。',
+                   . date('m-d H:i', (int)$order['pay_time']) . ' 付款，至今 ' . $waited . ' 天未发货，请尽快处理。' . $creditText,
         'is_read' => 0, 'create_time' => $now,
     ]);
     return 'sent';

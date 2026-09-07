@@ -38,7 +38,8 @@
         <tr><td>企业名称</td><td>{$user.company_name ?: '-'}</td></tr>
         <tr><td>店铺介绍</td><td>{$user.seller_intro ?: '-'}</td></tr>
         <tr><td>消费保证金</td><td class="price">￥{$user.deposit}</td></tr>
-        <tr><td>店铺评分</td><td>{$user.shop_score}</td></tr>
+        <tr><td>店铺星级</td><td><span style="color:#f59e0b;letter-spacing:2px;">{:str_repeat('★', (int)round($user.shop_score))}{:str_repeat('☆', 5 - (int)round($user.shop_score))}</span> <span class="gray" style="font-size:12px;">{$user.shop_score} 星</span></td></tr>
+        <tr><td>卖家信誉分</td><td><b style="color:{if $user.credit_score >= 90}#16a34a{elseif $user.credit_score >= 60 /}#f59e0b{else /}#dc2626{/if};">{$user.credit_score}</b> <span class="gray" style="font-size:12px;">初始 100，付款后长期未发货每日扣 1 分</span></td></tr>
         <tr><td>粉丝数量</td><td>{$user.fans_count}</td></tr>
         <tr><td>店铺资料</td>
             <td><button class="btn btn-sm btn-primary" onclick="openShopEdit()">编辑店铺资料</button></td>
@@ -181,8 +182,13 @@
                 <input class="form-control" type="number" id="se_deposit" min="0" step="0.01" placeholder="0.00">
             </div>
             <div class="form-group" style="margin-bottom:12px;">
-                <label>店铺评分（0-5）</label>
+                <label>店铺星级（0-5）</label>
                 <input class="form-control" type="number" id="se_score" min="0" max="5" step="0.1" placeholder="5.0">
+            </div>
+            <div class="form-group" style="margin-bottom:12px;">
+                <label>卖家信誉分（0-999，初始 100）</label>
+                <input class="form-control" type="number" id="se_credit" min="0" max="999" step="1" placeholder="100">
+                <div class="tip">买家付款后卖家长期未发货，定时任务每日提醒一次并扣 1 分；此处可手动修正</div>
             </div>
             <div class="form-group">
                 <label>粉丝数量</label>
@@ -202,6 +208,7 @@ var shopData = {
     intro: {:json_encode($user.seller_intro)},
     deposit: '{$user.deposit}',
     score: '{$user.shop_score}',
+    credit: '{$user.credit_score}',
     fans: '{$user.fans_count}'
 };
 
@@ -225,6 +232,7 @@ function openShopEdit(){
     document.getElementById('se_intro').value = shopData.intro || '';
     document.getElementById('se_deposit').value = shopData.deposit;
     document.getElementById('se_score').value = shopData.score;
+    document.getElementById('se_credit').value = shopData.credit;
     document.getElementById('se_fans').value = shopData.fans;
     document.getElementById('shopEditMask').classList.add('show');
 }
@@ -235,6 +243,7 @@ function saveShop(){
         seller_intro: document.getElementById('se_intro').value.trim(),
         deposit: document.getElementById('se_deposit').value,
         shop_score: document.getElementById('se_score').value,
+        credit_score: document.getElementById('se_credit').value,
         fans_count: document.getElementById('se_fans').value
     }, function(res){
         alert(res.msg);

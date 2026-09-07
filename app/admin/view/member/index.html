@@ -75,7 +75,7 @@
             <div class="form-group">
                 <label>初始余额（元）</label>
                 <input type="number" step="0.01" min="0" class="form-control" id="addBalance" placeholder="0" value="0">
-                <div class="tip" id="addTypeTip" style="display:none;">虚拟会员余额为系统设置的永存金额，不支持充值/提现，不审计流水</div>
+                <div class="tip" id="addTypeTip" style="display:none;">虚拟会员余额永存：出价、付款后自动回补到此金额，不支持充值/提现，不审计流水</div>
             </div>
             <div class="form-group">
                 <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:normal;font-size:13px;">
@@ -287,9 +287,9 @@ function onAddType(){
     var balance = document.getElementById('addBalance');
     var tip = document.getElementById('addTypeTip');
     if(v == '1'){
-        balance.disabled = true;
-        balance.value = '';
-        balance.placeholder = '虚拟会员余额由系统设置';
+        balance.disabled = false;
+        balance.value = '100000';
+        balance.placeholder = '100000';
         tip.style.display = 'block';
     } else {
         balance.disabled = false;

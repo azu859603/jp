@@ -116,10 +116,9 @@ class Base extends BaseController
     {
         $user = Db::name('user')->where('id', $userId)->field('id, is_virtual')->find();
         if ($user && (int)$user['is_virtual'] === 1) {
-            // 虚拟会员：不审计账单流水，余额恒等于系统设置的永存金额
-            $vb = (float)get_setting('virtual_balance', 0);
+            // 虚拟会员：不审计账单流水，余额永存——把本次变动回补，余额回到变动前（后台添加时设定的金额）
             Db::name('user')->where('id', $userId)->update([
-                'balance'     => $vb,
+                'balance'     => round((float)$balance - (float)$amount, 2),
                 'update_time' => time(),
             ]);
             return;

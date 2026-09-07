@@ -66,7 +66,7 @@
 
 <!-- 拍卖头条（最新3条新闻） -->
 {if !empty($headlines)}
-<div style="background:#fff;padding:4px 14px 10px;border-bottom:8px solid #f5f5f5;">
+<div style="background:#fff;padding:4px 14px 10px;border-bottom:8px solid #f5f5f5;display: none">
     {foreach $headlines as $h}
     <a href="/news/detail?id={$h.id}" style="display:flex;align-items:center;padding:6px 0;border-bottom:1px solid #f7f7f7;font-size:13px;color:#333;">
         <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{$h.title}</span>
@@ -138,7 +138,11 @@ function loadGoods(page, append) {
     xhr.onload = function () {
         goodsState.loading = false;
         wrap.style.opacity = '';
-        if (xhr.status !== 200) { toast('加载失败，请重试'); return; }
+        if (xhr.status !== 200) {
+            var lm = wrap.querySelector('.load-more');
+            if (lm) { lm.classList.remove('loading'); var lt = lm.querySelector('.lm-txt'); if (lt) lt.textContent = t('上拉加载更多'); }
+            toast('加载失败，请重试'); return;
+        }
         if (append) {
             // 追加时去掉旧的「加载更多/没有更多」，再接上新内容
             var old = wrap.querySelector('.load-more, .no-more');
@@ -167,6 +171,8 @@ function loadGoods(page, append) {
     xhr.onerror = function () {
         goodsState.loading = false;
         wrap.style.opacity = '';
+        var lm = wrap.querySelector('.load-more');
+        if (lm) { lm.classList.remove('loading'); var lt = lm.querySelector('.lm-txt'); if (lt) lt.textContent = t('上拉加载更多'); }
         toast('网络异常，请重试');
     };
     xhr.send();
@@ -204,13 +210,23 @@ document.querySelectorAll('#cateTabs a[data-cate]').forEach(function (a) {
     });
 });
 
-// 加载更多（列表区域会被替换，故绑定在容器上）
+// 加载更多：上拉到列表底部自动追加（m.js autoLoadMore）；点击仍可触发，作为兜底
+function loadMoreGoods() {
+    var el = document.querySelector('#goodsWrap .load-more');
+    if (el) {
+        el.classList.add('loading');
+        var txt = el.querySelector('.lm-txt');
+        if (txt) txt.textContent = txt.getAttribute('data-loading') || txt.textContent;
+    }
+    loadGoods(goodsState.page + 1, true);
+}
 document.getElementById('goodsWrap').addEventListener('click', function (e) {
     var btn = e.target.closest('.load-more');
     if (!btn) return;
     e.preventDefault();
-    loadGoods(goodsState.page + 1, true);
+    if (!goodsState.loading) loadMoreGoods();
 });
+if (typeof autoLoadMore === 'function') autoLoadMore(document.getElementById('goodsWrap'), loadMoreGoods);
 
 // 成交记录：向上无缝循环滚动
 (function () {

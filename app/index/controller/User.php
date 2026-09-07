@@ -449,34 +449,42 @@ class User extends Base
 
         // 资产总额 = 可用 + 冻结
         $totalAssets = round($user['balance'] + $user['freeze_balance'], 2);
-        // 待结算订单（待付款）
-        $waitPay = Db::name('order')->where('buyer_id', $id)->where('order_status', 0)->where('pay_status', 0)->count();
-        // 已结算订单（已完成）
-        $finished = Db::name('order')->where('buyer_id', $id)->where('order_status', 3)->count();
-        // 累计成交（买卖合计）
-        $dealCount = $user['total_buy'] + $user['total_sell'];
 
-        // 最近流水
-        $logs = Db::name('balance_log')->where('user_id', $id)->order('id', 'desc')->limit(8)->select()->toArray();
-        // 流水备注多语言
+        // 资产明细：分页，页面滚动到底部时由 AJAX 追加下一页
+        $page  = max((int)$this->request->param('page', 1), 1);
+        $limit = 10;
+        $logQuery = Db::name('balance_log')->where('user_id', $id);
+        // 虚拟会员：余额永存（后台添加时设定），不展示流水（不审计）
+        $total = $isVirtual ? 0 : $logQuery->count();
+        $logs  = $isVirtual ? [] : $logQuery->order('id', 'desc')->page($page, $limit)->select()->toArray();
+        $typeNames = [
+            'recharge' => lang('充值'), 'deposit' => lang('保证金'), 'pay' => lang('支付'), 'income' => lang('收入'),
+            'refund' => lang('退回'), 'withdraw' => lang('提现'), 'reward' => lang('奖励'), 'forfeit' => lang('没收'),
+        ];
         foreach ($logs as &$log) {
-            $log['remark'] = translate_remark($log['remark']);
+            $log['remark']    = translate_remark($log['remark']);
+            $log['type_name'] = $typeNames[$log['type']] ?? ($log['type'] ?: lang('余额'));
         }
         unset($log);
-        // 虚拟会员：余额展示永存金额，不展示流水（不审计）
-        if ($isVirtual) {
-            $user['balance'] = (float)get_setting('virtual_balance', 0);
-            $logs = [];
+        $hasMore = $page * $limit < $total;
+
+        if ($this->request->isAjax()) {
+            View::assign(['logs' => $logs]);
+            return json(['code' => 1, 'html' => View::fetch('user/wallet_items'), 'has_more' => $hasMore, 'page' => $page]);
         }
+
+        // 总收入 / 总支出：按流水正负汇总
+        $income  = $isVirtual ? 0 : (float)Db::name('balance_log')->where('user_id', $id)->where('amount', '>', 0)->sum('amount');
+        $expense = $isVirtual ? 0 : abs((float)Db::name('balance_log')->where('user_id', $id)->where('amount', '<', 0)->sum('amount'));
 
         View::assign([
             'user'         => $user,
             'is_virtual'   => $isVirtual,
             'total_assets' => number_format($totalAssets, 2),
-            'wait_pay'     => $waitPay,
-            'finished'     => $finished,
-            'deal_count'   => $dealCount,
+            'total_income' => number_format($income, 2),
+            'total_expense'=> number_format($expense, 2),
             'logs'         => $logs,
+            'has_more'     => $hasMore,
             'page_title'   => lang('我的钱包'),
             'tab_active'   => 'mine',
         ]);

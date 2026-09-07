@@ -17,9 +17,10 @@ class Setting extends Base
                 'seller_check', 'goods_check', 'withdraw_fee', 'service_phone',
                 'service_qq', 'service_link', 'auction_delay', 'user_protocol', 'privacy_policy', 'publish_protocol',
                 'user_protocol_tw', 'user_protocol_en', 'privacy_policy_tw', 'privacy_policy_en', 'publish_protocol_tw', 'publish_protocol_en',
-                'withdraw_min', 'withdraw_max', 'virtual_balance',
+                'withdraw_min', 'withdraw_max',
                 'order_pay_timeout_hours', 'order_timeout_deposit', 'order_auto_confirm_days', 'order_ship_remind_days',
                 'about_us', 'about_us_tw', 'about_us_en', 'about_us_image',
+                'about_dept', 'about_dept_tw', 'about_dept_en',
             ];
             $data = [];
             foreach ($fields as $field) {
@@ -28,7 +29,7 @@ class Setting extends Base
                     continue;
                 }
                 $value = trim($this->request->post($field, ''));
-                if (in_array($field, ['commission_rate', 'withdraw_fee', 'withdraw_min', 'withdraw_max', 'virtual_balance'])) {
+                if (in_array($field, ['commission_rate', 'withdraw_fee', 'withdraw_min', 'withdraw_max'])) {
                     $value = (string)max(0, (float)$value);
                 }
                 $data[$field] = $value;
@@ -69,9 +70,10 @@ class Setting extends Base
             'withdraw_fee' => '0', 'service_phone' => '',
             'service_qq' => '', 'service_link' => '', 'auction_delay' => '0', 'user_protocol' => '', 'privacy_policy' => '', 'publish_protocol' => '',
             'user_protocol_tw' => '', 'user_protocol_en' => '', 'privacy_policy_tw' => '', 'privacy_policy_en' => '', 'publish_protocol_tw' => '', 'publish_protocol_en' => '',
-            'withdraw_min' => '0', 'withdraw_max' => '0', 'virtual_balance' => '10000',
+            'withdraw_min' => '0', 'withdraw_max' => '0',
             'order_pay_timeout_hours' => '0', 'order_timeout_deposit' => 'forfeit_platform', 'order_auto_confirm_days' => '0', 'order_ship_remind_days' => '0',
             'about_us' => '', 'about_us_tw' => '', 'about_us_en' => '', 'about_us_image' => '',
+            'about_dept' => '', 'about_dept_tw' => '', 'about_dept_en' => '',
         ];
         $settings = array_merge($defaults, $settings);
         View::assign(['settings' => $settings, 'menu_active' => '/admin1314/setting/index']);

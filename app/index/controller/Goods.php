@@ -15,7 +15,7 @@ class Goods extends Base
         $goods = Db::name('goods')->alias('g')
             ->leftJoin('user u', 'g.seller_id = u.id')
             ->leftJoin('category c', 'g.category_id = c.id')
-            ->field('g.*, u.nickname as seller_name, u.shop_name as seller_shop, u.avatar as seller_avatar, u.seller_intro, u.deposit as seller_deposit, u.shop_score, u.fans_count, c.name as category_name')
+            ->field('g.*, u.nickname as seller_name, u.shop_name as seller_shop, u.avatar as seller_avatar, u.seller_intro, u.deposit as seller_deposit, u.shop_score, u.credit_score, u.fans_count, c.name as category_name')
             ->where('g.id', $id)
             ->find();
 

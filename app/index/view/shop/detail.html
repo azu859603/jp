@@ -50,7 +50,8 @@
     {/if}
     <div class="sh-stats">
         <div class="st"><div class="v">{$seller.deposit|number_format=2}</div><div class="k">{:lang('消保金')}</div></div>
-        <div class="st"><div class="v">{$seller.shop_score|number_format=2}</div><div class="k">{:lang('店铺评分')}</div></div>
+        <div class="st"><div class="v" style="color:#f59e0b;letter-spacing:1px;">{:str_repeat('★', (int)round($seller.shop_score))}{:str_repeat('☆', 5 - (int)round($seller.shop_score))}</div><div class="k">{:lang('店铺星级')}</div></div>
+        <div class="st"><div class="v">{$seller.credit_score|default=100}</div><div class="k">{:lang('信誉分')}</div></div>
         <div class="st"><div class="v">{$fans}</div><div class="k">{:lang('粉丝')}</div></div>
     </div>
 </div>

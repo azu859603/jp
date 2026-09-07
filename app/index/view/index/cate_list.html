@@ -14,6 +14,7 @@ var cateState = {
     loading: false
 };
 
+// 点击仍可触发，作为兜底；正常情况由 autoLoadMore 在上拉到底时自动调用
 document.getElementById('cateWrap').addEventListener('click', function (e) {
     var link = e.target.closest ? e.target.closest('.load-more') : null;
     if (!link) return;
@@ -27,8 +28,10 @@ function loadMoreCate() {
 
     var wrap = document.getElementById('cateWrap');
     var link = wrap.querySelector('.load-more');
-    var oldText = link ? link.textContent : '';
-    if (link) link.textContent = (typeof t === 'function' ? t('加载中') : '加载中') + '...';
+    var txtEl = link ? link.querySelector('.lm-txt') : null;
+    var oldText = txtEl ? txtEl.textContent : '';
+    if (link) link.classList.add('loading');
+    if (txtEl) txtEl.textContent = txtEl.getAttribute('data-loading') || oldText;
 
     var next = cateState.page + 1;
     var xhr = new XMLHttpRequest();
@@ -37,7 +40,8 @@ function loadMoreCate() {
     xhr.onload = function () {
         cateState.loading = false;
         if (xhr.status !== 200) {
-            if (link) link.textContent = oldText;
+            if (link) link.classList.remove('loading');
+            if (txtEl) txtEl.textContent = oldText;
             toast('加载失败，请重试');
             return;
         }
@@ -60,12 +64,14 @@ function loadMoreCate() {
     };
     xhr.onerror = function () {
         cateState.loading = false;
-        if (link) link.textContent = oldText;
+        if (link) link.classList.remove('loading');
+        if (txtEl) txtEl.textContent = oldText;
         toast('网络异常，请重试');
     };
     xhr.send();
 }
 
 initCountdowns();
+if (typeof autoLoadMore === 'function') autoLoadMore(document.getElementById('cateWrap'), loadMoreCate);
 </script>
 {/block}

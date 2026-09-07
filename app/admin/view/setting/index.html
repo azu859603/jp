@@ -51,7 +51,7 @@
             <div class="form-group">
                 <label>平台佣金比例（%）</label>
                 <input type="number" step="0.1" min="0" max="100" class="form-control" name="commission_rate" value="{$settings.commission_rate}">
-                <div class="tip">卖家成交后按此比例向平台支付佣金，商品发布时可单独设置</div>
+                <div class="tip">成交后按此比例从成交价中扣除平台佣金，卖家实收 = 成交价 − 佣金；填 0 表示不收佣金</div>
             </div>
             <div class="form-group">
                 <label>提现手续费（%）</label>
@@ -70,11 +70,6 @@
             </div>
         </div>
         <div class="form-row">
-            <div class="form-group">
-                <label>虚拟会员默认永存金额（元）</label>
-                <input type="number" step="0.01" min="0" class="form-control" name="virtual_balance" value="{$settings.virtual_balance}">
-                <div class="tip">后台添加的虚拟会员初始余额，扣减后自动回补，不产生账单流水，不支持充值/提现</div>
-            </div>
             <div class="form-group">
                 <label>卖家开通审核</label>
                 <select class="form-control" name="seller_check">
@@ -152,6 +147,19 @@
             <label>关于我们（英文）</label>
             <textarea class="form-control" name="about_us_en" style="min-height:120px;" placeholder="不填则默认使用简体内容">{$settings.about_us_en}</textarea>
         </div>
+        <div class="form-group">
+            <label>业务部门（简体）</label>
+            <textarea class="form-control" name="about_dept" style="min-height:220px;font-family:monospace;" placeholder="每个部门一段，段与段之间空一行：&#10;第一行是部门名称，之后每行是「岗位：姓名 姓名」&#10;&#10;古代书画部&#10;总经理：张三&#10;业务经理：李四 王五">{$settings.about_dept}</textarea>
+            <div class="tip">显示在「关于我们」页面正文下方。每个部门一段，段间空一行；第一行部门名称，其余每行「岗位：姓名」，姓名可留空只显示岗位。内容为空则不显示该区块</div>
+        </div>
+        <div class="form-group">
+            <label>业务部门（繁体）</label>
+            <textarea class="form-control" name="about_dept_tw" style="min-height:140px;font-family:monospace;" placeholder="不填则默认使用简体内容">{$settings.about_dept_tw}</textarea>
+        </div>
+        <div class="form-group">
+            <label>业务部门（英文）</label>
+            <textarea class="form-control" name="about_dept_en" style="min-height:140px;font-family:monospace;" placeholder="不填则默认使用简体内容">{$settings.about_dept_en}</textarea>
+        </div>
     </form>
 </div>
 
@@ -206,7 +214,7 @@
 <script>
 function saveAll(){
     var fd = new FormData();
-    ['site_name','site_url','site_logo','service_phone','service_qq','service_link','commission_rate','withdraw_fee','seller_check','goods_check','auction_delay','user_protocol','privacy_policy','publish_protocol','user_protocol_tw','user_protocol_en','privacy_policy_tw','privacy_policy_en','publish_protocol_tw','publish_protocol_en','withdraw_min','withdraw_max','virtual_balance','order_pay_timeout_hours','order_timeout_deposit','order_auto_confirm_days','order_ship_remind_days','about_us','about_us_tw','about_us_en','about_us_image'].forEach(function(name){
+    ['site_name','site_url','site_logo','service_phone','service_qq','service_link','commission_rate','withdraw_fee','seller_check','goods_check','auction_delay','user_protocol','privacy_policy','publish_protocol','user_protocol_tw','user_protocol_en','privacy_policy_tw','privacy_policy_en','publish_protocol_tw','publish_protocol_en','withdraw_min','withdraw_max','order_pay_timeout_hours','order_timeout_deposit','order_auto_confirm_days','order_ship_remind_days','about_us','about_us_tw','about_us_en','about_us_image','about_dept','about_dept_tw','about_dept_en'].forEach(function(name){
         var el = document.querySelector('[name="' + name + '"]');
         if(el) fd.append(name, el.value);
     });

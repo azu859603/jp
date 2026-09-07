@@ -88,7 +88,8 @@
     <div class="sm-intro">{if !empty($goods.seller_intro)}{$goods.seller_intro}{else}{:lang('该店铺暂无介绍')}{/if}</div>
     <div class="sm-row">
         <div class="sm-item"><div class="v">¥{$goods.seller_deposit|default=0|number_format=2}</div><div class="k">{:lang('消费保证金')}</div></div>
-        <div class="sm-item"><div class="v">{$goods.shop_score|default=0|number_format=1}</div><div class="k">{:lang('店铺评分')}</div></div>
+        <div class="sm-item"><div class="v" style="color:#f59e0b;letter-spacing:1px;">{:str_repeat('★', (int)round($goods.shop_score ?? 0))}{:str_repeat('☆', 5 - (int)round($goods.shop_score ?? 0))}</div><div class="k">{:lang('店铺星级')}</div></div>
+        <div class="sm-item"><div class="v">{$goods.credit_score|default=100}</div><div class="k">{:lang('信誉分')}</div></div>
         <div class="sm-item"><div class="v">{$goods.fans_count|default=0}</div><div class="k">{:lang('粉丝数量')}</div></div>
     </div>
 </div>
@@ -111,12 +112,12 @@
 <div class="detail-params">
     <div class="param-row"><span>{:lang('起拍价')}</span><b>¥{$goods.start_price|number_format=2}</b></div>
     <div class="param-row"><span>{:lang('保证金')}</span><b>{if $goods.deposit>0}¥{$goods.deposit|number_format=2}{else}{:lang('无需保证金')}{/if}</b></div>
-    <!-- <div class="param-row"><span>佣金</span><b>{$goods.commission_rate|default=0}%</b></div> -->
     <div class="param-row"><span>{:lang('加价幅度')}</span><b>¥{$goods.raise_price|number_format=2}</b></div>
     {if isset($goods.reference_price) && $goods.reference_price > 0}
     <div class="param-row"><span>{:lang('参考价')}</span><b>¥{$goods.reference_price|number_format=2}</b></div>
     {/if}
-    <div class="param-row"><span>{:lang('邮费')}</span><b>{if isset($goods.is_free_shipping) && $goods.is_free_shipping}{:lang('包邮')}{else}{:lang('买家承担')}{/if}</b></div>
+    {php}$commissionRate = goods_commission_rate($goods);{/php}
+    <div class="param-row"><span>{:lang('佣金')}</span><b>{if $commissionRate > 0}<span style="color:#16a34a;">{:lang('有')}</span>{else}<span style="color:#e11d48;">{:lang('无')}</span>{/if}</b></div>
 </div>
 
 <!-- 互动信息 -->

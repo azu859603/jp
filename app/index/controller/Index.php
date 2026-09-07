@@ -112,6 +112,7 @@ class Index extends Base
     {
         View::assign([
             'about'      => about_us_content(),
+            'depts'      => about_dept_content(),
             'page_title' => lang('关于我们'),
             'tab_active' => 'index',
         ]);

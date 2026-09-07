@@ -86,7 +86,7 @@ class Member extends Base
             if ($status !== '') {
                 $query->where('seller_check', (int)$status);
             }
-            $query->field('id,mobile,nickname,avatar,invite_code,pid,is_seller,seller_check,balance,freeze_balance,points,commission_rate,total_buy,total_sell,status,reg_ip,reg_time,last_login_time,create_time,shop_name,company_name,license_img,real_name');
+            $query->field('id,mobile,nickname,avatar,invite_code,pid,is_seller,seller_check,balance,freeze_balance,points,commission_rate,total_buy,total_sell,status,reg_ip,reg_time,last_login_time,create_time,shop_name,company_name,license_img,real_name,shop_score,credit_score');
             $total = $query->count();
             $list = $query->order('id', 'desc')->page($page, $limit)->select()->toArray();
 
@@ -260,7 +260,7 @@ class Member extends Base
     }
 
     /**
-     * 更新店铺资料（店铺介绍/消费保证金/店铺评分/粉丝数量）
+     * 更新店铺资料（店铺介绍/消费保证金/店铺星级/卖家信誉分/粉丝数量）
      */
     public function updateShop()
     {
@@ -276,17 +276,23 @@ class Member extends Base
         $deposit = round((float)$this->request->post('deposit', 0), 2);
         $score = round((float)$this->request->post('shop_score', 5), 1);
         $fans = max((int)$this->request->post('fans_count', 0), 0);
+        $credit = (int)$this->request->post('credit_score', $user['credit_score'] ?? 100);
         if ($deposit < 0 || $score < 0 || $score > 5 || $fans < 0) {
             return json(['code' => 0, 'msg' => '参数不正确']);
+        }
+        if ($credit < 0 || $credit > 999) {
+            return json(['code' => 0, 'msg' => '信誉分范围 0 ~ 999']);
         }
         Db::name('user')->where('id', $id)->update([
             'seller_intro' => mb_substr($intro, 0, 200),
             'deposit'      => $deposit,
             'shop_score'   => $score,
+            'credit_score' => $credit,
             'fans_count'   => $fans,
             'update_time'  => time(),
         ]);
-        admin_log('修改店铺资料：会员 ' . ($user['mobile'] ?: $user['id']));
+        $creditNote = $credit !== (int)($user['credit_score'] ?? 100) ? '，信誉分 ' . (int)$user['credit_score'] . ' → ' . $credit : '';
+        admin_log('修改店铺资料：会员 ' . ($user['mobile'] ?: $user['id']) . $creditNote);
         return json(['code' => 1, 'msg' => '已保存']);
     }
 
@@ -312,7 +318,7 @@ class Member extends Base
         if (strlen($password) < 6) {
             return json(['code' => 0, 'msg' => '密码至少6位']);
         }
-        if (!$isVirtual && $balance < 0) {
+        if ($balance < 0) {
             return json(['code' => 0, 'msg' => '初始余额不能为负数']);
         }
         if (Db::name('user')->where('mobile', $mobile)->find()) {
@@ -326,8 +332,8 @@ class Member extends Base
         $myCode = generate_invite_code();
 
         $now = time();
-        // 虚拟会员：余额 = 系统设置的永存金额，不审计流水
-        $virtualBalance = $isVirtual ? (float)Db::name('setting')->where('name', 'virtual_balance')->value('value') : $balance;
+        // 虚拟会员：余额 = 表单填写的金额（默认 100000），永存不减、不审计流水
+        $virtualBalance = $balance;
         Db::startTrans();
         try {
             $userId = Db::name('user')->insertGetId([

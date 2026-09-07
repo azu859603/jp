@@ -56,13 +56,6 @@
             <label style="display:flex;align-items:center;gap:6px;margin-left:16px;"><input type="radio" name="is_featured" value="1"> {:lang('是')}</label>
         </div>
     </div>
-    <div class="form-row">
-        <span class="fl">{:lang('是否包邮')}</span>
-        <div class="fr">
-            <label style="display:flex;align-items:center;gap:6px;"><input type="radio" name="is_free_shipping" value="0" checked> {:lang('否')}</label>
-            <label style="display:flex;align-items:center;gap:6px;margin-left:16px;"><input type="radio" name="is_free_shipping" value="1"> {:lang('是')}</label>
-        </div>
-    </div>
 </div>
 
 <div class="form-card">
@@ -180,7 +173,6 @@ function doPublish() {
         end_time: endTime,
         content: document.getElementById('content').value.trim(),
         is_featured: document.querySelector('input[name=is_featured]:checked').value,
-        is_free_shipping: document.querySelector('input[name=is_free_shipping]:checked').value,
         images: uploadedImages
     }, function(res){
         if (res.code === 1) {

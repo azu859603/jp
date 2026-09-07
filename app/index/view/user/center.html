@@ -152,7 +152,7 @@
     </span>
     <span class="sz-txt">
         <b>{:lang('卖家中心')}</b>
-        <i>{:lang('管理商品 · 查看出价 · 处理订单')}</i>
+        <i>{:lang('店铺星级')} <span style="color:#f59e0b;">{:str_repeat('★', (int)round($user.shop_score ?? 5))}</span> · {:lang('信誉分')} <b style="color:{if ($user.credit_score ?? 100) >= 90}#16a34a{elseif ($user.credit_score ?? 100) >= 60 /}#f59e0b{else /}#dc2626{/if};">{$user.credit_score|default=100}</b></i>
     </span>
     <span class="sz-btn">{:lang('进入')} ›</span>
 </a>

@@ -31,7 +31,7 @@
     {/foreach}
 </div>
 {if $page*$limit < $total}
-<a class="load-more" href="/?page={$page+1}&category_id={$category_id}&seller_id={$seller_id}&keyword={$keyword|urlencode=###}&sort={$sort}">{:lang('加载更多')}</a>
+<a class="load-more" href="/?page={$page+1}&category_id={$category_id}&seller_id={$seller_id}&keyword={$keyword|urlencode=###}&sort={$sort}"><span class="lm-spin"></span><span class="lm-txt" data-loading="{:lang('加载中...')}">{:lang('上拉加载更多')}</span></a>
 {else}
 <div class="no-more">{:lang('—— 没有更多数据了 ——')}</div>
 {/if}

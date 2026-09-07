@@ -100,17 +100,14 @@
             </div>
             <div class="g-row">
                 <div class="g-col"><label>保证金（元）</label><input type="number" step="0.01" min="0" class="form-control" id="gDeposit" placeholder="0"></div>
-                <div class="g-col"><label>佣金比例（%）</label><input type="number" step="0.01" min="0" max="100" class="form-control" id="gCommission" placeholder="0 按系统设置"></div>
                 <div class="g-col"><label>参考价（元）</label><input type="number" step="0.01" min="0" class="form-control" id="gRef" placeholder="0"></div>
+                <div class="g-col"><label>佣金</label><div class="tip" style="margin-top:8px;">按基础设置的佣金比例，成交后从成交价中扣除</div></div>
             </div>
             <div class="g-row">
                 <div class="g-col"><label>截拍时间 <span class="req">*</span></label><input type="datetime-local" class="form-control" id="gEndTime"></div>
                 <div class="g-col"><label>延迟结束（秒）</label><input type="number" min="0" class="form-control" id="gDelay" placeholder="0 表示不延迟"></div>
                 <div class="g-col" style="display:flex;align-items:flex-end;padding-bottom:4px;">
                     <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:normal;font-size:13px;margin:0;">
-                        <input type="checkbox" id="gFreeShip" style="width:16px;height:16px;"> 包邮
-                    </label>
-                    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:normal;font-size:13px;margin:0 0 0 14px;">
                         <input type="checkbox" id="gFeatured" style="width:16px;height:16px;"> 推荐
                     </label>
                 </div>
@@ -293,11 +290,9 @@ function openAddGoods(){
     document.getElementById('gRaise').value = '';
     document.getElementById('gReserve').value = '';
     document.getElementById('gDeposit').value = '';
-    document.getElementById('gCommission').value = '';
     document.getElementById('gRef').value = '';
     document.getElementById('gEndTime').value = '';
     document.getElementById('gDelay').value = '';
-    document.getElementById('gFreeShip').checked = false;
     document.getElementById('gFeatured').checked = false;
     document.getElementById('gContent').value = '';
     filterSeller();
@@ -380,11 +375,9 @@ function doAddGoods(){
         raise_price: raisePrice,
         reserve_price: document.getElementById('gReserve').value || 0,
         deposit: document.getElementById('gDeposit').value || 0,
-        commission_rate: document.getElementById('gCommission').value || 0,
         reference_price: document.getElementById('gRef').value || 0,
         end_time: endTime,
         delay_seconds: document.getElementById('gDelay').value || 0,
-        is_free_shipping: document.getElementById('gFreeShip').checked ? 1 : 0,
         is_featured: document.getElementById('gFeatured').checked ? 1 : 0,
         cover: goodsImgs[0],
         images: goodsImgs.join(',')

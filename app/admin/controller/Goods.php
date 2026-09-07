@@ -82,7 +82,6 @@ class Goods extends Base
         $raisePrice = round((float)$this->request->post('raise_price', 0), 2);
         $reservePrice = round((float)$this->request->post('reserve_price', 0), 2);
         $deposit = round((float)$this->request->post('deposit', 0), 2);
-        $commissionRate = round((float)$this->request->post('commission_rate', 0), 2);
         $endTime = trim($this->request->post('end_time', ''));
         $delaySeconds = (int)$this->request->post('delay_seconds', 0);
         $cover = trim($this->request->post('cover', ''));
@@ -142,9 +141,7 @@ class Goods extends Base
             'raise_price'     => $raisePrice,
             'reserve_price'   => $reservePrice,
             'deposit'         => $deposit,
-            'commission_rate' => $commissionRate,
             'reference_price' => round((float)$this->request->post('reference_price', 0), 2),
-            'is_free_shipping' => (int)$this->request->post('is_free_shipping', 0),
             'is_featured'      => (int)$this->request->post('is_featured', 0),
             'start_time'      => $st,
             'end_time'        => $et,

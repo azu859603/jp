@@ -1,48 +1,85 @@
 {extend name="layout" /}
 {block name="content"}
-<div class="wallet-top">
-    <div class="w-label">{:lang('资产总额(元)')}</div>
-    <div class="w-amount">{$user.balance|number_format=2}</div>
-    <div class="w-ops">
+<div class="wallet2">
+    <div class="wl-card">
+        <div class="wl-title"><span class="wl-bag">¥</span>{:lang('我的钱包')}</div>
+        <div class="wl-total"><small>¥</small> {$total_assets}</div>
+        <div class="wl-total-lbl">{:lang('总资产')}</div>
+        <div class="wl-io">
+            <div class="wl-io-item">
+                <div class="k">{:lang('总收入')}</div>
+                <div class="v in">¥{$total_income}</div>
+            </div>
+            <div class="wl-io-item">
+                <div class="k">{:lang('总支出')}</div>
+                <div class="v out">¥{$total_expense}</div>
+            </div>
+        </div>
         {if isset($is_virtual) && $is_virtual}
-        <span class="w-tip" style="font-size:12px;color:#999;line-height:44px;padding:0 12px;">{:lang('虚拟会员：余额为系统永存金额，不支持充值/提现')}</span>
+        <div class="wl-virtual">{:lang('虚拟会员：余额为系统永存金额，不支持充值/提现')}</div>
         {else /}
-        <a class="w-op" href="/user/withdraw">{:lang('提现')}</a>
-        <a class="w-op" href="/user/recharge">{:lang('充值')}</a>
+        <div class="wl-btns">
+            <a class="wl-btn" href="/user/withdraw"><i class="ic-wd"></i>{:lang('申请提现')}</a>
+            <a class="wl-btn light" href="/user/recharge">{:lang('充值')}</a>
+        </div>
         {/if}
     </div>
-</div>
-<!--<div class="wallet-cards">-->
-<!--    <div class="wcard"><div class="num">{$data.reward_pending|default=0}</div><div class="lbl">待结算奖励</div></div>-->
-<!--    <div class="wcard"><div class="num red">{$data.reward_settled|default=0}</div><div class="lbl">已结算奖励</div></div>-->
-<!--    <div class="wcard"><div class="num">{$data.order_pending|default=0}</div><div class="lbl">待结算订单</div></div>-->
-<!--    <div class="wcard"><div class="num red">{$data.order_settled|default=0}</div><div class="lbl">已结算订单</div></div>-->
-<!--</div>-->
-<div class="wallet-log">
-    <div class="w-head">
-        <span class="t">{:lang('余额明细')}</span>
-        <a class="more" href="/user/balance_log">{:lang('更多')}</a>
-    </div>
-    {foreach $logs as $l}
-    <div class="log-item">
-        <div class="l-ico">💰</div>
-        <div class="l-info">
-            <div class="l-name">{$l.remark}</div>
-            <div class="l-time">{$l.create_time|date='Y-m-d H:i'}</div>
+
+    <div class="wl-list">
+        <div class="wl-head"><i class="ic-list"></i>{:lang('资产明细')}</div>
+        <div id="wlItems">
+            {include file="user/wallet_items" /}
         </div>
-        <div style="text-align:right;">
-            <div class="l-amount {if $l.amount>0}in{else}out{/if}">{if $l.amount>0}+{/if}{$l.amount|number_format=2}</div>
-            <div class="l-balance">{:lang('余额')} {$l.balance|number_format=2}</div>
+        {if empty($logs)}
+        <div class="empty" style="padding:40px 0;">{:lang('暂无记录')}</div>
+        {else /}
+        <div class="wl-more" id="wlMore" data-has-more="{$has_more ? 1 : 0}">
+            {if $has_more}<span class="wl-spin"></span>{:lang('加载中...')}{else}{:lang('没有更多了')}{/if}
         </div>
+        {/if}
     </div>
-    {/foreach}
-    {if empty($logs)}
-    <div class="empty" style="padding:30px 0;">{:lang('暂无记录')}</div>
-    {/if}
 </div>
 {/block}
 {block name="script"}
 <script>
 document.querySelector('.page').classList.add('no-bg');
+(function(){
+    var box = document.getElementById('wlItems');
+    var more = document.getElementById('wlMore');
+    if (!box || !more) return;
+    var page = 1, loading = false, hasMore = more.getAttribute('data-has-more') === '1';
+    var txtLoading = '<span class="wl-spin"></span>' + {:json_encode(lang('加载中...'))};
+    var txtEnd = {:json_encode(lang('没有更多了'))};
+    var txtFail = {:json_encode(lang('加载失败，上拉重试'))};
+    function loadNext(){
+        if (loading || !hasMore) return;
+        loading = true;
+        more.innerHTML = txtLoading;
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', '/user/wallet?page=' + (page + 1), true);
+        xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+        xhr.onload = function(){
+            loading = false;
+            var res = null;
+            try { res = JSON.parse(xhr.responseText); } catch(e) {}
+            if (!res || res.code != 1) { more.innerHTML = txtFail; return; }
+            page = res.page;
+            box.insertAdjacentHTML('beforeend', res.html);
+            hasMore = !!res.has_more;
+            more.innerHTML = hasMore ? txtLoading : txtEnd;
+            if (hasMore) check(); // 一页不足一屏时继续拉
+        };
+        xhr.onerror = function(){ loading = false; more.innerHTML = txtFail; };
+        xhr.send();
+    }
+    function check(){
+        if (!hasMore || loading) return;
+        var rect = more.getBoundingClientRect();
+        if (rect.top < (window.innerHeight || document.documentElement.clientHeight) + 80) loadNext();
+    }
+    window.addEventListener('scroll', check, {passive:true});
+    window.addEventListener('resize', check);
+    check();
+})();
 </script>
 {/block}
