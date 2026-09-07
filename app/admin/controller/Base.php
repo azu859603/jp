@@ -85,7 +85,7 @@ class Base extends BaseController
             'items' => [
                 ['title' => '基础设置', 'url' => '/admin1314/setting/index'],
                 ['title' => '轮播管理', 'url' => '/admin1314/banner/index'],
-                ['title' => '新闻管理', 'url' => '/admin1314/news/index'],
+//                ['title' => '新闻管理', 'url' => '/admin1314/news/index'],
                 ['title' => '管理员管理', 'url' => '/admin1314/admin_user/index'],
                 ['title' => '操作日志', 'url' => '/admin1314/log/index'],
             ],

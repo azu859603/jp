@@ -1,20 +1,31 @@
 {extend name="layout" /}
 {block name="title"}{$page_title}{/block}
 {block name="content"}
-<style>
-.agree-detail{background:#fff;padding:18px 14px 24px;}
-.agree-detail h1{font-size:18px;font-weight:600;color:#333;line-height:1.5;}
-.agree-detail .ad-line{height:1px;background:#f5f5f5;margin:12px 0 14px;}
-.agree-detail .ad-content{font-size:14px;color:#444;line-height:1.9;word-break:break-word;white-space:pre-wrap;}
-.agree-detail .ad-empty{text-align:center;color:#bbb;padding:60px 0;font-size:13px;}
-</style>
-<div class="agree-detail">
-    <h1>{$title}</h1>
-    <div class="ad-line"></div>
-    {if !empty($content)}
-    <div class="ad-content">{$content}</div>
-    {else}
-    <div class="ad-empty">{:lang('内容暂未发布，请稍后再查看')}</div>
-    {/if}
+<div class="agree-page">
+    <div class="agree-head">
+        <div class="ah-ico">
+            {if $type=='privacy'}
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6l8-3z"/><path d="M9 12l2 2 4-4"/></svg>
+            {else}
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8l-5-5z"/><path d="M14 3v5h5"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="13" y2="17"/></svg>
+            {/if}
+        </div>
+        <div class="ah-info">
+            <div class="ah-title">{$title}</div>
+            <div class="ah-sub">{:lang('请仔细阅读以下条款')}</div>
+        </div>
+        <div class="ah-tabs">
+            <a href="/user/agreement?type=protocol" class="{if $type!='privacy'}on{/if}">{:lang('用户协议')}</a>
+            <a href="/user/agreement?type=privacy" class="{if $type=='privacy'}on{/if}">{:lang('隐私政策')}</a>
+        </div>
+    </div>
+
+    <div class="agree-card">
+        {if !empty($content)}
+        <div class="ac-content">{$content}</div>
+        {else}
+        <div class="ac-empty"><div class="e-ico">📄</div><div>{:lang('内容暂未发布，请稍后再查看')}</div></div>
+        {/if}
+    </div>
 </div>
 {/block}

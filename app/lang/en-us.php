@@ -231,6 +231,7 @@ return [
     '秒' => 's',
     '默认' => 'Default',
     '内容暂未发布，请稍后再查看' => 'Content not yet published, check back later',
+    '请仔细阅读以下条款' => 'Please read the following terms carefully',
     '昵称' => 'Nickname',
     '匿名' => 'Anonymous',
     '您的入驻申请已提交，请耐心等待审核' => 'Your application has been submitted, please wait',

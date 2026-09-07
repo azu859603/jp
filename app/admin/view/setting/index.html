@@ -4,286 +4,460 @@
 {block name="crumb"}系统设置 / <b>基础设置</b>{/block}
 
 {block name="content"}
-<div class="card" style="max-width:760px;">
-    <div class="card-title">站点设置</div>
-    <form id="settingForm" onsubmit="return false;">
-        <div class="form-row">
-            <div class="form-group">
-                <label>站点名称</label>
-                <input type="text" class="form-control" name="site_name" value="{$settings.site_name}">
-            </div>
-            <div class="form-group">
-                <label>站点网址</label>
-                <input type="text" class="form-control" name="site_url" value="{$settings.site_url}" placeholder="https://example.com">
-            </div>
-        </div>
-        <div class="form-group">
-            <label>站点 Logo（首页左上角展示）</label>
-            <div class="upload-box">
-                <div class="up-item" id="logoBox" {if empty($settings.site_logo)}style="display:none;"{/if} onclick="uploadLogo()">
-                    {if !empty($settings.site_logo)}<img src="{$settings.site_logo}" style="height:32px;object-fit:contain;"><span class="del" onclick="event.stopPropagation();removeLogo()">×</span>{/if}
+<style>
+.st-page{display:flex;gap:20px;align-items:flex-start;padding-bottom:70px}
+/* 左侧分组导航 */
+.st-nav{width:200px;flex:none;background:#fff;border-radius:10px;box-shadow:0 1px 3px rgba(0,0,0,.06);padding:8px;position:sticky;top:80px}
+.st-nav a{display:flex;align-items:center;gap:10px;padding:11px 12px;border-radius:8px;color:#475569;font-size:14px;cursor:pointer;transition:all .15s}
+.st-nav a svg{width:18px;height:18px;flex:none;color:#94a3b8}
+.st-nav a:hover{background:#f8fafc;color:#1e293b}
+.st-nav a.on{background:#fff3e6;color:#ea580c;font-weight:600}
+.st-nav a.on svg{color:#ff7a00}
+.st-nav a .dot{margin-left:auto;width:7px;height:7px;border-radius:50%;background:#ff7a00;display:none}
+.st-nav a.dirty .dot{display:block}
+/* 右侧面板 */
+.st-body{flex:1;min-width:0;max-width:860px}
+.st-panel{display:none}
+.st-panel.on{display:block}
+.st-card{background:#fff;border-radius:10px;box-shadow:0 1px 3px rgba(0,0,0,.06);margin-bottom:16px;overflow:hidden}
+.st-card .sc-head{display:flex;align-items:center;justify-content:space-between;padding:16px 22px;border-bottom:1px solid #f1f5f9}
+.st-card .sc-head h3{font-size:15px;font-weight:600;color:#1e293b}
+.st-card .sc-head p{font-size:12px;color:#94a3b8;margin-top:3px}
+.st-card .sc-head .sc-extra{font-size:12px;color:#64748b}
+.st-card .sc-head .sc-extra a{color:#2563eb;margin-left:10px}
+.st-card .sc-body{padding:20px 22px 6px}
+.st-card .form-group label{font-weight:500;color:#334155}
+.st-card .tip{line-height:1.6}
+.st-card .tip code{background:#f1f5f9;color:#475569;padding:1px 5px;border-radius:4px;font-size:11px}
+.st-card .form-row{gap:20px}
+/* 带单位的输入 */
+.in-unit{position:relative}
+.in-unit .form-control{padding-right:44px}
+.in-unit span{position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:12px;color:#94a3b8;pointer-events:none}
+/* 开关式选择 */
+.seg{display:inline-flex;background:#f1f5f9;border-radius:8px;padding:3px}
+.seg label{padding:6px 16px;border-radius:6px;font-size:13px;color:#64748b;cursor:pointer;user-select:none;transition:all .15s}
+.seg input{display:none}
+.seg input:checked+label{background:#fff;color:#ea580c;font-weight:600;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+/* 提示块 */
+.note{display:flex;gap:10px;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:10px 14px;font-size:12px;color:#92400e;line-height:1.7;margin-bottom:16px}
+.note svg{width:16px;height:16px;flex:none;margin-top:3px}
+.note code{background:#fff;padding:1px 5px;border-radius:4px;color:#b45309}
+/* Logo 上传 */
+.logo-up{display:flex;align-items:center;gap:16px}
+.logo-up .lu-prev{width:180px;height:60px;border:1px dashed #d1d5db;border-radius:8px;background:#fafbfc url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"><rect width="8" height="8" fill="%23eef0f3"/><rect x="8" y="8" width="8" height="8" fill="%23eef0f3"/></svg>');display:flex;align-items:center;justify-content:center;overflow:hidden;cursor:pointer;color:#94a3b8;font-size:12px;position:relative}
+.logo-up .lu-prev img{max-width:90%;max-height:44px;object-fit:contain}
+.logo-up .lu-prev:hover{border-color:#ff7a00}
+.logo-up .lu-btns{display:flex;flex-direction:column;gap:6px}
+.cover-up .lu-prev{width:240px;height:110px}
+.cover-up .lu-prev img{max-width:100%;max-height:100%;width:100%;height:100%;object-fit:cover}
+/* 多语言子标签 */
+.lang-tabs{display:flex;gap:4px;margin-bottom:10px}
+.lang-tabs span{padding:5px 14px;border-radius:6px;font-size:12px;color:#64748b;cursor:pointer;border:1px solid transparent;display:flex;align-items:center;gap:6px}
+.lang-tabs span:hover{background:#f8fafc}
+.lang-tabs span.on{background:#fff3e6;color:#ea580c;border-color:#fed7aa;font-weight:600}
+.lang-tabs span i{width:6px;height:6px;border-radius:50%;background:#cbd5e1;display:inline-block}
+.lang-tabs span.filled i{background:#22c55e}
+.lang-pane{display:none}
+.lang-pane.on{display:block}
+.lang-pane textarea{font-size:13px;line-height:1.7}
+.lang-pane .cnt{text-align:right;font-size:11px;color:#94a3b8;margin-top:4px}
+.mono textarea{font-family:Consolas,Menlo,monospace}
+/* 底部保存栏 */
+.save-bar{position:fixed;left:220px;right:0;bottom:0;background:#fff;border-top:1px solid #e5e7eb;padding:12px 24px;display:flex;align-items:center;gap:16px;z-index:80;box-shadow:0 -4px 16px rgba(0,0,0,.04)}
+.save-bar .sb-state{font-size:13px;color:#94a3b8;display:flex;align-items:center;gap:6px}
+.save-bar .sb-state i{width:8px;height:8px;border-radius:50%;background:#cbd5e1}
+.save-bar.dirty .sb-state{color:#ea580c}
+.save-bar.dirty .sb-state i{background:#ff7a00}
+.save-bar .spacer{flex:1}
+.save-bar .btn-primary{padding:9px 32px;font-size:14px}
+.save-bar .btn-primary[disabled]{opacity:.6;cursor:default}
+.save-bar kbd{font-size:11px;color:#94a3b8;border:1px solid #e2e8f0;border-radius:4px;padding:1px 5px;background:#f8fafc}
+/* 轻提示 */
+.toast{position:fixed;left:50%;top:80px;transform:translate(-50%,-20px);background:#1e293b;color:#fff;padding:10px 20px;border-radius:8px;font-size:13px;opacity:0;pointer-events:none;transition:all .25s;z-index:1000;box-shadow:0 8px 24px rgba(0,0,0,.18)}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+.toast.ok{background:#16a34a}.toast.err{background:#dc2626}
+@media (max-width:900px){.st-page{flex-direction:column}.st-nav{width:100%;position:static;display:flex;flex-wrap:wrap}.save-bar{left:0}}
+</style>
+
+<div class="st-page" id="settingPage">
+    <div class="st-nav" id="stNav">
+        <a data-tab="site" class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/></svg>站点信息<i class="dot"></i></a>
+        <a data-tab="auction"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4l6 6-8 8-6-6z"/><path d="M3 21l6-6"/><path d="M15 3l6 6"/></svg>拍卖与交易<i class="dot"></i></a>
+        <a data-tab="fund"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="3"/><path d="M6 12h.01M18 12h.01"/></svg>资金与提现<i class="dot"></i></a>
+        <a data-tab="about"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>关于我们<i class="dot"></i></a>
+        <a data-tab="agree"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></svg>协议与政策<i class="dot"></i></a>
+    </div>
+
+    <div class="st-body">
+        <!-- 站点信息 -->
+        <div class="st-panel on" data-panel="site">
+            <div class="st-card">
+                <div class="sc-head"><div><h3>站点基本信息</h3><p>站点名称与 Logo 会显示在前台首页顶部、浏览器标题及各页面</p></div></div>
+                <div class="sc-body">
+                    <div class="form-row">
+                        <div class="form-group"><label>站点名称</label><input type="text" class="form-control" name="site_name" value="{$settings.site_name}"></div>
+                        <div class="form-group"><label>站点网址</label><input type="text" class="form-control" name="site_url" value="{$settings.site_url}" placeholder="https://example.com"></div>
+                    </div>
+                    <div class="form-group">
+                        <label>站点 Logo</label>
+                        <div class="logo-up">
+                            <div class="lu-prev" id="logoPrev" onclick="uploadImg('site_logo','logoPrev')">{if !empty($settings.site_logo)}<img src="{$settings.site_logo}">{else}点击上传{/if}</div>
+                            <div class="lu-btns">
+                                <button class="btn btn-sm" type="button" onclick="uploadImg('site_logo','logoPrev')">选择图片</button>
+                                <button class="btn btn-sm btn-danger" type="button" onclick="removeImg('site_logo','logoPrev')">移除</button>
+                            </div>
+                        </div>
+                        <div class="tip">建议透明底 PNG，宽高比约 4:1；不传则首页显示站点名称文字</div>
+                        <input type="hidden" name="site_logo" id="site_logo" value="{$settings.site_logo}">
+                    </div>
                 </div>
-                <div class="up-item add" id="logoAdd" {if !empty($settings.site_logo)}style="display:none;"{/if} onclick="uploadLogo()">+</div>
             </div>
-            <div class="tip">建议透明底 PNG，宽高比 4:1 左右；不传则首页显示站点文字</div>
-            <input type="hidden" name="site_logo" id="site_logo" value="{$settings.site_logo}">
-        </div>
-        <div class="form-group">
-            <label>客服电话</label>
-            <input type="text" class="form-control" name="service_phone" value="{$settings.service_phone}">
-        </div>
-        <div class="form-group">
-            <label>客服QQ</label>
-            <input type="text" class="form-control" name="service_qq" value="{$settings.service_qq}">
-        </div>
-        <div class="form-group">
-            <label>客服链接</label>
-            <input type="text" class="form-control" name="service_link" value="{$settings.service_link}" placeholder="如 https://work.weixin.qq.com/kf/xxxx">
-            <div class="tip">充值页“联系客服”按钮跳转的链接（如企业微信客服/在线客服）</div>
-        </div>
-    </form>
-</div>
-
-<div class="card" style="max-width:760px;">
-    <div class="card-title">拍卖规则</div>
-    <form id="settingForm2" onsubmit="return false;">
-        <div class="form-row">
-            <div class="form-group">
-                <label>平台佣金比例（%）</label>
-                <input type="number" step="0.1" min="0" max="100" class="form-control" name="commission_rate" value="{$settings.commission_rate}">
-                <div class="tip">成交后按此比例从成交价中扣除平台佣金，卖家实收 = 成交价 − 佣金；填 0 表示不收佣金</div>
-            </div>
-            <div class="form-group">
-                <label>提现手续费（%）</label>
-                <input type="number" step="0.1" min="0" class="form-control" name="withdraw_fee" value="{$settings.withdraw_fee}">
-            </div>
-        </div>
-        <div class="form-row">
-            <div class="form-group">
-                <label>提现单笔最低金额（元）</label>
-                <input type="number" step="0.01" min="0" class="form-control" name="withdraw_min" value="{$settings.withdraw_min}" placeholder="0 为不限制">
-            </div>
-            <div class="form-group">
-                <label>提现单笔最高金额（元）</label>
-                <input type="number" step="0.01" min="0" class="form-control" name="withdraw_max" value="{$settings.withdraw_max}" placeholder="0 为不限制">
-                <div class="tip">用户每次提现必须在此区间内，0 表示不限制</div>
-            </div>
-        </div>
-        <div class="form-row">
-            <div class="form-group">
-                <label>卖家开通审核</label>
-                <select class="form-control" name="seller_check">
-                    <option value="1" {if $settings.seller_check == '1'}selected{/if}>需要审核</option>
-                    <option value="0" {if $settings.seller_check == '0'}selected{/if}>自动开通</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label>发布商品审核</label>
-                <select class="form-control" name="goods_check">
-                    <option value="1" {if $settings.goods_check == '1'}selected{/if}>需要审核</option>
-                    <option value="0" {if $settings.goods_check == '0'}selected{/if}>无需审核</option>
-                </select>
-                <div class="tip">设为无需审核，卖家发布商品后直接上架展示</div>
-            </div>
-        </div>
-        <div class="form-row">
-            <div class="form-group">
-                <label>注册必须填写邀请码</label>
-                <select class="form-control" name="invite_required">
-                    <option value="1" {if $settings.invite_required == '1'}selected{/if}>开启（必须填写）</option>
-                    <option value="0" {if $settings.invite_required == '0'}selected{/if}>关闭（可填可不填）</option>
-                </select>
-                <div class="tip">开启：注册页邀请码显示「必须填写」，不填不能注册；关闭：显示「如无可不填」，不填则该会员没有上级。填了邀请码时都会校验是否存在</div>
-            </div>
-            <div class="form-group"></div>
-        </div>
-        <div class="form-group">
-            <label>竞拍默认延时（秒）</label>
-            <input type="number" min="0" class="form-control" name="auction_delay" value="{$settings.auction_delay}">
-            <div class="tip">竞拍结束前N秒内出价自动延长竞拍时间，0为不延时（商品发布时可单独设置）</div>
-        </div>
-        <div class="form-row">
-            <div class="form-group">
-                <label>待付款超时（小时）</label>
-                <input type="number" min="0" class="form-control" name="order_pay_timeout_hours" value="{$settings.order_pay_timeout_hours}">
-                <div class="tip">拍下后超过该小时数未付款，系统自动取消订单并让商品回到可重新上架状态；0 为不启用。由定时任务 <code>php think order:timeout</code> 每 5 分钟执行</div>
-            </div>
-            <div class="form-group">
-                <label>未付款订单的保证金处理</label>
-                <select class="form-control" name="order_timeout_deposit">
-                    <option value="forfeit_platform" {if $settings.order_timeout_deposit=='forfeit_platform'}selected{/if}>没收（归平台）</option>
-                    <option value="to_seller" {if $settings.order_timeout_deposit=='to_seller'}selected{/if}>赔付给卖家</option>
-                    <option value="refund_buyer" {if $settings.order_timeout_deposit=='refund_buyer'}selected{/if}>退还给买家</option>
-                </select>
-                <div class="tip">超时自动取消与买家主动取消待付款订单时均按此规则处理</div>
-            </div>
-        </div>
-        <div class="form-row">
-            <div class="form-group">
-                <label>自动确认收货天数</label>
-                <input type="number" min="0" class="form-control" name="order_auto_confirm_days" value="{$settings.order_auto_confirm_days}">
-                <div class="tip">发货后超过该天数买家未确认收货，系统自动完成订单（不涉及资金，完成后买家可申请售后）；0 为不启用。定时任务 <code>php think order:confirm</code> 每小时执行</div>
-            </div>
-            <div class="form-group">
-                <label>未发货提醒天数</label>
-                <input type="number" min="0" class="form-control" name="order_ship_remind_days" value="{$settings.order_ship_remind_days}">
-                <div class="tip">买家付款后超过该天数卖家仍未发货，每天给卖家发一条站内信催发货；0 为不启用。定时任务 <code>php think order:remind</code> 每天执行</div>
-            </div>
-        </div>
-    </form>
-</div>
-
-<div class="card">
-    <div class="card-title">关于我们（首页展示）</div>
-    <form onsubmit="return false;">
-        <div class="form-group">
-            <label>背景图（建议 750×400 左右，留空则使用品牌色背景）</label>
-            <div class="upload-box">
-                <div class="up-item" id="aboutImgBox" {if empty($settings.about_us_image)}style="display:none;"{/if} onclick="uploadAboutImg()">
-                    {if !empty($settings.about_us_image)}<img src="{$settings.about_us_image}" style="height:60px;object-fit:cover;"><span class="del" onclick="event.stopPropagation();removeAboutImg()">×</span>{/if}
+            <div class="st-card" style="display: none">
+                <div class="sc-head"><div><h3>客服联系方式</h3><p>展示在前台充值页、个人中心等位置</p></div></div>
+                <div class="sc-body">
+                    <div class="form-row">
+                        <div class="form-group"><label>客服电话</label><input type="text" class="form-control" name="service_phone" value="{$settings.service_phone}"></div>
+                        <div class="form-group"><label>客服 QQ</label><input type="text" class="form-control" name="service_qq" value="{$settings.service_qq}"></div>
+                    </div>
+                    <div class="form-group">
+                        <label>客服链接</label>
+                        <input type="text" class="form-control" name="service_link" value="{$settings.service_link}" placeholder="如 https://work.weixin.qq.com/kf/xxxx">
+                        <div class="tip">充值页「联系客服」按钮跳转的外部链接（企业微信客服、在线客服等）。站内客服聊天在「在线客服」菜单处理，不受此项影响</div>
+                    </div>
                 </div>
-                <div class="up-item add" id="aboutImgAdd" {if !empty($settings.about_us_image)}style="display:none;"{/if} onclick="uploadAboutImg()">+</div>
             </div>
-            <input type="hidden" name="about_us_image" id="about_us_image" value="{$settings.about_us_image}">
         </div>
-        <div class="form-group">
-            <label>关于我们（简体）</label>
-            <textarea class="form-control" name="about_us" style="min-height:160px;" placeholder="每段一行；首页卡片只显示前 3 行，点「更多」查看全文。内容为空时首页不显示该区块">{$settings.about_us}</textarea>
+
+        <!-- 拍卖与交易 -->
+        <div class="st-panel" data-panel="auction">
+            <div class="st-card">
+                <div class="sc-head"><div><h3>注册与审核</h3><p>控制新用户注册、卖家开通和商品上架的审核流程</p></div></div>
+                <div class="sc-body">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>注册必须填写邀请码</label>
+                            <div class="seg">
+                                <input type="radio" name="invite_required" id="inv1" value="1" {if $settings.invite_required == '1'}checked{/if}><label for="inv1">开启</label>
+                                <input type="radio" name="invite_required" id="inv0" value="0" {if $settings.invite_required != '1'}checked{/if}><label for="inv0">关闭</label>
+                            </div>
+                            <div class="tip">开启：注册页标注「必须填写」，不填不能注册；关闭：标注「如无可不填」，不填则该会员没有上级。填写时都会校验邀请码是否存在</div>
+                        </div>
+                        <div class="form-group">
+                            <label>卖家开通审核</label>
+                            <div class="seg">
+                                <input type="radio" name="seller_check" id="sc1" value="1" {if $settings.seller_check == '1'}checked{/if}><label for="sc1">需要审核</label>
+                                <input type="radio" name="seller_check" id="sc0" value="0" {if $settings.seller_check != '1'}checked{/if}><label for="sc0">自动开通</label>
+                            </div>
+                            <div class="tip">需要审核时，申请在「卖家管理」中处理</div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>发布商品审核</label>
+                        <div class="seg">
+                            <input type="radio" name="goods_check" id="gc1" value="1" {if $settings.goods_check == '1'}checked{/if}><label for="gc1">需要审核</label>
+                            <input type="radio" name="goods_check" id="gc0" value="0" {if $settings.goods_check != '1'}checked{/if}><label for="gc0">无需审核</label>
+                        </div>
+                        <div class="tip">无需审核时，卖家发布商品后直接上架展示</div>
+                    </div>
+                </div>
+            </div>
+            <div class="st-card">
+                <div class="sc-head"><div><h3>竞拍规则</h3><p>成交佣金与延时出价</p></div></div>
+                <div class="sc-body">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>平台佣金比例</label>
+                            <div class="in-unit"><input type="number" step="0.1" min="0" max="100" class="form-control" name="commission_rate" value="{$settings.commission_rate}"><span>%</span></div>
+                            <div class="tip">成交后按此比例从成交价中扣除，卖家实收 = 成交价 − 佣金；填 0 表示不收佣金，商品详情会显示「无」</div>
+                        </div>
+                        <div class="form-group">
+                            <label>竞拍默认延时</label>
+                            <div class="in-unit"><input type="number" min="0" class="form-control" name="auction_delay" value="{$settings.auction_delay}"><span>秒</span></div>
+                            <div class="tip">截拍前 N 秒内有新出价则自动延长；0 为不延时。商品发布时可单独设置</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="st-card">
+                <div class="sc-head"><div><h3>订单自动处理</h3><p>由定时任务执行，填 0 表示关闭对应功能</p></div></div>
+                <div class="sc-body">
+                    <div class="note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg><div>以下功能依赖服务器定时任务：<code>php think order:timeout</code>（每 5 分钟）、<code>php think order:confirm</code>（每小时）、<code>php think order:remind</code>（每天）。定时任务未运行时，前台访问会兜底触发一次，但不保证及时</div></div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>待付款超时</label>
+                            <div class="in-unit"><input type="number" min="0" class="form-control" name="order_pay_timeout_hours" value="{$settings.order_pay_timeout_hours}"><span>小时</span></div>
+                            <div class="tip">拍下后超过该时长未付款，自动取消订单，商品可重新上架</div>
+                        </div>
+                        <div class="form-group">
+                            <label>未付款订单的保证金处理</label>
+                            <select class="form-control" name="order_timeout_deposit">
+                                <option value="forfeit_platform" {if $settings.order_timeout_deposit=='forfeit_platform'}selected{/if}>没收（归平台）</option>
+                                <option value="to_seller" {if $settings.order_timeout_deposit=='to_seller'}selected{/if}>赔付给卖家</option>
+                                <option value="refund_buyer" {if $settings.order_timeout_deposit=='refund_buyer'}selected{/if}>退还给买家</option>
+                            </select>
+                            <div class="tip">超时自动取消与买家主动取消待付款订单均按此规则处理</div>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>自动确认收货</label>
+                            <div class="in-unit"><input type="number" min="0" class="form-control" name="order_auto_confirm_days" value="{$settings.order_auto_confirm_days}"><span>天</span></div>
+                            <div class="tip">发货后超过该天数买家未确认，系统自动完成订单并结算给卖家</div>
+                        </div>
+                        <div class="form-group">
+                            <label>未发货提醒</label>
+                            <div class="in-unit"><input type="number" min="0" class="form-control" name="order_ship_remind_days" value="{$settings.order_ship_remind_days}"><span>天</span></div>
+                            <div class="tip">付款后超过该天数仍未发货，每天给卖家发一条站内信催发货</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
-        <div class="form-group">
-            <label>关于我们（繁体）</label>
-            <textarea class="form-control" name="about_us_tw" style="min-height:120px;" placeholder="不填则默认使用简体内容">{$settings.about_us_tw}</textarea>
+
+        <!-- 资金与提现 -->
+        <div class="st-panel" data-panel="fund">
+            <div class="st-card">
+                <div class="sc-head"><div><h3>提现规则</h3><p>用户申请提现时的手续费与单笔限额</p></div></div>
+                <div class="sc-body">
+                    <div class="form-group" style="max-width:380px">
+                        <label>提现手续费</label>
+                        <div class="in-unit"><input type="number" step="0.1" min="0" class="form-control" name="withdraw_fee" value="{$settings.withdraw_fee}"><span>%</span></div>
+                        <div class="tip">按申请金额的百分比扣除，实际到账 = 申请金额 − 手续费</div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>单笔最低金额</label>
+                            <div class="in-unit"><input type="number" step="0.01" min="0" class="form-control" name="withdraw_min" value="{$settings.withdraw_min}" placeholder="0 为不限制"><span>元</span></div>
+                        </div>
+                        <div class="form-group">
+                            <label>单笔最高金额</label>
+                            <div class="in-unit"><input type="number" step="0.01" min="0" class="form-control" name="withdraw_max" value="{$settings.withdraw_max}" placeholder="0 为不限制"><span>元</span></div>
+                        </div>
+                    </div>
+                    <div class="tip" style="margin:-8px 0 16px">每次提现金额必须在此区间内，0 表示该项不限制</div>
+                </div>
+            </div>
         </div>
-        <div class="form-group">
-            <label>关于我们（英文）</label>
-            <textarea class="form-control" name="about_us_en" style="min-height:120px;" placeholder="不填则默认使用简体内容">{$settings.about_us_en}</textarea>
+
+        <!-- 关于我们 -->
+        <div class="st-panel" data-panel="about">
+            <div class="st-card">
+                <div class="sc-head"><div><h3>关于我们</h3><p>首页底部卡片只显示前 3 行，点「更多」进入完整页面；内容为空时首页不显示该区块</p></div><div class="sc-extra"><a href="/about" target="_blank">预览前台 ↗</a></div></div>
+                <div class="sc-body">
+                    <div class="form-group">
+                        <label>页面背景图</label>
+                        <div class="logo-up cover-up">
+                            <div class="lu-prev" id="aboutPrev" onclick="uploadImg('about_us_image','aboutPrev')">{if !empty($settings.about_us_image)}<img src="{$settings.about_us_image}">{else}点击上传{/if}</div>
+                            <div class="lu-btns">
+                                <button class="btn btn-sm" type="button" onclick="uploadImg('about_us_image','aboutPrev')">选择图片</button>
+                                <button class="btn btn-sm btn-danger" type="button" onclick="removeImg('about_us_image','aboutPrev')">移除</button>
+                            </div>
+                        </div>
+                        <div class="tip">建议 750×400 左右；留空则使用品牌色背景</div>
+                        <input type="hidden" name="about_us_image" id="about_us_image" value="{$settings.about_us_image}">
+                    </div>
+                    <div class="form-group">
+                        <label>正文内容</label>
+                        <div class="lang-tabs" data-group="about_us"><span class="on" data-lang="">简体</span><span data-lang="_tw">繁体</span><span data-lang="_en">English</span></div>
+                        <div class="lang-pane on" data-group="about_us" data-lang=""><textarea class="form-control" name="about_us" style="min-height:180px" placeholder="每段一行">{$settings.about_us}</textarea><div class="cnt"></div></div>
+                        <div class="lang-pane" data-group="about_us" data-lang="_tw"><textarea class="form-control" name="about_us_tw" style="min-height:180px" placeholder="不填则默认使用简体内容">{$settings.about_us_tw}</textarea><div class="cnt"></div></div>
+                        <div class="lang-pane" data-group="about_us" data-lang="_en"><textarea class="form-control" name="about_us_en" style="min-height:180px" placeholder="不填则默认使用简体内容">{$settings.about_us_en}</textarea><div class="cnt"></div></div>
+                    </div>
+                </div>
+            </div>
+            <div class="st-card">
+                <div class="sc-head"><div><h3>业务部门</h3><p>显示在「关于我们」页面正文下方，内容为空则不显示该区块</p></div></div>
+                <div class="sc-body">
+                    <div class="note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg><div>格式：每个部门一段，段与段之间空一行。第一行是部门名称，之后每行「岗位：姓名 姓名」，姓名可留空只显示岗位。例如：<br>古代书画部<br>总经理：张三<br>业务经理：李四 王五</div></div>
+                    <div class="form-group mono">
+                        <div class="lang-tabs" data-group="about_dept"><span class="on" data-lang="">简体</span><span data-lang="_tw">繁体</span><span data-lang="_en">English</span></div>
+                        <div class="lang-pane on" data-group="about_dept" data-lang=""><textarea class="form-control" name="about_dept" style="min-height:240px">{$settings.about_dept}</textarea><div class="cnt"></div></div>
+                        <div class="lang-pane" data-group="about_dept" data-lang="_tw"><textarea class="form-control" name="about_dept_tw" style="min-height:240px" placeholder="不填则默认使用简体内容">{$settings.about_dept_tw}</textarea><div class="cnt"></div></div>
+                        <div class="lang-pane" data-group="about_dept" data-lang="_en"><textarea class="form-control" name="about_dept_en" style="min-height:240px" placeholder="不填则默认使用简体内容">{$settings.about_dept_en}</textarea><div class="cnt"></div></div>
+                    </div>
+                </div>
+            </div>
         </div>
-        <div class="form-group">
-            <label>业务部门（简体）</label>
-            <textarea class="form-control" name="about_dept" style="min-height:220px;font-family:monospace;" placeholder="每个部门一段，段与段之间空一行：&#10;第一行是部门名称，之后每行是「岗位：姓名 姓名」&#10;&#10;古代书画部&#10;总经理：张三&#10;业务经理：李四 王五">{$settings.about_dept}</textarea>
-            <div class="tip">显示在「关于我们」页面正文下方。每个部门一段，段间空一行；第一行部门名称，其余每行「岗位：姓名」，姓名可留空只显示岗位。内容为空则不显示该区块</div>
+
+        <!-- 协议与政策 -->
+        <div class="st-panel" data-panel="agree">
+            <div class="st-card">
+                <div class="sc-head"><div><h3>用户协议</h3><p>登录、注册页《用户协议》链接展示的内容，支持换行，按原样显示</p></div><div class="sc-extra"><a href="/user/agreement?type=protocol" target="_blank">预览前台 ↗</a></div></div>
+                <div class="sc-body">
+                    <div class="form-group">
+                        <div class="lang-tabs" data-group="user_protocol"><span class="on" data-lang="">简体</span><span data-lang="_tw">繁体</span><span data-lang="_en">English</span></div>
+                        <div class="lang-pane on" data-group="user_protocol" data-lang=""><textarea class="form-control" name="user_protocol" style="min-height:320px">{$settings.user_protocol}</textarea><div class="cnt"></div></div>
+                        <div class="lang-pane" data-group="user_protocol" data-lang="_tw"><textarea class="form-control" name="user_protocol_tw" style="min-height:320px" placeholder="不填则默认使用简体内容">{$settings.user_protocol_tw}</textarea><div class="cnt"></div></div>
+                        <div class="lang-pane" data-group="user_protocol" data-lang="_en"><textarea class="form-control" name="user_protocol_en" style="min-height:320px" placeholder="不填则默认使用简体内容">{$settings.user_protocol_en}</textarea><div class="cnt"></div></div>
+                    </div>
+                </div>
+            </div>
+            <div class="st-card">
+                <div class="sc-head"><div><h3>隐私政策</h3><p>登录、注册页《隐私政策》链接展示的内容</p></div><div class="sc-extra"><a href="/user/agreement?type=privacy" target="_blank">预览前台 ↗</a></div></div>
+                <div class="sc-body">
+                    <div class="form-group">
+                        <div class="lang-tabs" data-group="privacy_policy"><span class="on" data-lang="">简体</span><span data-lang="_tw">繁体</span><span data-lang="_en">English</span></div>
+                        <div class="lang-pane on" data-group="privacy_policy" data-lang=""><textarea class="form-control" name="privacy_policy" style="min-height:320px">{$settings.privacy_policy}</textarea><div class="cnt"></div></div>
+                        <div class="lang-pane" data-group="privacy_policy" data-lang="_tw"><textarea class="form-control" name="privacy_policy_tw" style="min-height:320px" placeholder="不填则默认使用简体内容">{$settings.privacy_policy_tw}</textarea><div class="cnt"></div></div>
+                        <div class="lang-pane" data-group="privacy_policy" data-lang="_en"><textarea class="form-control" name="privacy_policy_en" style="min-height:320px" placeholder="不填则默认使用简体内容">{$settings.privacy_policy_en}</textarea><div class="cnt"></div></div>
+                    </div>
+                </div>
+            </div>
+            <div class="st-card">
+                <div class="sc-head"><div><h3>发布协议</h3><p>卖家发布商品页《发布协议》弹窗展示的内容</p></div></div>
+                <div class="sc-body">
+                    <div class="form-group">
+                        <div class="lang-tabs" data-group="publish_protocol"><span class="on" data-lang="">简体</span><span data-lang="_tw">繁体</span><span data-lang="_en">English</span></div>
+                        <div class="lang-pane on" data-group="publish_protocol" data-lang=""><textarea class="form-control" name="publish_protocol" style="min-height:320px">{$settings.publish_protocol}</textarea><div class="cnt"></div></div>
+                        <div class="lang-pane" data-group="publish_protocol" data-lang="_tw"><textarea class="form-control" name="publish_protocol_tw" style="min-height:320px" placeholder="不填则默认使用简体内容">{$settings.publish_protocol_tw}</textarea><div class="cnt"></div></div>
+                        <div class="lang-pane" data-group="publish_protocol" data-lang="_en"><textarea class="form-control" name="publish_protocol_en" style="min-height:320px" placeholder="不填则默认使用简体内容">{$settings.publish_protocol_en}</textarea><div class="cnt"></div></div>
+                    </div>
+                </div>
+            </div>
         </div>
-        <div class="form-group">
-            <label>业务部门（繁体）</label>
-            <textarea class="form-control" name="about_dept_tw" style="min-height:140px;font-family:monospace;" placeholder="不填则默认使用简体内容">{$settings.about_dept_tw}</textarea>
-        </div>
-        <div class="form-group">
-            <label>业务部门（英文）</label>
-            <textarea class="form-control" name="about_dept_en" style="min-height:140px;font-family:monospace;" placeholder="不填则默认使用简体内容">{$settings.about_dept_en}</textarea>
-        </div>
-    </form>
+    </div>
 </div>
 
-<div class="card" style="max-width:760px;">
-    <div class="card-title">协议与政策</div>
-    <form id="settingForm3" onsubmit="return false;">
-        <div class="form-group">
-            <label>用户协议（简体）</label>
-            <textarea class="form-control" name="user_protocol" style="min-height:160px;" placeholder="用户注册协议内容">{$settings.user_protocol}</textarea>
-        </div>
-        <div class="form-group">
-            <label>用户协议（繁体）</label>
-            <textarea class="form-control" name="user_protocol_tw" style="min-height:120px;" placeholder="不填则默认使用简体内容">{$settings.user_protocol_tw}</textarea>
-        </div>
-        <div class="form-group">
-            <label>用户协议（英文）</label>
-            <textarea class="form-control" name="user_protocol_en" style="min-height:120px;" placeholder="不填则默认使用简体内容">{$settings.user_protocol_en}</textarea>
-        </div>
-        <div class="form-group">
-            <label>隐私政策（简体）</label>
-            <textarea class="form-control" name="privacy_policy" style="min-height:160px;" placeholder="隐私政策内容">{$settings.privacy_policy}</textarea>
-        </div>
-        <div class="form-group">
-            <label>隐私政策（繁体）</label>
-            <textarea class="form-control" name="privacy_policy_tw" style="min-height:120px;" placeholder="不填则默认使用简体内容">{$settings.privacy_policy_tw}</textarea>
-        </div>
-        <div class="form-group">
-            <label>隐私政策（英文）</label>
-            <textarea class="form-control" name="privacy_policy_en" style="min-height:120px;" placeholder="不填则默认使用简体内容">{$settings.privacy_policy_en}</textarea>
-            <div class="tip">登录/注册页《用户协议》《隐私政策》点击后展示的内容</div>
-        </div>
-        <div class="form-group">
-            <label>发布协议（简体）</label>
-            <textarea class="form-control" name="publish_protocol" style="min-height:160px;" placeholder="商品发布页《发布协议》弹窗展示的内容">{$settings.publish_protocol}</textarea>
-        </div>
-        <div class="form-group">
-            <label>发布协议（繁体）</label>
-            <textarea class="form-control" name="publish_protocol_tw" style="min-height:120px;" placeholder="不填则默认使用简体内容">{$settings.publish_protocol_tw}</textarea>
-        </div>
-        <div class="form-group">
-            <label>发布协议（英文）</label>
-            <textarea class="form-control" name="publish_protocol_en" style="min-height:120px;" placeholder="不填则默认使用简体内容">{$settings.publish_protocol_en}</textarea>
-            <div class="tip">前端发布商品页《发布协议》点击弹窗展示的内容</div>
-        </div>
-    </form>
+<div class="save-bar" id="saveBar">
+    <div class="sb-state"><i></i><span id="sbText">所有修改已保存</span></div>
+    <div class="spacer"></div>
+    <span><kbd>Ctrl</kbd> + <kbd>S</kbd> 快速保存</span>
+    <button class="btn" type="button" onclick="resetAll()">放弃修改</button>
+    <button class="btn btn-primary" type="button" id="saveBtn" onclick="saveAll()">保存全部设置</button>
 </div>
-
-<div style="max-width:760px;text-align:center;margin-bottom:30px;">
-    <button class="btn btn-primary btn-block" style="padding:11px;" onclick="saveAll()">保存全部设置</button>
-</div>
+<div class="toast" id="toast"></div>
 
 <script>
-function saveAll(){
-    var fd = new FormData();
-    ['site_name','site_url','site_logo','service_phone','service_qq','service_link','commission_rate','withdraw_fee','seller_check','goods_check','invite_required','auction_delay','user_protocol','privacy_policy','publish_protocol','user_protocol_tw','user_protocol_en','privacy_policy_tw','privacy_policy_en','publish_protocol_tw','publish_protocol_en','withdraw_min','withdraw_max','order_pay_timeout_hours','order_timeout_deposit','order_auto_confirm_days','order_ship_remind_days','about_us','about_us_tw','about_us_en','about_us_image','about_dept','about_dept_tw','about_dept_en'].forEach(function(name){
-        var el = document.querySelector('[name="' + name + '"]');
-        if(el) fd.append(name, el.value);
-    });
-    fetch('/admin1314/setting/index', {method:'POST', headers:{'X-Requested-With':'XMLHttpRequest'}, body:fd})
-        .then(function(r){ return r.json(); })
-        .then(function(res){
-            alert(res.msg);
-            if(res.code == 1) location.reload();
-        })
-        .catch(function(){ alert('网络错误，请重试'); });
-}
+(function(){
+    var page = document.getElementById('settingPage');
+    var saveBar = document.getElementById('saveBar');
+    var dirty = false;
 
-/* Logo 上传 */
-function uploadAboutImg(){
-    var input = document.createElement('input'); input.type = 'file'; input.accept = 'image/*';
-    input.onchange = function(e){ var file = e.target.files[0]; if(!file) return; var fd = new FormData(); fd.append('file', file);
-        fetch('/admin1314/setting/upload', {method:'POST', headers:{'X-Requested-With':'XMLHttpRequest'}, body:fd})
-            .then(function(r){ return r.json(); }).then(function(res){
-                if(res.code == 1){ document.getElementById('about_us_image').value = res.url;
-                    var box = document.getElementById('aboutImgBox'); box.innerHTML = '<img src="' + res.url + '" style="height:60px;object-fit:cover;"><span class="del" onclick="event.stopPropagation();removeAboutImg()">×</span>';
-                    box.style.display = ''; document.getElementById('aboutImgAdd').style.display = 'none';
-                } else { alert(res.msg || '上传失败'); }
-            }).catch(function(){ alert('网络错误，请重试'); }); };
-    input.click();
-}
-function removeAboutImg(){ document.getElementById('about_us_image').value = ''; document.getElementById('aboutImgBox').style.display = 'none'; document.getElementById('aboutImgAdd').style.display = ''; }
-function uploadLogo(){
-    var input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/*';
-    input.onchange = function(e){
-        var file = e.target.files[0];
-        if(!file) return;
-        var fd = new FormData();
-        fd.append('file', file);
-        fetch('/admin1314/setting/upload', {method:'POST', headers:{'X-Requested-With':'XMLHttpRequest'}, body:fd})
+    /* 左侧分组切换，记住上次所在分组 */
+    var nav = document.getElementById('stNav');
+    function showTab(key){
+        nav.querySelectorAll('a').forEach(function(a){ a.classList.toggle('on', a.dataset.tab === key); });
+        page.querySelectorAll('.st-panel').forEach(function(p){ p.classList.toggle('on', p.dataset.panel === key); });
+        try { localStorage.setItem('admin_setting_tab', key); } catch(e){}
+        if (location.hash !== '#' + key) history.replaceState(null, '', '#' + key);
+    }
+    nav.addEventListener('click', function(e){
+        var a = e.target.closest('a'); if (a) showTab(a.dataset.tab);
+    });
+    var init = (location.hash || '').replace('#', '');
+    if (!init) { try { init = localStorage.getItem('admin_setting_tab') || ''; } catch(e){} }
+    if (init && nav.querySelector('a[data-tab="' + init + '"]')) showTab(init);
+
+    /* 多语言子标签 */
+    function refreshLangDots(){
+        page.querySelectorAll('.lang-tabs span').forEach(function(s){
+            var g = s.parentNode.dataset.group;
+            var ta = page.querySelector('textarea[name="' + g + s.dataset.lang + '"]');
+            s.classList.toggle('filled', !!(ta && ta.value.trim()));
+        });
+        page.querySelectorAll('.lang-pane').forEach(function(p){
+            var ta = p.querySelector('textarea'), c = p.querySelector('.cnt');
+            if (ta && c) c.textContent = ta.value.length ? ta.value.length + ' 字' : '';
+        });
+    }
+    page.addEventListener('click', function(e){
+        var s = e.target.closest('.lang-tabs span'); if (!s) return;
+        var g = s.parentNode.dataset.group, lang = s.dataset.lang;
+        s.parentNode.querySelectorAll('span').forEach(function(x){ x.classList.toggle('on', x === s); });
+        page.querySelectorAll('.lang-pane[data-group="' + g + '"]').forEach(function(p){ p.classList.toggle('on', p.dataset.lang === lang); });
+    });
+    refreshLangDots();
+
+    /* 修改跟踪：记录初始值，标记哪个分组有改动 */
+    function fields(){ return page.querySelectorAll('input[name],select[name],textarea[name]'); }
+    function snapshot(){
+        var m = {};
+        fields().forEach(function(el){
+            if (el.type === 'radio') { if (el.checked) m[el.name] = el.value; }
+            else m[el.name] = el.value;
+        });
+        return m;
+    }
+    var initial = snapshot();
+    function checkDirty(){
+        var cur = snapshot(), changed = {};
+        dirty = false;
+        for (var k in cur) {
+            if (cur[k] !== initial[k]) {
+                dirty = true;
+                var el = page.querySelector('[name="' + k + '"]');
+                var panel = el && el.closest('.st-panel');
+                if (panel) changed[panel.dataset.panel] = 1;
+            }
+        }
+        nav.querySelectorAll('a').forEach(function(a){ a.classList.toggle('dirty', !!changed[a.dataset.tab]); });
+        saveBar.classList.toggle('dirty', dirty);
+        document.getElementById('sbText').textContent = dirty ? '有未保存的修改' : '所有修改已保存';
+    }
+    page.addEventListener('input', function(){ checkDirty(); refreshLangDots(); });
+    page.addEventListener('change', checkDirty);
+    window.addEventListener('beforeunload', function(e){ if (dirty) { e.preventDefault(); e.returnValue = ''; } });
+
+    /* 保存 */
+    var toastTimer = null;
+    window.toast = function(msg, type){
+        var t = document.getElementById('toast');
+        t.textContent = msg; t.className = 'toast show ' + (type || '');
+        clearTimeout(toastTimer); toastTimer = setTimeout(function(){ t.classList.remove('show'); }, 2200);
+    };
+    window.saveAll = function(){
+        var btn = document.getElementById('saveBtn');
+        if (btn.disabled) return;
+        btn.disabled = true; btn.textContent = '保存中…';
+        var fd = new FormData(), sent = {};
+        fields().forEach(function(el){
+            if (el.type === 'radio' && !el.checked) return;
+            if (sent[el.name]) return;
+            sent[el.name] = 1; fd.append(el.name, el.value);
+        });
+        fetch('/admin1314/setting/index', {method:'POST', headers:{'X-Requested-With':'XMLHttpRequest'}, body:fd})
             .then(function(r){ return r.json(); })
             .then(function(res){
-                if(res.code == 1){
-                    var box = document.getElementById('logoBox');
-                    box.style.display = '';
-                    box.innerHTML = '<img src="' + res.url + '" style="height:32px;object-fit:contain;"><span class="del" onclick="event.stopPropagation();removeLogo()">×</span>';
-                    document.getElementById('logoAdd').style.display = 'none';
-                    document.getElementById('site_logo').value = res.url;
-                } else {
-                    alert(res.msg || '上传失败');
-                }
+                btn.disabled = false; btn.textContent = '保存全部设置';
+                if (res.code == 1) { initial = snapshot(); checkDirty(); toast(res.msg || '设置已保存', 'ok'); }
+                else toast(res.msg || '保存失败', 'err');
             })
-            .catch(function(){ alert('网络错误，请重试'); });
+            .catch(function(){ btn.disabled = false; btn.textContent = '保存全部设置'; toast('网络错误，请重试', 'err'); });
     };
-    input.click();
-}
+    window.resetAll = function(){
+        if (!dirty) { toast('没有需要放弃的修改'); return; }
+        confirmDialog('确定放弃所有未保存的修改？', function(){ dirty = false; location.reload(); });
+    };
+    document.addEventListener('keydown', function(e){
+        if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S')) { e.preventDefault(); saveAll(); }
+    });
 
-function removeLogo(){
-    document.getElementById('logoBox').style.display = 'none';
-    document.getElementById('logoBox').innerHTML = '';
-    document.getElementById('logoAdd').style.display = '';
-    document.getElementById('site_logo').value = '';
-}
+    /* 图片上传（Logo / 关于我们背景图） */
+    window.uploadImg = function(field, prevId){
+        var input = document.createElement('input'); input.type = 'file'; input.accept = 'image/*';
+        input.onchange = function(e){
+            var file = e.target.files[0]; if (!file) return;
+            var fd = new FormData(); fd.append('file', file);
+            toast('上传中…');
+            fetch('/admin1314/setting/upload', {method:'POST', headers:{'X-Requested-With':'XMLHttpRequest'}, body:fd})
+                .then(function(r){ return r.json(); })
+                .then(function(res){
+                    if (res.code == 1) {
+                        document.getElementById(field).value = res.url;
+                        document.getElementById(prevId).innerHTML = '<img src="' + res.url + '">';
+                        checkDirty(); toast('上传成功，记得保存', 'ok');
+                    } else toast(res.msg || '上传失败', 'err');
+                })
+                .catch(function(){ toast('网络错误，请重试', 'err'); });
+        };
+        input.click();
+    };
+    window.removeImg = function(field, prevId){
+        document.getElementById(field).value = '';
+        document.getElementById(prevId).innerHTML = '点击上传';
+        checkDirty();
+    };
+})();
 </script>
 {/block}

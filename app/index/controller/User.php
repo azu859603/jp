@@ -254,6 +254,7 @@ class User extends Base
         }
         View::assign([
             'title'      => $title,
+            'type'       => $type === 'privacy' ? 'privacy' : 'protocol',
             'content'    => $content,
             'page_title' => $title,
             'hide_tabbar' => true,
