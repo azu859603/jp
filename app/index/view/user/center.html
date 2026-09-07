@@ -108,18 +108,23 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="10" r="3"/><path d="M6.5 19a6 6 0 0 1 11 0"/></svg>
             <span>{:lang('设置管理')}</span>
         </a>
-        <a href="/user/messages" style="position:relative;">
+        <a href="/user/messages" id="svMsg" class="{if $data.msg_unread > 0}has-new{/if}">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 5h16v14H4z"/><polyline points="4 6 12 12 20 6"/></svg>
-            {if $data.msg_unread > 0}<i class="sv-badge">{$data.msg_unread}</i>{/if}
+            <i class="sv-badge" {if $data.msg_unread <= 0}style="display:none;"{/if}>{$data.msg_unread}</i>
             <span>{:lang('站内信')}</span>
+            <em class="sv-new">{:lang('有新消息')}</em>
         </a>
-        <a href="/chat/list">
+        <a href="/chat/list" id="svChat" class="{if $data.chat_unread > 0}has-new{/if}">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 13.5"/></svg>
+            <i class="sv-badge" {if $data.chat_unread <= 0}style="display:none;"{/if}>{$data.chat_unread}</i>
             <span>{:lang('消息')}</span>
+            <em class="sv-new">{:lang('有新消息')}</em>
         </a>
-        <a href="javascript:contactService()">
+        <a href="/service/index" id="svService" class="{if !empty($data.service_unread)}has-new{/if}">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+            <i class="sv-badge" {if empty($data.service_unread)}style="display:none;"{/if}>{$data.service_unread|default=0}</i>
             <span>{:lang('联系客服')}</span>
+            <em class="sv-new">{:lang('有新消息')}</em>
         </a>
     </div>
    
@@ -207,10 +212,24 @@ document.addEventListener('click', function () {
 });
 </script>
 <script>
-function contactService() {
-    var link = '{$service_link}'.trim();
-    if (!link) { toast('暂未配置客服，请联系平台'); return; }
-    location.href = link;
-}
+// 未读提醒：每 60 秒查一次站内信 / 消息 / 客服未读，有新消息时高亮并显示角标；页面重新可见时立即查一次
+(function(){
+    function apply(id, n){
+        var a = document.getElementById(id); if (!a) return;
+        var b = a.querySelector('.sv-badge');
+        n = parseInt(n, 10) || 0;
+        if (b) { b.textContent = n > 99 ? '99+' : n; b.style.display = n > 0 ? '' : 'none'; }
+        a.classList.toggle('has-new', n > 0);
+    }
+    function check(){
+        if (document.hidden) return;
+        ajaxGet('/user/unread?t=' + Date.now(), function(res){
+            if (!res || res.code !== 1) return;
+            apply('svMsg', res.msg_unread); apply('svChat', res.chat_unread); apply('svService', res.service_unread);
+        }, '');
+    }
+    setInterval(check, 60000);
+    document.addEventListener('visibilitychange', function(){ if (!document.hidden) check(); });
+})();
 </script>
 {/block}

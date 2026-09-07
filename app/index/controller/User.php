@@ -299,6 +299,10 @@ class User extends Base
             'browse_count' => Db::name('browse_history')->where('user_id', $id)->count(),
             // 站内信未读
             'msg_unread'   => Db::name('sys_message')->where('user_id', $id)->where('is_read', 0)->count(),
+            // 在线客服：客服回复未读数
+            'service_unread' => Db::name('service_message')->where('user_id', $id)->where('from_type', 2)->where('is_read', 0)->count(),
+            // 买卖家聊天：发给我的未读数
+            'chat_unread'    => Db::name('message')->where('to_uid', $id)->where('is_read', 0)->count(),
         ];
 
         // 等级
@@ -498,6 +502,26 @@ class User extends Base
             'tab_active'   => 'mine',
         ]);
         return View::fetch();
+    }
+
+    /**
+     * 未读数（个人中心每 60 秒轮询）：站内信 / 买卖家聊天 / 在线客服
+     */
+    public function unread()
+    {
+        if (!$this->request->isAjax()) {
+            return json(['code' => 0]);
+        }
+        if (empty($this->user)) {
+            return json(['code' => -1]);
+        }
+        $id = (int)$this->user['id'];
+        return json([
+            'code'           => 1,
+            'msg_unread'     => Db::name('sys_message')->where('user_id', $id)->where('is_read', 0)->count(),
+            'chat_unread'    => Db::name('message')->where('to_uid', $id)->where('is_read', 0)->count(),
+            'service_unread' => Db::name('service_message')->where('user_id', $id)->where('from_type', 2)->where('is_read', 0)->count(),
+        ]);
     }
 
     /**

@@ -36,6 +36,7 @@ class Base extends BaseController
                 ['title' => '实名认证', 'url' => '/admin1314/member/auth'],
                 ['title' => '卖家审核', 'url' => '/admin1314/member/seller'],
                 ['title' => '咨询审核', 'url' => '/admin1314/message/index'],
+                ['title' => '在线客服', 'url' => '/admin1314/service/index', 'badge' => 'service_unread'],
             ],
         ],
         'goods' => [
@@ -105,6 +106,15 @@ class Base extends BaseController
         $this->admin = $admin;
         View::assign('admin', $admin);
         View::assign('menus', $this->menus);
+        // 在线客服未回复数（菜单角标）；页面内每 30 秒再拉一次 /service/unread 刷新
+        if (!$this->request->isAjax()) {
+            try {
+                $n = (int)\think\facade\Db::name('service_message')->where('from_type', 1)->where('is_read', 0)->count();
+            } catch (\Throwable $e) {
+                $n = 0;
+            }
+            View::assign('service_unread', $n);
+        }
     }
 
     /**

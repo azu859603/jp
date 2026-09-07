@@ -43,6 +43,7 @@ class UserInit extends Command
         'sys_message',     // 站内信
         'message',         // 聊天消息
         'admin_log',         // 后台日志
+        'service_message',         // 后台日志
     ];
 
     /** 明确保护、绝不清空的平台数据表 */

@@ -31,6 +31,7 @@ var LANG = (metaLang ? metaLang.getAttribute('content') : '') || getCookie(COOKI
         /* 补充：toast/confirm 文案 */
         '加载中': ['載入中', 'Loading'],
         '加载中...': ['載入中...', 'Loading...'],
+        '发送太频繁，请3秒后再试': ['傳送太頻繁，請3秒後再試', 'Too fast, please wait 3 seconds'],
         '上拉加载更多': ['上拉載入更多', 'Scroll to load more'],
         '1个月': ['1個月', '1 month'],
         '后': ['後', ' later'],

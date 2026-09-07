@@ -1,0 +1,138 @@
+{extend name="layout" /}
+{block name="title"}{$page_title}{/block}
+{block name="content"}
+<div class="chat-page svc-page">
+    <div class="ch-head svc-head">
+        <span class="svc-ico">🎧</span>
+        <span class="svc-title">{:lang('平台客服')}</span>
+        <span class="svc-sub">{:lang('客服会尽快回复您')}</span>
+        {if $service_link}<a class="svc-ext" href="{$service_link}" target="_blank" rel="noopener">{:lang('其他联系方式')} ›</a>{/if}
+    </div>
+
+    <div class="ch-body" id="chatBody">
+        {if empty($messages)}
+        <div class="svc-empty" id="svcEmpty">{:lang('暂无消息，有问题请在此留言')}</div>
+        {/if}
+        {foreach $messages as $m}
+        <div class="ch-msg {if $m.from_type == 1}ch-mine{else}ch-other{/if}">
+            {if $m.type == 2}
+            <a class="ch-img" href="{$m.content}" target="_blank"><img src="{$m.content}" alt=""></a>
+            {else}
+            <div class="ch-bubble">{$m.content}</div>
+            {/if}
+            <div class="ch-time">{$m.time_str}</div>
+        </div>
+        {/foreach}
+    </div>
+
+    <div class="ch-foot">
+        <label class="ch-imgbtn" title="{:lang('发送图片')}">
+            <input type="file" accept="image/*" id="imgFile" style="display:none;" onchange="sendImage(this)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="M21 16l-5-5-8 8"/></svg>
+        </label>
+        <input type="text" id="msgInput" class="ch-input" placeholder="{:lang('输入消息...')}" maxlength="500" onkeydown="if(event.keyCode==13)sendMsg();">
+        <a class="ch-send" href="javascript:sendMsg();">{:lang('发送')}</a>
+    </div>
+</div>
+
+<style>
+.chat-page{display:flex;flex-direction:column;position:fixed;left:0;right:0;top:44px;bottom:0;background:#f5f5f5;}
+.svc-head{display:flex;align-items:center;gap:8px;padding:10px 14px;background:#fff;border-bottom:1px solid #eee;font-size:13px;}
+.svc-ico{font-size:20px;}
+.svc-title{font-weight:600;font-size:15px;color:#333;}
+.svc-sub{color:#999;font-size:12px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.svc-ext{color:#BE2F2B;font-size:12px;white-space:nowrap;}
+.ch-body{flex:1;overflow-y:auto;padding:10px 14px;background:#f5f5f5;-webkit-overflow-scrolling:touch;}
+.svc-empty{text-align:center;color:#aaa;font-size:13px;padding:40px 0;}
+.ch-msg{margin-bottom:12px;}
+.ch-mine{text-align:right;}
+.ch-other{text-align:left;}
+.ch-bubble{display:inline-block;max-width:80%;padding:8px 12px;border-radius:8px;font-size:14px;line-height:1.5;word-break:break-all;text-align:left;white-space:pre-wrap;}
+.ch-mine .ch-bubble{background:#ffe066;color:#333;}
+.ch-other .ch-bubble{background:#fff;color:#333;}
+.ch-img{display:inline-block;max-width:60%;border-radius:8px;overflow:hidden;background:#fff;border:1px solid #eee;}
+.ch-img img{display:block;max-width:100%;max-height:260px;}
+.ch-time{font-size:11px;color:#bbb;margin-top:4px;}
+.ch-foot{display:flex;align-items:center;padding:8px 10px;background:#fff;border-top:1px solid #e5e5e5;gap:8px;}
+.ch-imgbtn{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#666;background:#f2f2f2;flex:none;cursor:pointer;}
+.ch-imgbtn svg{width:20px;height:20px;}
+.ch-input{flex:1;min-width:0;height:36px;border:1px solid #ddd;border-radius:18px;padding:0 14px;font-size:14px;outline:none;}
+.ch-send{width:56px;height:36px;line-height:36px;text-align:center;background:#e4393c;color:#fff;border-radius:18px;font-size:14px;text-decoration:none;flex:none;}
+</style>
+{/block}
+{block name="tabbar"}{/block}
+{block name="script"}
+<script>
+var lastId = {$last_id};
+var body = document.getElementById('chatBody');
+
+function scrollToBottom() { body.scrollTop = body.scrollHeight; }
+scrollToBottom();
+
+function escapeHtml(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function appendMsg(m) {
+    var empty = document.getElementById('svcEmpty'); if (empty) empty.remove();
+    var div = document.createElement('div');
+    div.className = 'ch-msg ' + (m.from_type == 1 ? 'ch-mine' : 'ch-other');
+    var inner = m.type == 2
+        ? '<a class="ch-img" href="' + escapeHtml(m.content) + '" target="_blank"><img src="' + escapeHtml(m.content) + '" alt=""></a>'
+        : '<div class="ch-bubble">' + escapeHtml(m.content) + '</div>';
+    div.innerHTML = inner + '<div class="ch-time">' + escapeHtml(m.time_str || '') + '</div>';
+    body.appendChild(div);
+    if (m.id && m.id > lastId) lastId = m.id;
+    scrollToBottom();
+}
+
+var sendLockUntil = 0;
+function doSend(type, content, done) {
+    if (Date.now() < sendLockUntil) { toast('发送太频繁，请3秒后再试'); if (done) done(false); return; }
+    ajaxPost('/service/send', {type: type, content: content}, function(res){
+        if (res.code === 1) {
+            sendLockUntil = Date.now() + 3000;
+            appendMsg({id: res.id, from_type: 1, type: type, content: content, time_str: res.time_str});
+            if (done) done(true);
+        } else {
+            toast(res.msg);
+            if (res.code === -1) setTimeout(function(){ location.href = '/user/login'; }, 600);
+            if (done) done(false);
+        }
+    });
+}
+
+function sendMsg() {
+    var input = document.getElementById('msgInput');
+    var content = input.value.trim();
+    if (!content) { toast('请输入消息内容'); return; }
+    doSend(1, content, function(ok){ if (ok) input.value = ''; });
+}
+
+function sendImage(el) {
+    var f = el.files && el.files[0];
+    if (!f) return;
+    if (f.size > 5 * 1024 * 1024) { toast('图片不能超过5M'); el.value = ''; return; }
+    var fd = new FormData(); fd.append('file', f);
+    fetch('/upload/image', {method: 'POST', body: fd, credentials: 'same-origin'})
+        .then(function(r){ return r.json(); })
+        .then(function(res){
+            if (res.code === 1) doSend(2, res.url); else toast(res.msg || '上传失败，请重试');
+        })
+        .catch(function(){ toast('上传失败，请重试'); })
+        .finally(function(){ el.value = ''; });
+}
+
+function pollMsg() {
+    if (document.hidden) return;
+    ajaxGet('/service/poll?last_id=' + lastId, function(res){
+        if (res.code === 1 && res.data && res.data.length) {
+            for (var i = 0; i < res.data.length; i++) {
+                if (res.data[i].from_type == 1 && res.data[i].id <= lastId) continue;
+                appendMsg(res.data[i]);
+            }
+        }
+    });
+}
+setInterval(pollMsg, 3000);
+</script>
+{/block}

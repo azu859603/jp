@@ -795,3 +795,13 @@ ul,ol{list-style:none;}
 .page-loading .pl-spin{width:34px;height:34px;border:3px solid rgba(190,47,43,.2);border-top-color:#BE2F2B;border-radius:50%;animation:plspin .8s linear infinite;}
 .page-loading .pl-txt{font-size:13px;color:#666;}
 @keyframes plspin{to{transform:rotate(360deg);}}
+
+/* 个人中心：站内信 / 消息 / 联系客服 有新消息的特别提示 */
+.mine-services .sv-grid a{position:relative;}
+.mine-services .sv-grid .sv-new{display:none;font-style:normal;font-size:10px;color:#E4393C;line-height:1.2;margin-top:2px;}
+.mine-services .sv-grid a.has-new svg{color:#E4393C;animation:svshake 1.2s ease-in-out infinite;transform-origin:50% 20%;}
+.mine-services .sv-grid a.has-new>span{color:#E4393C;font-weight:600;}
+.mine-services .sv-grid a.has-new .sv-new{display:block;}
+.mine-services .sv-grid a.has-new .sv-badge{box-shadow:0 0 0 0 rgba(228,57,60,.6);animation:svpulse 1.6s ease-out infinite;}
+@keyframes svshake{0%,60%,100%{transform:rotate(0)}65%{transform:rotate(-10deg)}70%{transform:rotate(10deg)}75%{transform:rotate(-8deg)}80%{transform:rotate(8deg)}85%{transform:rotate(-4deg)}90%{transform:rotate(4deg)}}
+@keyframes svpulse{0%{box-shadow:0 0 0 0 rgba(228,57,60,.6)}100%{box-shadow:0 0 0 8px rgba(228,57,60,0)}}

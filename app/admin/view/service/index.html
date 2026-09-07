@@ -1,0 +1,199 @@
+{extend name="layout" /}
+
+{block name="title"}在线客服{/block}
+{block name="crumb"}会员管理 / <b>在线客服</b>{/block}
+
+{block name="content"}
+<div class="svc-wrap">
+    <div class="svc-list">
+        <div class="svc-list-head">
+            <input type="text" class="form-control" id="svcKeyword" placeholder="搜索会员：手机号 / 昵称 / 店铺" oninput="loadSessions()">
+            <label class="svc-only"><input type="checkbox" id="svcOnlyUnread" onchange="loadSessions()"> 只看未回复</label>
+            <div class="svc-hint">输入关键词可搜到所有会员，未聊过的会员点击即可主动发起会话</div>
+        </div>
+        <div class="svc-sessions" id="svcSessions"><div class="svc-tip">加载中...</div></div>
+    </div>
+    <div class="svc-chat">
+        <div class="svc-chat-head" id="svcChatHead"><span class="gray">请选择左侧会话</span></div>
+        <div class="svc-chat-body" id="svcChatBody"></div>
+        <div class="svc-chat-foot" id="svcChatFoot" style="display:none;">
+            <label class="svc-imgbtn" title="发送图片">
+                <input type="file" accept="image/*" id="svcImgFile" style="display:none;" onchange="sendImage(this)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="M21 16l-5-5-8 8"/></svg>
+            </label>
+            <textarea class="form-control" id="svcInput" rows="2" placeholder="输入回复，Enter 发送，Shift+Enter 换行" maxlength="500"></textarea>
+            <button class="btn btn-primary" onclick="sendMsg()">发送</button>
+        </div>
+    </div>
+</div>
+
+<style>
+.svc-wrap{display:flex;gap:0;height:calc(100vh - 150px);min-height:520px;background:#fff;border-radius:10px;box-shadow:0 1px 3px rgba(0,0,0,.06);overflow:hidden;}
+.svc-list{width:300px;flex:none;border-right:1px solid #e5e7eb;display:flex;flex-direction:column;}
+.svc-list-head{padding:12px;border-bottom:1px solid #f1f5f9;display:flex;flex-direction:column;gap:8px;}
+.svc-only{font-size:12px;color:#64748b;display:flex;align-items:center;gap:6px;cursor:pointer;}
+.svc-sessions{flex:1;overflow-y:auto;}
+.svc-tip{padding:30px 0;text-align:center;color:#94a3b8;font-size:13px;}
+.svc-item{display:flex;align-items:center;gap:10px;padding:12px;border-bottom:1px solid #f1f5f9;cursor:pointer;position:relative;}
+.svc-item:hover{background:#f8fafc;}
+.svc-item.on{background:#fff7ed;border-left:3px solid #ff7a00;padding-left:9px;}
+.svc-item .av{width:40px;height:40px;border-radius:50%;background:#e2e8f0;flex:none;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:18px;}
+.svc-item .av img{width:100%;height:100%;object-fit:cover;}
+.svc-item .info{flex:1;min-width:0;}
+.svc-item .nm{font-size:13px;color:#0f172a;display:flex;align-items:center;gap:6px;}
+.svc-item .nm .tag{font-size:10px;padding:0 5px;line-height:16px;}
+.svc-item .lt{font-size:12px;color:#94a3b8;margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.svc-item .lt.me{color:#cbd5e1;}
+.svc-item .tm{font-size:11px;color:#94a3b8;position:absolute;right:12px;top:12px;}
+.svc-item .ub{position:absolute;right:12px;bottom:12px;min-width:18px;height:18px;line-height:18px;padding:0 5px;border-radius:9px;background:#ef4444;color:#fff;font-size:11px;text-align:center;}
+.svc-item .lt.new{color:#ff7a00;}
+.svc-item .nb{position:absolute;right:12px;bottom:12px;height:18px;line-height:18px;padding:0 8px;border-radius:9px;background:#fff7ed;color:#ff7a00;border:1px solid #fed7aa;font-size:11px;}
+.svc-hint{font-size:11px;color:#94a3b8;line-height:1.5;}
+.svc-chat{flex:1;min-width:0;display:flex;flex-direction:column;background:#f5f7fa;}
+.svc-chat-head{padding:12px 16px;background:#fff;border-bottom:1px solid #e5e7eb;font-size:14px;display:flex;align-items:center;gap:12px;}
+.svc-chat-head .sub{font-size:12px;color:#94a3b8;}
+.svc-chat-body{flex:1;overflow-y:auto;padding:16px;}
+.svc-msg{margin-bottom:14px;display:flex;flex-direction:column;}
+.svc-msg.user{align-items:flex-start;}
+.svc-msg.admin{align-items:flex-end;}
+.svc-bubble{max-width:70%;padding:9px 12px;border-radius:8px;font-size:13px;line-height:1.6;word-break:break-all;white-space:pre-wrap;}
+.svc-msg.user .svc-bubble{background:#fff;color:#0f172a;border:1px solid #e5e7eb;}
+.svc-msg.admin .svc-bubble{background:#ff7a00;color:#fff;}
+.svc-img{max-width:50%;border-radius:8px;overflow:hidden;border:1px solid #e5e7eb;background:#fff;}
+.svc-img img{display:block;max-width:100%;max-height:280px;cursor:zoom-in;}
+.svc-time{font-size:11px;color:#94a3b8;margin-top:4px;}
+.svc-chat-foot{display:flex;align-items:flex-end;gap:10px;padding:12px 16px;background:#fff;border-top:1px solid #e5e7eb;}
+.svc-chat-foot textarea{flex:1;resize:none;}
+.svc-imgbtn{width:38px;height:38px;border-radius:8px;border:1px solid #e5e7eb;display:flex;align-items:center;justify-content:center;color:#64748b;cursor:pointer;flex:none;background:#f8fafc;}
+.svc-imgbtn svg{width:20px;height:20px;}
+</style>
+{/block}
+
+{block name="script"}
+<script>
+var curUser = 0, lastId = 0, sessionsCache = [];
+
+function esc(s){ return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function loadSessions(){
+    var kw = document.getElementById('svcKeyword').value.trim();
+    var only = document.getElementById('svcOnlyUnread').checked ? 1 : 0;
+    fetch('/admin1314/service/index?keyword=' + encodeURIComponent(kw) + '&unread=' + only, {headers:{'X-Requested-With':'XMLHttpRequest'}})
+        .then(function(r){ return r.json(); })
+        .then(function(res){
+            sessionsCache = res.data || [];
+            var box = document.getElementById('svcSessions');
+            if (!sessionsCache.length) { box.innerHTML = '<div class="svc-tip">暂无会话</div>'; return; }
+            var html = '';
+            sessionsCache.forEach(function(s){
+                html += '<div class="svc-item' + (s.user_id == curUser ? ' on' : '') + '" onclick="openSession(' + s.user_id + ')">'
+                    + '<div class="av">' + (s.avatar ? '<img src="' + esc(s.avatar) + '">' : '👤') + '</div>'
+                    + '<div class="info"><div class="nm">' + esc(s.nickname || '-') + (s.is_seller == 1 ? '<span class="tag tag-orange">卖家</span>' : '') + '</div>'
+                    + '<div class="lt' + (s.last_from == 2 ? ' me' : '') + (s.is_new ? ' new' : '') + '">' + (s.is_new ? '尚未聊过，点击发起会话' : (s.last_from == 2 ? '我：' : '') + esc(s.last_text)) + '</div></div>'
+                    + '<span class="tm">' + esc(s.last_time) + '</span>'
+                    + (s.unread > 0 ? '<span class="ub">' + s.unread + '</span>' : '')
+                    + (s.is_new ? '<span class="nb">发起</span>' : '')
+                    + '</div>';
+            });
+            box.innerHTML = html;
+            updateMenuBadge(res.total_unread || 0);
+        });
+}
+
+function updateMenuBadge(n){
+    var b = document.getElementById('svcMenuBadge');
+    if (!b) return;
+    b.textContent = n > 99 ? '99+' : n;
+    b.style.display = n > 0 ? '' : 'none';
+}
+
+function renderMsg(m){
+    var div = document.createElement('div');
+    div.className = 'svc-msg ' + (m.from_type == 1 ? 'user' : 'admin');
+    var inner = m.type == 2
+        ? '<a class="svc-img" href="' + esc(m.content) + '" target="_blank"><img src="' + esc(m.content) + '"></a>'
+        : '<div class="svc-bubble">' + esc(m.content) + '</div>';
+    div.innerHTML = inner + '<div class="svc-time">' + esc(m.time_str) + '</div>';
+    document.getElementById('svcChatBody').appendChild(div);
+    if (m.id > lastId) lastId = m.id;
+}
+function scrollBottom(){ var b = document.getElementById('svcChatBody'); b.scrollTop = b.scrollHeight; }
+
+function openSession(uid){
+    curUser = uid; lastId = 0;
+    document.getElementById('svcChatBody').innerHTML = '';
+    document.getElementById('svcChatFoot').style.display = '';
+    fetch('/admin1314/service/detail?user_id=' + uid, {headers:{'X-Requested-With':'XMLHttpRequest'}})
+        .then(function(r){ return r.json(); })
+        .then(function(res){
+            if (res.code != 1) { alert(res.msg); return; }
+            var u = res.user;
+            document.getElementById('svcChatHead').innerHTML = '<b>' + esc(u.nickname || '-') + '</b>'
+                + (u.is_seller == 1 ? '<span class="tag tag-orange">卖家' + (u.shop_name ? '·' + esc(u.shop_name) : '') + '</span>' : '<span class="tag tag-gray">买家</span>')
+                + '<span class="sub">' + esc(u.mobile) + ' ｜ 注册 ' + esc(u.reg_time_text) + '</span>'
+                + '<a class="btn btn-sm" style="margin-left:auto;" href="/admin1314/member/detail?id=' + uid + '" target="_blank">会员详情</a>';
+            if (res.data && res.data.length) {
+                res.data.forEach(renderMsg);
+            } else {
+                document.getElementById('svcChatBody').innerHTML = '<div class="svc-tip">还没有聊天记录，在下方输入内容即可主动发起会话，会员在个人中心「联系客服」里会看到</div>';
+            }
+            scrollBottom();
+            loadSessions();
+            document.getElementById('svcInput').focus();
+        });
+}
+
+function pollCurrent(){
+    if (!curUser) return;
+    fetch('/admin1314/service/detail?user_id=' + curUser + '&last_id=' + lastId, {headers:{'X-Requested-With':'XMLHttpRequest'}})
+        .then(function(r){ return r.json(); })
+        .then(function(res){
+            if (res.code == 1 && res.data && res.data.length) {
+                var hadUser = false;
+                res.data.forEach(function(m){ if (m.from_type == 1) hadUser = true; renderMsg(m); });
+                scrollBottom();
+                if (hadUser) loadSessions();
+            }
+        });
+}
+
+function doSend(type, content){
+    ajaxPost('/admin1314/service/send', {user_id: curUser, type: type, content: content}, function(res){
+        if (res.code == 1) {
+            var tip = document.querySelector('#svcChatBody .svc-tip'); if (tip) tip.remove();
+            renderMsg({id: res.id, from_type: 2, type: type, content: content, time_str: res.time_str});
+            scrollBottom();
+            if (type == 1) document.getElementById('svcInput').value = '';
+            loadSessions();
+        } else {
+            alert(res.msg);
+        }
+    });
+}
+function sendMsg(){
+    if (!curUser) return;
+    var v = document.getElementById('svcInput').value.trim();
+    if (!v) return;
+    doSend(1, v);
+}
+function sendImage(el){
+    var f = el.files && el.files[0];
+    if (!f || !curUser) { el.value = ''; return; }
+    if (f.size > 5 * 1024 * 1024) { alert('图片不能超过5M'); el.value = ''; return; }
+    var fd = new FormData(); fd.append('file', f);
+    fetch('/admin1314/upload/image', {method:'POST', body: fd})
+        .then(function(r){ return r.json(); })
+        .then(function(res){ if (res.code == 1) doSend(2, res.url); else alert(res.msg || '上传失败'); })
+        .catch(function(){ alert('上传失败，请重试'); })
+        .finally(function(){ el.value = ''; });
+}
+
+document.getElementById('svcInput').addEventListener('keydown', function(e){
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMsg(); }
+});
+
+loadSessions();
+setInterval(pollCurrent, 3000);
+setInterval(loadSessions, 8000);
+</script>
+{/block}

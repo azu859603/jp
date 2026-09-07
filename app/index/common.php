@@ -56,6 +56,20 @@ function translate_nickname($nickname)
  * 文本格式：每个部门一段，段间空一行；段内第一行为部门名称，其余每行「岗位：姓名 姓名」。
  * 返回 [['title'=>部门, 'roles'=>[['label'=>岗位, 'names'=>姓名文本], ...]], ...]
  */
+/**
+ * 前台发消息频率限制：同一会员 3 秒内只能发一条（买卖家聊天、在线客服共用）
+ * 通过后立即占位，返回 true；3 秒内再次调用返回 false
+ */
+function message_rate_ok($userId, $seconds = 3)
+{
+    $key = 'msg_rate_' . (int)$userId;
+    if (\think\facade\Cache::has($key)) {
+        return false;
+    }
+    \think\facade\Cache::set($key, 1, $seconds);
+    return true;
+}
+
 function about_dept_content()
 {
     $set  = Lang::getLangSet();

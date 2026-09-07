@@ -68,12 +68,15 @@ function scrollToBottom() {
 scrollToBottom();
 
 // 发送消息
+var sendLockUntil = 0;
 function sendMsg() {
     var input = document.getElementById('msgInput');
     var content = input.value.trim();
     if (!content) { toast('请输入消息内容'); return; }
+    if (Date.now() < sendLockUntil) { toast('发送太频繁，请3秒后再试'); return; }
     ajaxPost('/chat/send', {goods_id: goodsId, seller_id: sellerId, content: content}, function(res){
         if (res.code === 1) {
+            sendLockUntil = Date.now() + 3000;
             input.value = '';
             // 追加新消息
             var body = document.getElementById('chatBody');

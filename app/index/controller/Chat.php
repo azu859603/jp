@@ -100,6 +100,9 @@ class Chat extends Base
         if (mb_strlen($content) > 500) {
             return json(['code' => 0, 'msg' => lang('消息不能超过500字')]);
         }
+        if (!message_rate_ok($uid)) {
+            return json(['code' => 0, 'msg' => lang('发送太频繁，请3秒后再试')]);
+        }
 
         $msgId = Db::name('message')->insertGetId([
             'from_uid'    => $uid,

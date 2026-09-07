@@ -36,6 +36,7 @@ a:hover{color:#ff7a00}
 .menu-items a{display:block;padding:10px 20px 10px 50px;font-size:13px;color:#94a3b8;transition:all .2s}
 .menu-items a:hover{color:#fff;background:#1e293b}
 .menu-items a.active{color:#ff7a00;background:#1e293b;border-left:3px solid #ff7a00}
+.menu-items a .menu-badge{display:inline-block;min-width:18px;height:18px;line-height:18px;padding:0 5px;margin-left:8px;border-radius:9px;background:#ef4444;color:#fff;font-size:11px;text-align:center;vertical-align:middle}
 
 /* 顶栏 */
 .topbar{height:60px;background:#fff;border-bottom:1px solid #e5e7eb;display:flex;align-items:center;justify-content:space-between;padding:0 24px;position:sticky;top:0;z-index:90}
@@ -172,7 +173,7 @@ table.table input[type=checkbox]{width:15px;height:15px;cursor:pointer;vertical-
                 </div>
                 <div class="menu-items">
                     {volist name="group.items" id="item"}
-                    <a href="{$item.url}" class="{if condition='strpos($item.url, $menu_active) !== false'}active{/if}">{$item.title}</a>
+                    <a href="{$item.url}" class="{if condition='strpos($item.url, $menu_active) !== false'}active{/if}">{$item.title}{if !empty($item.badge) && $item.badge == 'service_unread'}<span class="menu-badge" id="svcMenuBadge" {if empty($service_unread)}style="display:none;"{/if}>{$service_unread|default=0}</span>{/if}</a>
                     {/volist}
                 </div>
             </div>
@@ -267,6 +268,19 @@ function ajaxPost(url, data, cb, errMsg){
         .then(function(res){ cb(res); })
         .catch(function(){ alert(errMsg || '网络错误，请重试'); });
 }
+</script>
+<script>
+// 在线客服菜单角标：每 30 秒刷新一次未回复数
+(function(){
+    var b = document.getElementById('svcMenuBadge');
+    if (!b) return;
+    setInterval(function(){
+        fetch('/admin1314/service/unread', {headers:{'X-Requested-With':'XMLHttpRequest'}})
+            .then(function(r){ return r.json(); })
+            .then(function(res){ if (res.code == 1) { var n = res.unread || 0; b.textContent = n > 99 ? '99+' : n; b.style.display = n > 0 ? '' : 'none'; } })
+            .catch(function(){});
+    }, 30000);
+})();
 </script>
 {block name="script"}{/block}
 </body>
