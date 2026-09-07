@@ -498,6 +498,7 @@ function translate_remark($remark)
         '拍卖成交收入',
         '充值到账',
         '后台添加会员赠送余额',
+        '后台调整',
         '余额充值',
     ];
     foreach ($prefixes as $zh) {

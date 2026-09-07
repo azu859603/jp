@@ -805,3 +805,140 @@ ul,ol{list-style:none;}
 .mine-services .sv-grid a.has-new .sv-badge{box-shadow:0 0 0 0 rgba(228,57,60,.6);animation:svpulse 1.6s ease-out infinite;}
 @keyframes svshake{0%,60%,100%{transform:rotate(0)}65%{transform:rotate(-10deg)}70%{transform:rotate(10deg)}75%{transform:rotate(-8deg)}80%{transform:rotate(8deg)}85%{transform:rotate(-4deg)}90%{transform:rotate(4deg)}}
 @keyframes svpulse{0%{box-shadow:0 0 0 0 rgba(228,57,60,.6)}100%{box-shadow:0 0 0 8px rgba(228,57,60,0)}}
+
+/* ==================== 前台 UI 统一优化（全局覆盖层） ====================
+   目标：统一色板 / 圆角 / 阴影 / 间距 / 按压反馈 / 表单聚焦 / 安全区，不改模板结构 */
+:root{
+  --brand:#E4393C;--brand-dark:#BE2F2B;--brand-light:#FF6B5E;--brand-bg:#FFF1EE;
+  --text:#222;--text-2:#666;--text-3:#999;--line:#F0F0F0;--bg:#F5F6F8;--card:#FFF;
+  --radius:12px;--radius-sm:8px;--shadow:0 2px 12px rgba(0,0,0,.05);--shadow-hover:0 6px 18px rgba(0,0,0,.08);
+  --safe-b:env(safe-area-inset-bottom,0px);
+}
+html{-webkit-text-size-adjust:100%;}
+body{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;color:var(--text);}
+.app,.page{background:var(--bg);}
+a,button{transition:opacity .15s,transform .15s,box-shadow .15s,background-color .15s;}
+a:active,button:active{opacity:.82;}
+input:focus,textarea:focus,select:focus{outline:none;}
+::placeholder{color:#B8B8B8;}
+::selection{background:rgba(228,57,60,.18);}
+
+/* 顶部导航：去硬线、加浅阴影 */
+.hd{border-bottom:0;box-shadow:0 1px 0 rgba(0,0,0,.04),0 2px 10px rgba(0,0,0,.03);}
+.hd .title{font-size:16px;letter-spacing:.3px;}
+.hd .back{border-radius:50%;}
+.hd .back:active{background:#F3F3F3;}
+
+/* 底部标签栏：安全区 + 主色高亮 */
+.tabbar{height:calc(54px + var(--safe-b));padding-bottom:var(--safe-b);border-top:1px solid var(--line);box-shadow:0 -2px 12px rgba(0,0,0,.04);}
+.page{padding-bottom:calc(52px + var(--safe-b));}
+.page.no-tabbar{padding-bottom:calc(20px + var(--safe-b));}
+.tabbar a.on,.tabbar a.on svg{color:var(--brand);}
+.tabbar .tab-pub .pub-ico{box-shadow:0 6px 16px rgba(228,57,60,.35);}
+.tabbar .tab-pub:active .pub-ico{transform:scale(.94);}
+.detail-bottom,.ch-foot{padding-bottom:calc(8px + var(--safe-b));}
+
+/* 商品卡片：圆角、阴影、按压缩放，图片占位渐变 */
+.goods-grid .grid-item{border-radius:var(--radius);box-shadow:var(--shadow);transition:transform .15s,box-shadow .15s;}
+.goods-grid .grid-item:active{transform:scale(.985);box-shadow:var(--shadow-hover);opacity:1;}
+.goods-grid .grid-item .g-thumb{background:linear-gradient(135deg,#F7F7F7,#EFEFEF);}
+.goods-grid .grid-item .g-body{padding:9px 10px 11px;}
+.goods-grid .grid-item .g-price{color:var(--brand);font-weight:700;letter-spacing:.2px;}
+.goods-grid .grid-item .g-meta .bid-btn{background:linear-gradient(90deg,var(--brand),var(--brand-light));border-radius:12px;padding:4px 12px;box-shadow:0 3px 8px rgba(228,57,60,.22);font-weight:500;}
+.goods-card{border-radius:var(--radius);margin:10px 12px 0;border:0;box-shadow:var(--shadow);}
+
+/* 分类/排序 Tab：下划线更精致 */
+.cate-tabs{border-bottom:0;box-shadow:0 1px 0 var(--line);}
+.cate-tabs a{padding:6px 2px;}
+.cate-tabs a.on::after,.order-tabs a.on::after{width:22px;height:3px;border-radius:3px;background:linear-gradient(90deg,var(--brand),var(--brand-light));}
+.order-tabs{border-bottom:0;box-shadow:0 1px 0 var(--line);}
+
+/* 按钮：主按钮渐变 + 阴影 + 按压下沉 */
+.btn{font-weight:600;letter-spacing:.5px;}
+.btn-red,.login-btn,.ch-send,.form-submit .btn{background:linear-gradient(90deg,var(--brand),var(--brand-light));box-shadow:0 6px 16px rgba(228,57,60,.28);}
+.btn-red:active,.login-btn:active,.form-submit .btn:active{background:linear-gradient(90deg,#C9302C,#E85A4F);transform:translateY(1px);box-shadow:0 3px 8px rgba(228,57,60,.25);opacity:1;}
+.btn-gray{background:#F0F1F3;color:#9A9A9A;}
+.btn-disabled{background:#D9D9D9 !important;box-shadow:none !important;}
+.btn-sm{border-radius:14px;transition:all .15s;}
+.btn-sm:active{transform:scale(.96);}
+.empty .e-btn{border-radius:18px;}
+
+/* 卡片区块：统一圆角、侧边距、阴影 */
+.mine-orders,.mine-services,.mine-menu,.wallet-log,.form-card,.order-card,.pay-card,.apply-card,.withdraw-card,.invite-card,.shop-card{border-radius:var(--radius);box-shadow:var(--shadow);}
+.mine-orders,.mine-services{margin:10px 12px 0;}
+.mine-menu{margin:10px 12px 0;padding-left:16px;overflow:hidden;}
+.mine-menu a{border-bottom:1px solid var(--line);}
+.mine-menu a:active{background:#FAFAFA;}
+.mine-orders .o-head .t,.mine-services .sv-head{display:flex;align-items:center;}
+.mine-orders .o-head .t::before,.mine-services .sv-head::before{content:'';width:4px;height:14px;background:var(--brand);border-radius:2px;margin-right:7px;}
+.mine-orders .o-item a:active,.mine-services .sv-grid a:active{opacity:.7;}
+.mine-services .sv-grid a{border-radius:10px;}
+.form-card{margin:12px 12px;box-shadow:var(--shadow);}
+.form-row{border-bottom:1px solid var(--line);transition:background .15s;}
+.form-row:last-child{border-bottom:0;}
+.form-row:focus-within{background:#FFFAF9;}
+.form-row .fl{color:var(--text);}
+.form-row input::placeholder,.form-row textarea::placeholder{color:#B8B8B8;}
+.order-card{margin:10px 12px 0;}
+.wallet-log{border-radius:var(--radius);margin:10px 12px 0;overflow:hidden;}
+
+/* 列表行：分隔线更浅、按压反馈 */
+.log-item,.addr-item,.adr-item,.plain-item{border-bottom:1px solid var(--line);}
+.log-item:last-child,.addr-item:last-child,.plain-item:last-child{border-bottom:0;}
+
+/* 标签 */
+.tag{border-radius:4px;padding:1px 6px;font-weight:500;line-height:1.6;}
+
+/* 空状态 */
+.empty{padding:70px 0 60px;color:#B8B8B8;font-size:13px;border-radius:var(--radius);margin:10px 12px 0;}
+.empty .e-ico{font-size:48px;margin-bottom:14px;opacity:.85;filter:grayscale(.1);}
+
+/* Toast / 遮罩 / 底部弹层 */
+#toast{border-radius:10px;font-size:14px;padding:11px 20px;background:rgba(0,0,0,.78);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);box-shadow:0 8px 24px rgba(0,0,0,.2);}
+.mask{-webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px);}
+.sheet{border-radius:16px 16px 0 0;padding-bottom:var(--safe-b);}
+
+/* 首页：分类图标、成交滚动条、关于我们卡片 */
+.home-cates{box-shadow:var(--shadow);}
+.home-cates .cate-icon{transition:transform .15s;}
+.home-cates a:active .cate-icon{transform:scale(.94);}
+.home-about{border-radius:var(--radius);box-shadow:var(--shadow);}
+.deal-wrap{border-radius:var(--radius);}
+.load-more,.no-more{background:transparent;}
+
+/* 详情页：参数区、店铺区 */
+.detail-params,.shop-meta,.detail-desc{border-radius:var(--radius);}
+.auction-bar{box-shadow:0 6px 16px rgba(255,95,109,.25);}
+
+/* 输入框（登录/注册等自定义输入框，若存在） */
+.lc-input:focus{border-color:var(--brand) !important;box-shadow:0 0 0 3px rgba(228,57,60,.12);}
+.search-box input:focus{background:#fff;}
+
+/* ==================== PC 端：按 H5 样式居中展示（宽屏时页面收成一列手机宽度） ==================== */
+@media (min-width: 600px){
+  :root{--col:640px;}
+  body{background:#E9EBEF radial-gradient(ellipse at 50% 0%,rgba(228,57,60,.10),rgba(233,235,239,0) 60%) no-repeat;}
+  .app{max-width:var(--col);margin:0 auto;box-shadow:0 0 0 1px rgba(0,0,0,.04),0 12px 48px rgba(0,0,0,.12);min-height:100vh;}
+  /* 固定定位元素跟随中间这一列 */
+  .hd,.tabbar,.detail-bottom,.sheet{left:50%;right:auto;width:var(--col);margin-left:calc(var(--col) / -2);}
+  .app .chat-page{left:50%;right:auto;width:var(--col);margin-left:calc(var(--col) / -2);}
+  .sdrawer{left:calc(50% - var(--col) / 2);width:calc(var(--col) * .7);max-width:400px;}
+  .sdrawer-mask,.mask,.preview-mask,#confirm-mask,.page-loading{left:0;right:0;}
+  /* 鼠标环境：卡片悬停轻微上浮 */
+  .goods-grid .grid-item:hover{transform:translateY(-2px);box-shadow:var(--shadow-hover);}
+  .goods-grid .grid-item:active{transform:scale(.985);}
+  a,button,.grid-item,.o-item a,.sv-grid a{cursor:pointer;}
+}
+@media (min-width: 600px){
+  /* 抽屉收起时要完全移出列外（否则 -100% 只退到列左侧仍在屏幕内） */
+  .sdrawer{transform:translateX(calc(-100% - 120px));visibility:hidden;transition:transform .28s ease,visibility 0s linear .28s;}
+  .sdrawer.show{transform:translateX(0);visibility:visible;transition:transform .28s ease,visibility 0s;}
+}
+@media (min-width: 600px){
+  /* 登录/注册页右上角的语言切换（i18n.js 注入、固定定位）：贴到居中列的右上角，而不是屏幕右上角 */
+  body > .ls-wrap:not(.in-hd):not(.in-mount){right:auto;left:50%;margin-left:calc(var(--col) / 2 - 12px);transform:translateX(-100%);}
+}
+@media (min-width: 600px){
+  /* 卖家悬浮按钮默认位置：贴在居中列的右侧（拖动后由 JS 用像素定位并限制在列内） */
+  .seller-fab{right:auto;left:calc(50% + var(--col) / 2 - 52px);}
+}

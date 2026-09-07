@@ -583,6 +583,7 @@ return [
     '售后退款' => 'After-sale refund',
     '售后扣回成交收入' => 'After-sale income deduction',
     '后台添加会员赠送余额' => 'Admin bonus',
+    '后台调整' => 'Admin adjustment',
     '充值到账' => 'Recharge credited',
     '平台佣金' => 'platform fee',
     '佣金' => 'Commission',

@@ -166,12 +166,19 @@ function toggleSellerDrawer(open, force) {
         if (!fab) return;
         var KEY = 'seller_fab_pos', MARGIN = 8, TAP_MOVE = 6;
         var size = function () { return { w: fab.offsetWidth || 40, h: fab.offsetHeight || 40 }; };
-        var vw = function () { return window.innerWidth || document.documentElement.clientWidth; };
         var vh = function () { return window.innerHeight || document.documentElement.clientHeight; };
+        // PC 上页面收成居中一列（.app），按钮活动范围限制在这一列内；手机上就是整个视口
+        var col = function () {
+            var a = document.querySelector('.app'), w = window.innerWidth || document.documentElement.clientWidth;
+            if (!a) return { l: 0, r: w };
+            var r = a.getBoundingClientRect();
+            return (r.width > 0 && r.width < w - 1) ? { l: r.left, r: r.right } : { l: 0, r: w };
+        };
 
         function clamp(x, y) {
             var s = size();
-            x = Math.max(MARGIN, Math.min(x, vw() - s.w - MARGIN));
+            var c = col();
+            x = Math.max(c.l + MARGIN, Math.min(x, c.r - s.w - MARGIN));
             y = Math.max(MARGIN, Math.min(y, vh() - s.h - MARGIN));
             return { x: x, y: y };
         }
@@ -184,9 +191,11 @@ function toggleSellerDrawer(open, force) {
             // 松手后贴到左右最近的一侧，避免停在页面中间挡内容
             var s = size();
             var p = clamp(x, y);
-            p.x = (p.x + s.w / 2) < vw() / 2 ? MARGIN : vw() - s.w - MARGIN;
+            var c = col();
+            var side = (p.x + s.w / 2) < (c.l + c.r) / 2 ? 'l' : 'r';
+            p.x = side === 'l' ? c.l + MARGIN : c.r - s.w - MARGIN;
             apply(p.x, p.y);
-            try { localStorage.setItem(KEY, JSON.stringify({ side: p.x <= MARGIN ? 'l' : 'r', y: p.y / vh() })); } catch (e) {}
+            try { localStorage.setItem(KEY, JSON.stringify({ side: side, y: p.y / vh() })); } catch (e) {}
         }
         function restore() {
             var saved = null;
@@ -194,7 +203,8 @@ function toggleSellerDrawer(open, force) {
             if (!saved || typeof saved.y !== 'number') return;
             var s = size();
             var y = clamp(0, saved.y * vh()).y;
-            apply(saved.side === 'l' ? MARGIN : vw() - s.w - MARGIN, y);
+            var c = col();
+            apply(saved.side === 'l' ? c.l + MARGIN : c.r - s.w - MARGIN, y);
         }
 
         var drag = null;
