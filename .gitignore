@@ -1,2 +1,6 @@
 .idea
 .env
+
+# ThinkPHP 运行时目录：日志、缓存、编译模板、session，全部为生成内容
+/runtime/*
+!/runtime/.gitkeep
