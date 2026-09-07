@@ -757,3 +757,41 @@ ul,ol{list-style:none;}
 .about-page .apd-label{flex:none;min-width:6em;color:#8a6d4a;}
 .about-page .apd-label::after{content:'：';}
 .about-page .apd-names{flex:1;word-break:break-all;}
+
+/* 卖家：右上角菜单按钮 + 左侧抽屉 */
+.seller-fab{position:fixed;top:120px;right:12px;z-index:120;width:40px;height:40px;border-radius:50%;background:#fff;box-shadow:0 2px 10px rgba(0,0,0,.2);display:flex;align-items:center;justify-content:center;color:#222;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent;cursor:grab;transition:left .2s,top .2s,right .2s;}
+.seller-fab.dragging{transition:none;cursor:grabbing;box-shadow:0 4px 16px rgba(0,0,0,.3);transform:scale(1.06);}
+.seller-fab svg{width:20px;height:20px;}
+.sdrawer-mask{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:300;opacity:0;visibility:hidden;transition:opacity .25s;}
+.sdrawer-mask.show{opacity:1;visibility:visible;}
+.sdrawer{position:fixed;top:0;left:0;bottom:0;width:78%;max-width:340px;background:#fff;z-index:301;overflow-y:auto;transform:translateX(-100%);transition:transform .28s ease;padding:26px 14px 30px;box-sizing:border-box;}
+.sdrawer.show{transform:translateX(0);}
+.sdrawer .sd-top{display:flex;align-items:flex-start;justify-content:space-between;padding:0 6px;}
+.sdrawer .sd-avatar{width:104px;height:104px;border-radius:50%;overflow:hidden;background:#f3f3f3;display:flex;align-items:center;justify-content:center;font-size:44px;}
+.sdrawer .sd-avatar img{width:100%;height:100%;object-fit:cover;}
+.sdrawer .sd-btns{display:flex;flex-direction:column;gap:12px;}
+.sdrawer .sd-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-width:86px;height:40px;border:1px solid #d9d9d9;border-radius:6px;font-size:14px;color:#333;background:#fff;}
+.sdrawer .sd-btn svg{width:16px;height:16px;}
+.sdrawer .sd-info{margin-top:18px;border:1px solid #e5e5e5;border-radius:10px;padding:14px 12px;}
+.sdrawer .sd-row{display:flex;align-items:center;font-size:16px;line-height:1.3;padding:6px 0;color:#222;}
+.sdrawer .sd-row .k{flex:none;color:#222;}
+.sdrawer .sd-row .k.hl{color:#f59e0b;font-weight:600;}
+.sdrawer .sd-row .v{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-left:4px;}
+.sdrawer .sd-row .v.stars{color:#f59e0b;letter-spacing:1px;font-size:17px;}
+.sdrawer .sd-row .v.stars i{font-style:normal;color:#e5e5e5;}
+.sdrawer .sd-menu{margin-top:14px;border-top:1px solid #f0f0f0;}
+.sdrawer .sd-menu a{display:flex;align-items:center;gap:10px;height:58px;padding:0 8px;border-bottom:1px solid #f0f0f0;font-size:17px;color:#222;}
+.sdrawer .sd-menu a svg{width:20px;height:20px;color:#444;flex:none;}
+.sdrawer .sd-menu a b{margin-left:auto;font-weight:400;color:#bbb;font-size:20px;}
+
+/* 修改资料：店铺简介多行输入 */
+.form-row.form-row-area{height:auto;align-items:flex-start;padding-top:12px;padding-bottom:12px;}
+.form-row.form-row-area .fl{padding-top:6px;}
+.form-row.form-row-area .fr textarea{width:100%;border:0;outline:0;background:#f7f7f7;border-radius:6px;padding:8px 10px;font-size:14px;line-height:1.5;color:#333;resize:none;font-family:inherit;box-sizing:border-box;}
+
+/* 页面跳转等待层：点击站内链接/返回后、新页面到达前显示 */
+.page-loading{position:fixed;inset:0;z-index:9999;background:rgba(255,255,255,.55);display:none;align-items:center;justify-content:center;flex-direction:column;gap:10px;}
+.page-loading.show{display:flex;}
+.page-loading .pl-spin{width:34px;height:34px;border:3px solid rgba(190,47,43,.2);border-top-color:#BE2F2B;border-radius:50%;animation:plspin .8s linear infinite;}
+.page-loading .pl-txt{font-size:13px;color:#666;}
+@keyframes plspin{to{transform:rotate(360deg);}}

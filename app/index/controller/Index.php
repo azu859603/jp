@@ -64,17 +64,35 @@ class Index extends Base
                 break;
             case 'new':
                 // 分类轮流混排：同分类内按最新排名，排名相同的不同分类交替出现，
-                // 避免整批导入的同类商品在首页扎堆
-                $list = $query
-                    ->field('g.*, u.nickname as seller_name, (
-                        SELECT COUNT(*) FROM goods g2
-                        WHERE g2.category_id = g.category_id AND g2.status = 1
-                          AND g2.start_time <= ' . $now . ' AND g2.end_time > ' . $now . '
-                          AND g2.id > g.id
-                    ) AS cate_rank')
-                    ->order('cate_rank', 'asc')
-                    ->order('g.id', 'desc')
-                    ->page($page, $limit)->select()->toArray();
+                // 避免整批导入的同类商品在首页扎堆。
+                // 排名在 PHP 里算：只取 id/category_id 两列（几千行、毫秒级），
+                // 原来的逐行 COUNT 子查询在商品多时是 O(n²)，首页要 2 秒以上。
+                $rows = (clone $query)->field('g.id, g.category_id')->order('g.id', 'desc')->select()->toArray();
+                $rankInCate = [];
+                foreach ($rows as &$r) {
+                    $c = (int)$r['category_id'];
+                    $rankInCate[$c] = isset($rankInCate[$c]) ? $rankInCate[$c] + 1 : 0;
+                    $r['cate_rank'] = $rankInCate[$c];
+                }
+                unset($r);
+                usort($rows, function ($a, $b) {
+                    return $a['cate_rank'] <=> $b['cate_rank'] ?: $b['id'] <=> $a['id'];
+                });
+                $pageIds = array_column(array_slice($rows, ($page - 1) * $limit, $limit), 'id');
+                $list = [];
+                if ($pageIds) {
+                    $found = Db::name('goods')->alias('g')
+                        ->leftJoin('user u', 'g.seller_id = u.id')
+                        ->field('g.*, u.nickname as seller_name')
+                        ->whereIn('g.id', $pageIds)
+                        ->select()->toArray();
+                    $byId = array_column($found, null, 'id');
+                    foreach ($pageIds as $id) {
+                        if (isset($byId[$id])) {
+                            $list[] = $byId[$id];
+                        }
+                    }
+                }
                 break;
             default:
                 $list = $query->order('g.end_time', 'asc')->order('g.id', 'desc')->page($page, $limit)->select()->toArray();

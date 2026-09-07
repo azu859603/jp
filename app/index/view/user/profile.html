@@ -57,6 +57,12 @@
             <input type="text" id="company_name" value="{$user.company_name|default=''}" maxlength="50" placeholder="{:lang('请输入企业名称')}">
         </div>
     </div>
+    <div class="form-row form-row-area">
+        <span class="fl">{:lang('店铺简介')}</span>
+        <div class="fr">
+            <textarea id="seller_intro" maxlength="200" rows="3" placeholder="{:lang('请输入店铺简介')}">{$user.seller_intro|default=''}</textarea>
+        </div>
+    </div>
     <div class="form-row">
         <span class="fl">{:lang('店铺头像')}</span>
         <div class="fr" style="justify-content:flex-end;">
@@ -102,6 +108,8 @@ function saveProfile(){
     var companyName = document.getElementById('company_name');
     if(shopName) params.shop_name = shopName.value.trim();
     if(companyName) params.company_name = companyName.value.trim();
+    var sellerIntro = document.getElementById('seller_intro');
+    if(sellerIntro) params.seller_intro = sellerIntro.value.trim();
     ajaxPost('/user/profile', params, function(res){
         toast(res.msg);
         if(res.code == 1) setTimeout(function(){ location.href='/user/center'; }, 600);

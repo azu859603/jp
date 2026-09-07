@@ -14,7 +14,7 @@ class Setting extends Base
         if ($this->request->isPost()) {
             $fields = [
                 'site_name', 'site_logo', 'site_url', 'commission_rate',
-                'seller_check', 'goods_check', 'withdraw_fee', 'service_phone',
+                'seller_check', 'goods_check', 'invite_required', 'withdraw_fee', 'service_phone',
                 'service_qq', 'service_link', 'auction_delay', 'user_protocol', 'privacy_policy', 'publish_protocol',
                 'user_protocol_tw', 'user_protocol_en', 'privacy_policy_tw', 'privacy_policy_en', 'publish_protocol_tw', 'publish_protocol_en',
                 'withdraw_min', 'withdraw_max',
@@ -66,7 +66,7 @@ class Setting extends Base
         // 补默认值，避免新增配置未入库时模板访问报错
         $defaults = [
             'site_name' => '', 'site_logo' => '', 'site_url' => '',
-            'commission_rate' => '0', 'seller_check' => '1', 'goods_check' => '1',
+            'commission_rate' => '0', 'seller_check' => '1', 'goods_check' => '1', 'invite_required' => '1',
             'withdraw_fee' => '0', 'service_phone' => '',
             'service_qq' => '', 'service_link' => '', 'auction_delay' => '0', 'user_protocol' => '', 'privacy_policy' => '', 'publish_protocol' => '',
             'user_protocol_tw' => '', 'user_protocol_en' => '', 'privacy_policy_tw' => '', 'privacy_policy_en' => '', 'publish_protocol_tw' => '', 'publish_protocol_en' => '',

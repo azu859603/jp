@@ -151,7 +151,11 @@ class User extends Base
         if (!empty($this->user)) {
             return redirect('/user/center');
         }
-        View::assign('page_title', lang('会员注册'));
+        View::assign([
+            'page_title'      => lang('会员注册'),
+            // 后台开关：注册是否必须填写邀请码（默认必须）
+            'invite_required' => (int)get_setting('invite_required', 1) === 1,
+        ]);
         return View::fetch();
     }
 
@@ -186,15 +190,20 @@ class User extends Base
             return json(['code' => 0, 'msg' => lang('该手机号已注册')]);
         }
 
-        // 邀请码（必填）
+        // 邀请码：后台开关决定是否必填；填了就必须存在，没填（且不要求）则无上级
+        $inviteRequired = (int)get_setting('invite_required', 1) === 1;
+        $pid = 0;
         if ($inviteCode === '') {
-            return json(['code' => 0, 'msg' => lang('请输入邀请码')]);
+            if ($inviteRequired) {
+                return json(['code' => 0, 'msg' => lang('请输入邀请码')]);
+            }
+        } else {
+            $inviter = Db::name('user')->where('invite_code', $inviteCode)->find();
+            if (!$inviter) {
+                return json(['code' => 0, 'msg' => lang('邀请码不存在')]);
+            }
+            $pid = (int)$inviter['id'];
         }
-        $inviter = Db::name('user')->where('invite_code', $inviteCode)->find();
-        if (!$inviter) {
-            return json(['code' => 0, 'msg' => lang('邀请码不存在')]);
-        }
-        $pid = $inviter['id'];
 
         // 生成唯一的纯数字邀请码
         $myCode = generate_invite_code();
@@ -522,6 +531,10 @@ class User extends Base
                 }
                 if ($companyName !== '') {
                     $data['company_name'] = $companyName;
+                }
+                // 店铺简介：本次提交了该字段才更新（允许清空），最多 200 字
+                if ($this->request->has('seller_intro', 'post')) {
+                    $data['seller_intro'] = mb_substr(trim(strip_tags((string)$this->request->post('seller_intro', ''))), 0, 200);
                 }
             }
             Db::name('user')->where('id', $this->user['id'])->update($data);

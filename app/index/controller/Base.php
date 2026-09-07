@@ -43,6 +43,13 @@ class Base extends BaseController
         }
         $this->user = $user;
 
+        // 已登录用户的页面不进浏览器后退缓存（bfcache）：返回时重新请求，余额/订单状态保持最新，
+        // 也避免恢复态页面残留抽屉/提示，以及浏览器/调试工具在恢复页上读不到计时对象而报错
+        if (!empty($user) && !headers_sent()) {
+            header('Cache-Control: no-store, no-cache, must-revalidate');
+            header('Pragma: no-cache');
+        }
+
         $settings = site_settings();
         View::assign([
             'user'     => $user,

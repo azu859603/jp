@@ -30,6 +30,8 @@ var LANG = (metaLang ? metaLang.getAttribute('content') : '') || getCookie(COOKI
         '邀请码已复制': ['邀請碼已複製', 'Invite code copied'],
         /* 补充：toast/confirm 文案 */
         '加载中': ['載入中', 'Loading'],
+        '加载中...': ['載入中...', 'Loading...'],
+        '上拉加载更多': ['上拉載入更多', 'Scroll to load more'],
         '1个月': ['1個月', '1 month'],
         '后': ['後', ' later'],
         '如 TRC20 / ERC20': ['如 TRC20 / ERC20', 'e.g. TRC20 / ERC20'],

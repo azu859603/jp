@@ -1,6 +1,20 @@
 /* 移动端公共 JS */
 // Toast（自动按当前语言翻译）
+// 页面正在离开（点链接跳走）时，被中断的 XHR 会触发 onerror → toast；这时不该弹，否则返回（bfcache 恢复）时会看到「网络异常」
+window.__pageLeaving = false;
+window.addEventListener('pagehide', function () { window.__pageLeaving = true; });
+window.addEventListener('beforeunload', function () { window.__pageLeaving = true; });
+window.addEventListener('pageshow', function (e) {
+    window.__pageLeaving = false;
+    // 从后退缓存恢复的页面直接重新加载：避免恢复态下抽屉/提示残留，也避免浏览器或调试工具读取不到页面计时对象（startTime）而报错，同时保证返回后数据是最新的
+    if (e.persisted) { location.reload(); return; }
+    // 从后退缓存恢复：收起残留的 toast / 卖家抽屉 / 滚动锁
+    var tt = document.getElementById('toast'); if (tt) tt.style.display = 'none';
+    if (e.persisted && typeof toggleSellerDrawer === 'function') toggleSellerDrawer(false, true);
+    document.body.style.overflow = '';
+});
 function toast(msg, ms) {
+    if (window.__pageLeaving) return;
     if (typeof segT === 'function') msg = segT(msg);
     else if (typeof t === 'function') msg = t(msg);
     var el = document.getElementById('toast');
@@ -129,3 +143,152 @@ function autoLoadMore(wrap, loader) {
     onScroll();
     return check;
 }
+
+/** 卖家左侧抽屉开关 */
+var _sellerDrawerOpenedAt = 0;
+function toggleSellerDrawer(open, force) {
+    var d = document.getElementById('sdrawer'), m = document.getElementById('sdrawerMask');
+    if (!d || !m) return;
+    if (!open && !force && Date.now() - _sellerDrawerOpenedAt < 400) return; // 刚打开就收到的关闭（触摸后补发的 click）忽略
+    if (open) _sellerDrawerOpenedAt = Date.now();
+    d.classList.toggle('show', !!open);
+    m.classList.toggle('show', !!open);
+    document.body.style.overflow = open ? 'hidden' : '';
+}
+
+/**
+ * 卖家菜单悬浮按钮：可拖动、松手贴边、位置记住（localStorage）、轻点打开抽屉
+ * 按钮只在卖家登录时由模板输出，退出登录后页面上不再有该节点
+ */
+(function () {
+    function init() {
+        var fab = document.getElementById('sellerFab');
+        if (!fab) return;
+        var KEY = 'seller_fab_pos', MARGIN = 8, TAP_MOVE = 6;
+        var size = function () { return { w: fab.offsetWidth || 40, h: fab.offsetHeight || 40 }; };
+        var vw = function () { return window.innerWidth || document.documentElement.clientWidth; };
+        var vh = function () { return window.innerHeight || document.documentElement.clientHeight; };
+
+        function clamp(x, y) {
+            var s = size();
+            x = Math.max(MARGIN, Math.min(x, vw() - s.w - MARGIN));
+            y = Math.max(MARGIN, Math.min(y, vh() - s.h - MARGIN));
+            return { x: x, y: y };
+        }
+        function apply(x, y) {
+            fab.style.right = 'auto';
+            fab.style.left = x + 'px';
+            fab.style.top = y + 'px';
+        }
+        function snap(x, y) {
+            // 松手后贴到左右最近的一侧，避免停在页面中间挡内容
+            var s = size();
+            var p = clamp(x, y);
+            p.x = (p.x + s.w / 2) < vw() / 2 ? MARGIN : vw() - s.w - MARGIN;
+            apply(p.x, p.y);
+            try { localStorage.setItem(KEY, JSON.stringify({ side: p.x <= MARGIN ? 'l' : 'r', y: p.y / vh() })); } catch (e) {}
+        }
+        function restore() {
+            var saved = null;
+            try { saved = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) {}
+            if (!saved || typeof saved.y !== 'number') return;
+            var s = size();
+            var y = clamp(0, saved.y * vh()).y;
+            apply(saved.side === 'l' ? MARGIN : vw() - s.w - MARGIN, y);
+        }
+
+        var drag = null;
+        function onDown(e) {
+            var pt = e.touches ? e.touches[0] : e;
+            var r = fab.getBoundingClientRect();
+            drag = { sx: pt.clientX, sy: pt.clientY, ox: r.left, oy: r.top, moved: false };
+            fab.classList.add('dragging');
+            if (!e.touches) e.preventDefault();
+        }
+        function onMove(e) {
+            if (!drag) return;
+            var pt = e.touches ? e.touches[0] : e;
+            var dx = pt.clientX - drag.sx, dy = pt.clientY - drag.sy;
+            if (!drag.moved && Math.abs(dx) < TAP_MOVE && Math.abs(dy) < TAP_MOVE) return;
+            drag.moved = true;
+            var p = clamp(drag.ox + dx, drag.oy + dy);
+            apply(p.x, p.y);
+            if (e.cancelable) e.preventDefault();
+        }
+        function onUp() {
+            if (!drag) return;
+            fab.classList.remove('dragging');
+            var r = fab.getBoundingClientRect();
+            if (drag.moved) {
+                snap(r.left, r.top);
+            } else if (typeof toggleSellerDrawer === 'function') {
+                toggleSellerDrawer(true);   // 轻点：打开抽屉
+            }
+            drag = null;
+        }
+
+        fab.addEventListener('touchstart', onDown, { passive: true });
+        fab.addEventListener('touchmove', onMove, { passive: false });
+        fab.addEventListener('touchend', function (e) { onUp(); if (e.cancelable) e.preventDefault(); }, { passive: false });
+        fab.addEventListener('touchcancel', onUp);
+        fab.addEventListener('mousedown', onDown);
+        document.addEventListener('mousemove', onMove);
+        document.addEventListener('mouseup', onUp);
+        fab.addEventListener('click', function (e) { e.preventDefault(); }); // 打开由 onUp 统一处理，避免拖完误触
+        window.addEventListener('resize', function () {
+            var r = fab.getBoundingClientRect();
+            if (fab.style.left) snap(r.left, r.top);
+        });
+        restore();
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
+})();
+
+/**
+ * 页面跳转等待层：点击站内链接 / 返回按钮后立即显示转圈，新页面加载出来后随页面一起消失
+ * - 只对同源、非新窗口、非 javascript:、非锚点、未按修饰键的链接生效
+ * - 超时兜底（8s）与页面恢复（pageshow）时自动隐藏，避免跳转被取消后一直遮着
+ */
+(function () {
+    var box = null, timer = null;
+    function el() {
+        if (box) return box;
+        box = document.createElement('div');
+        box.className = 'page-loading';
+        box.innerHTML = '<div class="pl-spin"></div><div class="pl-txt">' + (typeof t === 'function' ? t('加载中...') : '加载中...') + '</div>';
+        document.body.appendChild(box);
+        return box;
+    }
+    function show() {
+        el().classList.add('show');
+        clearTimeout(timer);
+        timer = setTimeout(hide, 8000);
+    }
+    function hide() {
+        if (box) box.classList.remove('show');
+        clearTimeout(timer);
+    }
+    window.showPageLoading = show;
+    window.hidePageLoading = hide;
+
+    document.addEventListener('click', function (e) {
+        if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+        var a = e.target.closest ? e.target.closest('a[href]') : null;
+        if (!a) return;
+        var href = a.getAttribute('href') || '';
+        if (!href || href.charAt(0) === '#' || /^\s*javascript:/i.test(href) || a.target === '_blank' || a.hasAttribute('download')) return;
+        if (a.origin && a.origin !== location.origin) return;
+        // 仅锚点变化（同页）不显示
+        if (a.pathname === location.pathname && a.search === location.search && a.hash) return;
+        show();
+    }, true);
+
+    // 头部返回按钮（onclick 里走 history.back）
+    document.addEventListener('click', function (e) {
+        var b = e.target.closest ? e.target.closest('.hd .back') : null;
+        if (b) show();
+    }, true);
+
+    window.addEventListener('pageshow', hide);
+    window.addEventListener('pagehide', function () { clearTimeout(timer); });
+})();
