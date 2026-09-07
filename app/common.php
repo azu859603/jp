@@ -71,6 +71,22 @@ function clean_html($html)
 }
 
 /**
+ * 生成唯一的纯数字邀请码（8 位，首位不为 0）
+ * 后台添加会员与前台注册统一使用
+ */
+function generate_invite_code($length = 8)
+{
+    $length = max(6, (int)$length);
+    do {
+        $code = (string)random_int(1, 9);
+        for ($i = 1; $i < $length; $i++) {
+            $code .= (string)random_int(0, 9);
+        }
+    } while (\think\facade\Db::name('user')->where('invite_code', $code)->find());
+    return $code;
+}
+
+/**
  * 生成密码哈希（bcrypt）
  * 旧的 encrypt_password() 仅保留用于校验历史数据，新写入一律走这里
  */

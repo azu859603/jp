@@ -11,6 +11,20 @@
         <tr><td>手机号</td><td>{$user.mobile}</td></tr>
         <tr><td>昵称</td><td>{$user.nickname ?: '-'}</td></tr>
         <tr><td>邀请码</td><td>{$user.invite_code}</td></tr>
+        <tr><td>上级会员</td>
+            <td>
+                {if $user.parent}
+                <a href="/admin1314/member/detail?id={$user.parent.id}">{$user.parent.mobile}</a>
+                <span class="gray" style="font-size:12px;">（{$user.parent.nickname ?: '-'} / #{$user.parent.id}）</span>
+                {elseif $user.pid > 0 /}
+                <span class="gray">#{$user.pid}（已删除）</span>
+                {else /}
+                <span class="gray">无</span>
+                {/if}
+                <button class="btn btn-sm btn-primary" style="margin-left:10px;" onclick="openParentEdit()">修改上级</button>
+            </td>
+        </tr>
+        <tr><td>直接下级</td><td>{$user.child_count} 人</td></tr>
         <tr><td>会员类型</td>
             <td>{if $user.is_virtual == 1}<span class="tag tag-purple">虚拟会员</span>{else /}<span class="tag tag-gray">普通会员</span>{/if}
                 {if $user.is_seller == 1}<span class="tag tag-orange">卖家</span>{/if}
@@ -132,6 +146,28 @@
 </div>
 
 <!-- 编辑店铺资料弹窗 -->
+<!-- 修改上级弹层 -->
+<div class="mask" id="parentMask">
+    <div class="dialog">
+        <div class="dialog-title">修改上级 - {$user.mobile}</div>
+        <div class="dialog-body">
+            <div class="form-group">
+                <label>当前上级</label>
+                <div style="font-size:13px;color:#64748b;">{if $user.parent}{$user.parent.mobile}{else /}无{/if}</div>
+            </div>
+            <div class="form-group" style="margin-bottom:0;">
+                <label>新上级（手机号 / 邀请码 / 会员ID）</label>
+                <input type="text" class="form-control" id="parentValue" placeholder="留空表示清空上级">
+                <div class="tip">上级即邀请人，修改后该会员会归到新上级的代理中心下级列表；留空并确定即清空上级。</div>
+            </div>
+        </div>
+        <div class="dialog-footer">
+            <button class="btn" onclick="document.getElementById('parentMask').classList.remove('show')">取消</button>
+            <button class="btn btn-primary" onclick="doSetParent()">确定</button>
+        </div>
+    </div>
+</div>
+
 <div class="mask" id="shopEditMask">
     <div class="dialog">
         <div class="dialog-title">编辑店铺资料</div>
@@ -168,6 +204,22 @@ var shopData = {
     score: '{$user.shop_score}',
     fans: '{$user.fans_count}'
 };
+
+function openParentEdit(){
+    document.getElementById('parentValue').value = '';
+    document.getElementById('parentMask').classList.add('show');
+}
+
+function doSetParent(){
+    var val = document.getElementById('parentValue').value.trim();
+    var go = function(){
+        ajaxPost('/admin1314/member/setParent', {id: {$user.id}, parent: val}, function(res){
+            alert(res.msg);
+            if(res.code == 1) location.reload();
+        });
+    };
+    if(val === ''){ confirmDialog('未填写新上级，确定要清空该会员的上级吗？', go); } else { go(); }
+}
 
 function openShopEdit(){
     document.getElementById('se_intro').value = shopData.intro || '';

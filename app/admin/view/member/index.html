@@ -38,7 +38,7 @@
         <table class="table">
             <thead>
             <tr>
-                <th>ID</th><th>会员</th><th>手机号</th><th>类型</th><th>代理</th>
+                <th>ID</th><th>会员</th><th>手机号</th><th>上级</th><th>类型</th><th>代理</th>
                 <th>余额</th><th>冻结</th><th>成交(买/卖)</th><th>状态</th><th>注册时间</th><th>操作</th>
             </tr>
             </thead>
@@ -77,10 +77,16 @@
                 <input type="number" step="0.01" min="0" class="form-control" id="addBalance" placeholder="0" value="0">
                 <div class="tip" id="addTypeTip" style="display:none;">虚拟会员余额为系统设置的永存金额，不支持充值/提现，不审计流水</div>
             </div>
-            <div class="form-group" style="margin-bottom:0;">
+            <div class="form-group">
                 <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:normal;font-size:13px;">
                     <input type="checkbox" id="addIsSeller" style="width:16px;height:16px;"> 同时开通卖家权限
                 </label>
+            </div>
+            <div class="form-group" style="margin-bottom:0;">
+                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:normal;font-size:13px;">
+                    <input type="checkbox" id="addIsAgent" style="width:16px;height:16px;"> 同时设为代理
+                </label>
+                <div class="tip">设为代理后可用该账号登录 /agent 代理中心，管理注册时填写其邀请码的一级会员</div>
             </div>
         </div>
         <div class="dialog-footer">
@@ -118,6 +124,28 @@
         <div class="dialog-footer">
             <button class="btn" onclick="document.getElementById('balanceMask').classList.remove('show')">取消</button>
             <button class="btn btn-primary" onclick="doAdjustBalance()">确定</button>
+        </div>
+    </div>
+</div>
+
+<!-- 修改上级弹层 -->
+<div class="mask" id="parentMask">
+    <div class="dialog">
+        <div class="dialog-title" id="parentDialogTitle">修改上级</div>
+        <div class="dialog-body">
+            <div class="form-group">
+                <label>当前上级</label>
+                <div id="parentCurrent" style="font-size:13px;color:#64748b;">无</div>
+            </div>
+            <div class="form-group" style="margin-bottom:0;">
+                <label>新上级（手机号 / 邀请码 / 会员ID）</label>
+                <input type="text" class="form-control" id="parentValue" placeholder="留空表示清空上级">
+                <div class="tip">上级即邀请人，修改后该会员会归到新上级的代理中心下级列表；留空并确定即清空上级。</div>
+            </div>
+        </div>
+        <div class="dialog-footer">
+            <button class="btn" onclick="document.getElementById('parentMask').classList.remove('show')">取消</button>
+            <button class="btn btn-primary" onclick="doSetParent()">确定</button>
         </div>
     </div>
 </div>
@@ -186,6 +214,7 @@ function loadList(page){
                         + '<td>' + u.id + '</td>'
                         + '<td>' + (u.nickname || '-') + '</td>'
                         + '<td>' + u.mobile + '</td>'
+                        + '<td>' + (u.pid > 0 ? (u.parent_mobile ? u.parent_mobile + '<br><span class="gray" style="font-size:12px;">' + (u.parent_nickname || '#' + u.pid) + '</span>' : '<span class="gray">#' + u.pid + '(已删除)</span>') : '<span class="gray">-</span>') + '</td>'
                         // + '<td>' + u.invite_code + '</td>'
                         + '<td>' + typeHtml + '</td>'
                         + '<td>' + (u.is_agent == 1 ? '<span class="tag tag-blue">代理</span>' : '<span class="gray">-</span>') + '</td>'
@@ -198,6 +227,7 @@ function loadList(page){
                         + '<a class="btn btn-sm" href="/admin1314/member/detail?id=' + u.id + '">详情</a> '
                         + '<a class="btn btn-sm" href="javascript:;" onclick="openBalance(' + u.id + ')">余额</a> '
                         + '<a class="btn btn-sm" href="javascript:;" onclick="openPwd(' + u.id + ')">重置密码</a> '
+                        + '<a class="btn btn-sm" href="javascript:;" onclick="openParent(' + u.id + ',\'' + encodeURIComponent(u.mobile) + '\',\'' + encodeURIComponent(u.parent_mobile || '') + '\')">改上级</a> '
                         + '<a class="btn btn-sm" href="javascript:;" onclick="openMsg(' + u.id + ',\'' + encodeURIComponent(u.nickname || '-') + '\')">私信</a> '
                         + (u.status == 1
                             ? '<a class="btn btn-sm btn-danger" href="javascript:;" onclick="toggleStatus(' + u.id + ',0)">禁用</a>'
@@ -246,6 +276,7 @@ function openAdd(){
     document.getElementById('addPassword').value = '';
     document.getElementById('addBalance').value = '0';
     document.getElementById('addIsSeller').checked = false;
+    document.getElementById('addIsAgent').checked = false;
     document.querySelector('input[name="addType"][value="0"]').checked = true;
     onAddType();
     document.getElementById('addMask').classList.add('show');
@@ -279,6 +310,7 @@ function doAddMember(){
         password: password,
         balance: document.getElementById('addBalance').value,
         is_seller: document.getElementById('addIsSeller').checked ? 1 : 0,
+        is_agent: document.getElementById('addIsAgent').checked ? 1 : 0,
         is_virtual: document.querySelector('input[name="addType"]:checked').value
     }, function(res){
         alert(res.msg);
@@ -333,6 +365,28 @@ function doAdjustBalance(){
             loadList(currentPage);
         }
     });
+}
+
+function openParent(id, mobile, parentMobile){
+    currentId = id;
+    document.getElementById('parentDialogTitle').textContent = '修改上级 - ' + decodeURIComponent(mobile);
+    document.getElementById('parentCurrent').textContent = decodeURIComponent(parentMobile) || '无';
+    document.getElementById('parentValue').value = '';
+    document.getElementById('parentMask').classList.add('show');
+}
+
+function doSetParent(){
+    var val = document.getElementById('parentValue').value.trim();
+    var go = function(){
+        ajaxPost('/admin1314/member/setParent', {id:currentId, parent:val}, function(res){
+            alert(res.msg);
+            if(res.code == 1){
+                document.getElementById('parentMask').classList.remove('show');
+                loadList(currentPage);
+            }
+        });
+    };
+    if(val === ''){ confirmDialog('未填写新上级，确定要清空该会员的上级吗？', go); } else { go(); }
 }
 
 function openPwd(id){

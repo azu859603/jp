@@ -54,6 +54,16 @@ class Member extends Base
             $total = $query->count();
             $list = $query->order('id', 'desc')->page($page, $limit)->field('id,mobile,nickname,avatar,invite_code,pid,is_seller,is_agent,is_virtual,seller_check,balance,freeze_balance,points,commission_rate,total_buy,total_sell,status,reg_ip,reg_time,last_login_time,create_time')->select()->toArray();
 
+            // 上级会员信息（列表展示用）
+            $pids = array_values(array_unique(array_filter(array_column($list, 'pid'))));
+            $parents = $pids ? Db::name('user')->whereIn('id', $pids)->column('mobile,nickname', 'id') : [];
+            foreach ($list as &$u) {
+                $p = $parents[$u['pid']] ?? null;
+                $u['parent_mobile']   = $p['mobile'] ?? '';
+                $u['parent_nickname'] = $p['nickname'] ?? '';
+            }
+            unset($u);
+
             return json(['code' => 0, 'msg' => '', 'count' => $total, 'data' => $list]);
         }
 
@@ -206,6 +216,12 @@ class Member extends Base
         $user['last_login_text'] = $user['last_login_time'] ? date('Y-m-d H:i:s', $user['last_login_time']) : '-';
         $user['lic_list'] = !empty($user['license_img']) ? explode(',', $user['license_img']) : [];
 
+        // 上级会员
+        $user['parent'] = $user['pid'] > 0
+            ? Db::name('user')->where('id', $user['pid'])->field('id,mobile,nickname,invite_code')->find()
+            : null;
+        $user['child_count'] = Db::name('user')->where('pid', $id)->count();
+
         // 统计
         $user['sell_count'] = Db::name('goods')->where('seller_id', $id)->where('status', 2)->count();
         $user['buy_count'] = Db::name('order')->where('buyer_id', $id)->where('pay_status', 1)->count();
@@ -287,6 +303,7 @@ class Member extends Base
         $password = trim($this->request->post('password', ''));
         $balance = round((float)$this->request->post('balance', 0), 2);
         $isSeller = (int)$this->request->post('is_seller', 0);
+        $isAgent = (int)$this->request->post('is_agent', 0);
         $isVirtual = (int)$this->request->post('is_virtual', 0);
 
         if (!preg_match('/^1\d{10}$/', $mobile)) {
@@ -305,10 +322,8 @@ class Member extends Base
             $nickname = '用户' . substr($mobile, -4);
         }
 
-        // 生成唯一邀请码
-        do {
-            $myCode = strtoupper(substr(md5($mobile . mt_rand(1000, 9999)), 0, 8));
-        } while (Db::name('user')->where('invite_code', $myCode)->find());
+        // 生成唯一的纯数字邀请码
+        $myCode = generate_invite_code();
 
         $now = time();
         // 虚拟会员：余额 = 系统设置的永存金额，不审计流水
@@ -322,6 +337,8 @@ class Member extends Base
                 'invite_code' => $myCode,
                 'balance'     => $virtualBalance,
                 'is_seller'   => $isSeller ? 1 : 0,
+                'is_agent'    => $isAgent ? 1 : 0,
+                'agent_time'  => $isAgent ? $now : 0,
                 'is_virtual'  => $isVirtual ? 1 : 0,
                 'seller_check'=> $isSeller ? 1 : 0,
                 'status'      => 1,
@@ -525,5 +542,63 @@ class Member extends Base
         ]);
         admin_log(($isAgent ? '设置' : '取消') . '代理：' . $user['mobile']);
         return json(['code' => 1, 'msg' => '操作成功']);
+    }
+
+    /**
+     * 修改会员上级（邀请人）
+     *
+     * POST id=会员ID  parent=上级的手机号 / 邀请码 / 会员ID；parent 为空则清空上级
+     * 上级即 user.pid：影响前台「我的邀请」统计以及代理中心（/agent）的下级数据范围。
+     * 校验：不能设为自己；上级必须存在；不能把会员挂到自己的下级链上（防止形成环）。
+     */
+    public function setParent()
+    {
+        if (!$this->request->isPost()) {
+            return json(['code' => 0, 'msg' => '请求方式错误']);
+        }
+        $id = (int)$this->request->post('id');
+        $parentInput = trim((string)$this->request->post('parent', ''));
+
+        $user = Db::name('user')->find($id);
+        if (!$user) {
+            return json(['code' => 0, 'msg' => '会员不存在']);
+        }
+
+        $newPid = 0;
+        $parent = null;
+        if ($parentInput !== '') {
+            // 依次按 手机号 / 邀请码 / 会员ID 查找上级
+            $parent = Db::name('user')->where('mobile', $parentInput)->find()
+                ?: Db::name('user')->where('invite_code', $parentInput)->find();
+            if (!$parent && ctype_digit($parentInput)) {
+                $parent = Db::name('user')->where('id', (int)$parentInput)->find();
+            }
+            if (!$parent) {
+                return json(['code' => 0, 'msg' => '未找到该上级会员，请输入正确的手机号、邀请码或会员ID']);
+            }
+            if ((int)$parent['id'] === $id) {
+                return json(['code' => 0, 'msg' => '不能把自己设为上级']);
+            }
+            // 沿新上级的 pid 链向上查，若能回到自己则会形成环
+            $cursor = (int)$parent['pid'];
+            for ($i = 0; $i < 50 && $cursor > 0; $i++) {
+                if ($cursor === $id) {
+                    return json(['code' => 0, 'msg' => '该会员是当前会员的下级，不能反过来设为上级']);
+                }
+                $cursor = (int)Db::name('user')->where('id', $cursor)->value('pid');
+            }
+            $newPid = (int)$parent['id'];
+        }
+
+        if ($newPid === (int)$user['pid']) {
+            return json(['code' => 0, 'msg' => '上级未变化']);
+        }
+
+        Db::name('user')->where('id', $id)->update(['pid' => $newPid, 'update_time' => time()]);
+
+        $oldText = $user['pid'] > 0 ? ('#' . $user['pid']) : '无';
+        $newText = $parent ? ($parent['mobile'] . '(#' . $parent['id'] . ')') : '无';
+        admin_log('修改会员上级：' . $user['mobile'] . ' 由 ' . $oldText . ' 改为 ' . $newText);
+        return json(['code' => 1, 'msg' => $parent ? ('已将上级改为 ' . $parent['mobile']) : '已清空上级']);
     }
 }

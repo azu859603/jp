@@ -196,10 +196,8 @@ class User extends Base
         }
         $pid = $inviter['id'];
 
-        // 生成唯一邀请码
-        do {
-            $myCode = strtoupper(substr(md5($mobile . mt_rand(1000, 9999)), 0, 8));
-        } while (Db::name('user')->where('invite_code', $myCode)->find());
+        // 生成唯一的纯数字邀请码
+        $myCode = generate_invite_code();
 
         $now = time();
         $userId = Db::name('user')->insertGetId([
