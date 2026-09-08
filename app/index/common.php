@@ -97,7 +97,10 @@ function about_dept_content()
     if (trim($text) === '') {
         $text = (string)get_setting('about_dept', '');
     }
-    $text = str_replace(["\r\n", "\r"], "\n", trim($text));
+    // 归一化：换行、全角空格 / 不换行空格 / 制表符都视为普通空格
+    $text = str_replace(["\r\n", "\r"], "\n", $text);
+    $text = str_replace(["\xE3\x80\x80", "\xC2\xA0", "\t"], ' ', $text);
+    $text = trim($text);
     if ($text === '') {
         return [];
     }
@@ -107,22 +110,62 @@ function about_dept_content()
         if (empty($lines)) {
             continue;
         }
-        $title = array_shift($lines);
+        $title = preg_replace('/\s+/u', ' ', array_shift($lines));
         $roles = [];
         foreach ($lines as $line) {
-            $parts = preg_split('/[：:]/u', $line, 2);
-            $label = trim($parts[0]);
-            $names = isset($parts[1]) ? trim(preg_replace('/\s+/u', ' ', $parts[1])) : '';
-            if ($label === '' && $names === '') {
+            // 从站点复制时标题常常重复一行，跳过
+            if ($line === $title) {
                 continue;
             }
-            $roles[] = ['label' => $label, 'names' => $names];
+            $parts = preg_split('/[：:]/u', $line, 2);
+            if (count($parts) === 2) {
+                // 岗位名内部的补位空格去掉（如「海 外 拓 展」）
+                $label = preg_replace('/\s+/u', '', $parts[0]);
+                $names = about_dept_names($parts[1]);
+                if ($label === '' && $names === '') {
+                    continue;
+                }
+                $roles[] = ['label' => $label, 'names' => $names];
+                continue;
+            }
+            // 没有冒号：是上一岗位的续行（姓名太多换行了），并入上一岗位
+            $names = about_dept_names($line);
+            if ($names === '') {
+                continue;
+            }
+            if (!empty($roles)) {
+                $last = count($roles) - 1;
+                $roles[$last]['names'] = trim($roles[$last]['names'] . ' ' . $names);
+            } else {
+                $roles[] = ['label' => '', 'names' => $names];
+            }
         }
         $depts[] = ['title' => $title, 'roles' => $roles];
     }
     return $depts;
 }
 
+/**
+ * 整理一串姓名：按空格拆开；被补位空格拆散的两字名（如「王 健 任 星」）按相邻单字两两合并为「王健 任星」
+ */
+function about_dept_names(string $raw): string
+{
+    $tokens = preg_split('/\s+/u', trim($raw), -1, PREG_SPLIT_NO_EMPTY);
+    $out = [];
+    $n = count($tokens);
+    for ($i = 0; $i < $n; $i++) {
+        $t = $tokens[$i];
+        // 下一个词是单个汉字，或「单个汉字 + 括号备注」（如「麻 正（紫砂茶具）」）时合并
+        if (mb_strlen($t) === 1 && preg_match('/^\p{Han}$/u', $t)
+            && isset($tokens[$i + 1]) && preg_match('/^\p{Han}(?:[（(][^）)]*[）)])?$/u', $tokens[$i + 1])) {
+            $out[] = $t . $tokens[$i + 1];
+            $i++;
+        } else {
+            $out[] = $t;
+        }
+    }
+    return implode(' ', $out);
+}
 function about_us_content()
 {
     $set  = Lang::getLangSet();

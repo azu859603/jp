@@ -269,7 +269,7 @@
             <div class="st-card">
                 <div class="sc-head"><div><h3>业务部门</h3><p>显示在「关于我们」页面正文下方，内容为空则不显示该区块</p></div></div>
                 <div class="sc-body">
-                    <div class="note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg><div>格式：每个部门一段，段与段之间空一行。第一行是部门名称，之后每行「岗位：姓名 姓名」，姓名可留空只显示岗位。例如：<br>古代书画部<br>总经理：张三<br>业务经理：李四 王五</div></div>
+                    <div class="note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg><div>格式：每个部门一段，段与段之间空一行。第一行是部门名称，之后每行「岗位：姓名 姓名」，姓名可留空只显示岗位。姓名太多可以换行接着写（不带冒号的行会并入上一岗位），全角空格、两字名中间的补位空格会自动整理。例如：<br>古代书画部<br>总经理：张三<br>业务经理：李四 王五</div></div>
                     <div class="form-group mono">
                         <div class="lang-tabs" data-group="about_dept"><span class="on" data-lang="">简体</span><span data-lang="_tw">繁体</span><span data-lang="_en">English</span></div>
                         <div class="lang-pane on" data-group="about_dept" data-lang=""><textarea class="form-control" name="about_dept" style="min-height:240px">{$settings.about_dept}</textarea><div class="cnt"></div></div>

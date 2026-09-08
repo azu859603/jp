@@ -1398,3 +1398,5 @@ b,strong,.num,.price,.wl-total,.g-price{font-variant-numeric:tabular-nums;}
 .rc-svc{display:flex;align-items:center;justify-content:space-between;color:#666;}
 .rc-svc .rc-svc-go{flex:none;font-size:13px;color:#E4393C;margin-left:8px;}
 .rc-svc:active{opacity:.7;}
+/* 业务部门：姓名之间拉开间距 */
+.about-page .apd-names{word-spacing:.6em;}
