@@ -42,8 +42,8 @@ class UserInit extends Command
         'seller_follow',   // 店铺关注
         'sys_message',     // 站内信
         'message',         // 聊天消息
-        'admin_log',         // 后台日志
-        'service_message',         // 后台日志
+        'admin_log',       // 后台日志
+        'service_message', // 聊天记录
     ];
 
     /** 明确保护、绝不清空的平台数据表 */
