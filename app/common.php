@@ -160,3 +160,28 @@ function arraySort($arr, $keys, $type = 'asc')
 
     return $newArray;
 }
+
+/**
+ * 读取系统设置（内存缓存）。前台 / 后台 / 代理端共用
+ */
+function site_settings()
+{
+    static $settings = null;
+    if ($settings === null) {
+        $list = \think\facade\Db::name('setting')->select()->toArray();
+        $settings = [];
+        foreach ($list as $row) {
+            $settings[$row['name']] = $row['value'];
+        }
+    }
+    return $settings;
+}
+
+/**
+ * 读取单个设置
+ */
+function get_setting($name, $default = '')
+{
+    $settings = site_settings();
+    return isset($settings[$name]) && $settings[$name] !== '' ? $settings[$name] : $default;
+}

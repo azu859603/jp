@@ -64,6 +64,7 @@ Route::get('seller/goods_list', 'Seller/goods_list');
 Route::post('seller/goods_status', 'Seller/set_status');
 Route::get('seller/orders', 'Seller/orders');
 Route::post('seller/ship', 'Seller/ship');
+Route::post('seller/goods_delete', 'Seller/delete');
 Route::get('upload/image', 'Upload/image');
 Route::post('upload/image', 'Upload/image');
 // 未匹配的路由走默认应用解析

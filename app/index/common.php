@@ -3,30 +3,7 @@
 use think\facade\Db;
 use think\facade\Lang;
 
-/**
- * 读取系统设置（内存缓存）
- */
-function site_settings()
-{
-    static $settings = null;
-    if ($settings === null) {
-        $list = Db::name('setting')->select()->toArray();
-        $settings = [];
-        foreach ($list as $row) {
-            $settings[$row['name']] = $row['value'];
-        }
-    }
-    return $settings;
-}
-
-/**
- * 读取单个设置
- */
-function get_setting($name, $default = '')
-{
-    $settings = site_settings();
-    return isset($settings[$name]) && $settings[$name] !== '' ? $settings[$name] : $default;
-}
+// site_settings() / get_setting() 已移至全局 app/common.php：后台、代理端的模板也会用到
 
 /**
  * 昵称展示层翻译
