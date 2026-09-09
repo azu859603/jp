@@ -4,3 +4,9 @@
 # ThinkPHP 运行时目录：日志、缓存、编译模板、session，全部为生成内容
 /runtime/*
 !/runtime/.gitkeep
+
+
+# 用户上传目录：只保留 about（关于我们素材）和 collect（采集图片）两个子目录，其余上传内容不进仓库
+/public/uploads/*
+!/public/uploads/about/
+!/public/uploads/collect/
