@@ -167,7 +167,7 @@ $r = $A->post('/admin1314/member/add', ['mobile' => $agentMobile, 'nickname' => 
 ok('添加代理会员', ($r['code'] ?? 0) == 1, j($r));
 $agent = row('select * from user where mobile=?', [$agentMobile]);
 ok('代理标记 is_agent=1', $agent && $agent['is_agent'] == 1, j($agent));
-ok('邀请码为纯数字', $agent && preg_match('/^\d+$/', $agent['invite_code']), $agent['invite_code'] ?? '');
+ok('邀请码为 6 位纯数字', $agent && preg_match('/^\d{6}$/', $agent['invite_code']), $agent['invite_code'] ?? '');
 $CREATED_USERS[] = (int)$agent['id'];
 $agentCode = $agent['invite_code'];
 $r = $A->post('/admin1314/member/add', ['mobile' => $agentMobile, 'nickname' => 'dup', 'password' => $PWD]);
@@ -197,7 +197,7 @@ $r = $B->post('/user/doRegister', ['mobile' => $buyerMobile, 'password' => $PWD,
 ok('买家注册成功', ($r['code'] ?? 0) == 1, j($r));
 $buyer = row('select * from user where mobile=?', [$buyerMobile]); $CREATED_USERS[] = (int)$buyer['id'];
 ok('买家上级为代理', $buyer['pid'] == $agent['id'], 'pid=' . $buyer['pid']);
-ok('前台注册邀请码为 8 位纯数字（与后台一致）', preg_match('/^\d{8}$/', $buyer['invite_code']), '实际=' . $buyer['invite_code']);
+ok('前台注册邀请码为 6 位纯数字（与后台一致）', preg_match('/^\d{6}$/', $buyer['invite_code']), '实际=' . $buyer['invite_code']);
 $cap = $S->captcha('/user/captcha', 'user_captcha');
 $r = $S->post('/user/doRegister', ['mobile' => $sellerMobile, 'password' => $PWD, 'password2' => $PWD, 'nickname' => 'QA卖家', 'invite_code' => $agentCode, 'captcha' => $cap]);
 ok('卖家注册成功', ($r['code'] ?? 0) == 1, j($r));
