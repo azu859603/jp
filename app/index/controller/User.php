@@ -206,7 +206,7 @@ class User extends Base
         }
 
         // 生成唯一的纯数字邀请码
-        $myCode = generate_invite_code();
+        $myCode = generate_invite_code(6);
 
         $now = time();
         $userId = Db::name('user')->insertGetId([
