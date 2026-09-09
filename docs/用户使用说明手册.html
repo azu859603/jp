@@ -1,0 +1,451 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>拍卖平台用户使用说明手册</title>
+<style>
+@page{size:A4;margin:22mm 18mm 20mm 18mm;
+  @top-left{content:"拍卖平台用户使用说明手册";font-family:"Microsoft YaHei";font-size:8.5pt;color:#999}
+  @top-right{content:string(chapter);font-family:"Microsoft YaHei";font-size:8.5pt;color:#999}
+  @bottom-center{content:"第 " counter(page) " 页";font-family:"Microsoft YaHei";font-size:8.5pt;color:#999}}
+@page cover{margin:0;@top-left{content:none}@top-right{content:none}@bottom-center{content:none}}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{font-family:"Microsoft YaHei","PingFang SC","Noto Sans CJK SC",sans-serif;font-size:10.5pt;line-height:1.75;color:#333}
+h1{string-set:chapter content()}
+/* 封面 */
+.cover{page:cover;height:297mm;width:210mm;position:relative;background:linear-gradient(160deg,#C62E2B 0%,#E4393C 55%,#F0524F 100%);color:#fff;page-break-after:always;overflow:hidden}
+.cover::before{content:"";position:absolute;right:-90mm;top:-90mm;width:220mm;height:220mm;border-radius:50%;background:rgba(255,255,255,.07)}
+.cover::after{content:"";position:absolute;left:-60mm;bottom:-80mm;width:170mm;height:170mm;border-radius:50%;background:rgba(255,255,255,.06)}
+.cover .cv-in{position:absolute;left:24mm;right:24mm;top:78mm}
+.cover .cv-kicker{font-size:12pt;letter-spacing:6px;opacity:.85}
+.cover h1{font-size:36pt;font-weight:700;margin:8mm 0 4mm;letter-spacing:2px;line-height:1.3;color:#fff;border:0;padding:0}
+.cover .cv-sub{font-size:14pt;opacity:.9}
+.cover .cv-ends{margin-top:20mm;display:flex;gap:6mm}
+.cover .cv-ends div{flex:1;background:rgba(255,255,255,.14);border-radius:4mm;padding:6mm 5mm}
+.cover .cv-ends b{display:block;font-size:14pt;margin-bottom:2mm}
+.cover .cv-ends span{font-size:9.5pt;opacity:.85;line-height:1.6}
+.cover .cv-foot{position:absolute;left:24mm;bottom:22mm;font-size:10pt;opacity:.85;line-height:1.8}
+/* 目录 */
+.toc{page-break-after:always}
+.toc h1{font-size:20pt;border:0;margin-bottom:8mm}
+.toc ol{list-style:none;padding:0;margin:0}
+.toc li{padding:2.2mm 0;border-bottom:1px dashed #e5e5e5;font-size:11pt}
+.toc li.l2{padding-left:8mm;font-size:10pt;color:#555;border-bottom:0;padding-top:1mm;padding-bottom:1mm}
+.toc li a{color:inherit;text-decoration:none}
+.toc li .n{display:inline-block;min-width:9mm;color:#E4393C;font-weight:600}
+.toc li.l2 .n{color:#999;font-weight:400}
+/* 章节 */
+.chapter{page-break-before:always}
+h1{font-size:20pt;color:#C62E2B;margin:0 0 6mm;padding-bottom:3mm;border-bottom:2px solid #E4393C;font-weight:700}
+h2{font-size:14pt;color:#1a1a1a;margin:8mm 0 3mm;padding-left:3mm;border-left:4px solid #E4393C;line-height:1.4;page-break-after:avoid}
+h3{font-size:11.5pt;color:#333;margin:5mm 0 2mm;page-break-after:avoid}
+p{margin:0 0 2.5mm;text-align:justify}
+ul,ol{margin:0 0 3mm;padding-left:6mm}
+li{margin-bottom:1mm}
+code{font-family:Consolas,Menlo,monospace;font-size:9.5pt;background:#f3f4f6;color:#b91c1c;padding:0 4px;border-radius:3px}
+table{width:100%;border-collapse:collapse;margin:2mm 0 5mm;font-size:9.5pt;page-break-inside:auto}
+tr{page-break-inside:avoid}
+th{background:#FDECEC;color:#7f1d1d;text-align:left;padding:2mm 3mm;border:1px solid #f3c7c7;font-weight:600}
+td{padding:2mm 3mm;border:1px solid #e5e7eb;vertical-align:top}
+tr:nth-child(even) td{background:#fafafa}
+.tip,.warn{border-radius:2mm;padding:3mm 4mm 3mm 11mm;margin:3mm 0 4mm;position:relative;font-size:9.8pt;page-break-inside:avoid}
+.tip{background:#eff6ff;border:1px solid #bfdbfe;color:#1e3a8a}
+.warn{background:#fffbeb;border:1px solid #fde68a;color:#78350f}
+.tip::before,.warn::before{position:absolute;left:3.5mm;top:3.2mm;font-weight:700;font-size:8.5pt;writing-mode:vertical-rl;letter-spacing:1px}
+.tip::before{content:"提示";color:#2563eb}
+.warn::before{content:"注意";color:#d97706}
+.flow{display:flex;align-items:stretch;gap:2mm;margin:3mm 0 5mm;page-break-inside:avoid}
+.flow div{flex:1;background:#fff;border:1px solid #f3c7c7;border-top:3px solid #E4393C;border-radius:2mm;padding:2.5mm 3mm;font-size:9.5pt;line-height:1.5;position:relative}
+.flow div b{display:block;color:#C62E2B;margin-bottom:1mm;font-size:10pt}
+.flow div+div::before{content:"›";position:absolute;left:-2.6mm;top:40%;color:#E4393C;font-size:14pt;font-weight:700}
+.kv{display:grid;grid-template-columns:1fr 1fr;gap:3mm;margin:2mm 0 4mm}
+.kv div{background:#f8fafc;border:1px solid #e5e7eb;border-radius:2mm;padding:2.5mm 3.5mm;font-size:9.5pt}
+.kv div b{display:block;color:#C62E2B;margin-bottom:.5mm}
+.kbd{display:inline-block;border:1px solid #cbd5e1;border-bottom-width:2px;border-radius:3px;padding:0 5px;font-size:9pt;background:#fff;color:#334155}
+.muted{color:#888;font-size:9.5pt}
+</style>
+</head>
+<body>
+
+<!-- 封面 -->
+<section class="cover">
+  <div class="cv-in">
+    <div class="cv-kicker">USER GUIDE</div>
+    <h1>拍卖平台<br>用户使用说明手册</h1>
+    <div class="cv-sub">前台会员端 · 代理端 · 主后台</div>
+    <div class="cv-ends">
+      <div><b>前台会员端</b><span>买家竞拍、下单付款、钱包充提<br>卖家入驻、发布拍品、发货结算</span></div>
+      <div><b>代理端</b><span>管理自己邀请的下级会员<br>审核实名、卖家入驻与拍品</span></div>
+      <div><b>主后台</b><span>会员、商品、订单、财务<br>客服工作台与系统设置</span></div>
+    </div>
+  </div>
+  <div class="cv-foot">版本 1.0 &nbsp;·&nbsp; 2026 年 9 月<br>本手册按当前系统功能编写，界面以实际运行版本为准</div>
+</section>
+
+<!-- 目录 -->
+<section class="toc">
+  <h1>目录</h1>
+  <ol>
+    <li><a href="#c1"><span class="n">1</span>平台概述</a></li>
+    <li class="l2"><a href="#c1-1"><span class="n">1.1</span>三个端与入口地址</a></li>
+    <li class="l2"><a href="#c1-2"><span class="n">1.2</span>角色说明</a></li>
+    <li class="l2"><a href="#c1-3"><span class="n">1.3</span>一次完整的交易流程</a></li>
+    <li><a href="#c2"><span class="n">2</span>前台会员端</a></li>
+    <li class="l2"><a href="#c2-1"><span class="n">2.1</span>注册与登录</a></li>
+    <li class="l2"><a href="#c2-2"><span class="n">2.2</span>首页与浏览</a></li>
+    <li class="l2"><a href="#c2-3"><span class="n">2.3</span>商品详情与出价</a></li>
+    <li class="l2"><a href="#c2-4"><span class="n">2.4</span>买家订单</a></li>
+    <li class="l2"><a href="#c2-5"><span class="n">2.5</span>个人中心</a></li>
+    <li class="l2"><a href="#c2-6"><span class="n">2.6</span>钱包、充值与提现</a></li>
+    <li class="l2"><a href="#c2-7"><span class="n">2.7</span>消息与在线客服</a></li>
+    <li class="l2"><a href="#c2-8"><span class="n">2.8</span>卖家功能</a></li>
+    <li><a href="#c3"><span class="n">3</span>代理端</a></li>
+    <li class="l2"><a href="#c3-1"><span class="n">3.1</span>什么是代理</a></li>
+    <li class="l2"><a href="#c3-2"><span class="n">3.2</span>登录</a></li>
+    <li class="l2"><a href="#c3-3"><span class="n">3.3</span>功能菜单</a></li>
+    <li><a href="#c4"><span class="n">4</span>主后台</a></li>
+    <li class="l2"><a href="#c4-1"><span class="n">4.1</span>登录与界面</a></li>
+    <li class="l2"><a href="#c4-2"><span class="n">4.2</span>会员管理</a></li>
+    <li class="l2"><a href="#c4-3"><span class="n">4.3</span>在线客服工作台</a></li>
+    <li class="l2"><a href="#c4-4"><span class="n">4.4</span>商品管理与竞拍管理</a></li>
+    <li class="l2"><a href="#c4-5"><span class="n">4.5</span>订单管理</a></li>
+    <li class="l2"><a href="#c4-6"><span class="n">4.6</span>财务管理与数据报表</a></li>
+    <li class="l2"><a href="#c4-7"><span class="n">4.7</span>系统设置</a></li>
+    <li><a href="#c5"><span class="n">5</span>常见问题</a></li>
+  </ol>
+</section>
+
+<!-- 1 平台概述 -->
+<section class="chapter" id="c1">
+  <h1>1. 平台概述</h1>
+  <p>本平台是一个在线拍卖系统，会员可以作为买家参与竞拍，也可以申请成为卖家发布拍品。系统由三个端组成：面向会员的前台、面向代理的代理端、面向平台运营人员的主后台。</p>
+
+  <h2 id="c1-1">1.1 三个端与入口地址</h2>
+  <table>
+    <tr><th style="width:22%">端</th><th style="width:30%">入口地址</th><th>登录账号</th></tr>
+    <tr><td>前台会员端</td><td><code>/</code></td><td>前台会员账号，手机号 + 密码。电脑浏览器打开时按手机版样式居中显示一列，操作方式与手机一致</td></tr>
+    <tr><td>代理端</td><td><code>/agent/login/index</code></td><td>前台会员账号，且该会员已在主后台被设为「代理」</td></tr>
+    <tr><td>主后台</td><td><code>/admin1314/login/index</code></td><td>管理员账号，在后台「管理员管理」中维护</td></tr>
+  </table>
+  <div class="tip">三个端的登录页都有图形验证码。连续输错密码会被临时锁定，等几分钟后再试即可。</div>
+
+  <h2 id="c1-2">1.2 角色说明</h2>
+  <div class="kv">
+    <div><b>买家</b>注册即为买家。可以浏览、收藏、出价、付款、收货、申请售后，与卖家和平台客服聊天。</div>
+    <div><b>卖家</b>完成实名认证后申请入驻，审核通过即为卖家。可以发布拍品、发货、查看店铺数据，成交款扣除佣金后进入余额。</div>
+    <div><b>代理</b>被主后台标记为「代理」的会员。通过自己的邀请码发展下级，在代理端管理这些下级的实名、入驻和拍品审核。</div>
+    <div><b>管理员</b>主后台操作人员，负责审核、财务、客服和系统设置。所有操作都会记入操作日志。</div>
+  </div>
+  <p><b>上级关系</b>：会员注册时填写谁的邀请码，谁就是这个会员的上级。上级如果是代理，这个会员就归该代理管理。邀请码是 8 位纯数字，在个人中心「我的邀请」查看。</p>
+
+  <h2 id="c1-3">1.3 一次完整的交易流程</h2>
+  <div class="flow">
+    <div><b>① 发布</b>卖家发布拍品，设置起拍价、加价幅度、保证金和截拍时间</div>
+    <div><b>② 审核上架</b>后台或代理审核通过后进入「拍卖中」（可设为免审核）</div>
+    <div><b>③ 竞拍</b>买家出价，首次出价冻结保证金；临近截拍出价自动延时</div>
+    <div><b>④ 结算</b>截拍后系统自动结算，最高价者中标生成订单，其余人保证金退回</div>
+  </div>
+  <div class="flow">
+    <div><b>⑤ 付款</b>买家在限定时间内用余额付款，保证金自动抵扣</div>
+    <div><b>⑥ 发货</b>卖家填写快递公司和单号发货</div>
+    <div><b>⑦ 收货</b>买家确认收货，或到期系统自动确认</div>
+    <div><b>⑧ 结算给卖家</b>成交价扣除平台佣金后计入卖家余额，卖家可申请提现</div>
+  </div>
+</section>
+
+<!-- 2 前台 -->
+<section class="chapter" id="c2">
+  <h1>2. 前台会员端</h1>
+
+  <h2 id="c2-1">2.1 注册与登录</h2>
+  <h3>注册 <span class="muted">/user/register</span></h3>
+  <ul>
+    <li>填写手机号、密码、邀请码。</li>
+    <li>邀请码是否必填由后台开关决定：开启时输入框标注「必须填写」，不填不能注册；关闭时标注「如无可不填」，不填则没有上级。只要填了就会校验是否存在。</li>
+    <li>注册页底部可查看《用户协议》和《隐私政策》，协议页顶部可在两份协议间切换。</li>
+  </ul>
+  <h3>登录 <span class="muted">/user/login</span></h3>
+  <ul>
+    <li>手机号 + 密码 + 图形验证码。</li>
+    <li>登录页右上角可以返回首页；未登录也可以浏览拍品，出价、收藏等操作会跳转到登录页。</li>
+  </ul>
+  <h3>多语言</h3>
+  <p>首页右上角可切换简体中文 / 繁体中文 / English。第一次打开按站点默认语言显示，之后记住你的选择。协议、关于我们等内容如果后台填写了对应语言，会跟随切换。</p>
+
+  <h2 id="c2-2">2.2 首页与浏览</h2>
+  <table>
+    <tr><th style="width:22%">区块</th><th>说明</th></tr>
+    <tr><td>轮播图</td><td>后台「轮播管理」维护，点击可跳转到设定的链接</td></tr>
+    <tr><td>分类宫格</td><td>前 7 个分类 + 「全部分类」。分类图片缺失时显示彩色圆底的分类首字</td></tr>
+    <tr><td>数据条</td><td>在拍拍品数、累计成交、注册会员数</td></tr>
+    <tr><td>关于我们</td><td>后台填写的平台介绍，只显示前 3 行，点「更多」进入 <code>/about</code> 完整页面，页面下方还有业务部门介绍</td></tr>
+    <tr><td>拍品列表</td><td>顶部有「最新」「即将截拍」两种排序，右侧可按分类筛选。列表上拉到底自动加载下一页</td></tr>
+    <tr><td>成交记录</td><td>最近成交的拍品与成交价，完整列表在 <code>/index/deals</code></td></tr>
+  </table>
+  <p><b>分类页</b> <code>/category</code>：左侧分类、右侧该分类下的拍品，同样上拉自动加载。<b>店铺页</b>显示店铺资料、粉丝数、关注按钮和该店铺所有拍卖中的拍品，「共 N 件」是真实数量。</p>
+  <p><b>底部导航</b>：首页、分类、发布（卖家发布拍品，非卖家点击进入入驻申请）、我的。</p>
+
+  <h2 id="c2-3">2.3 商品详情与出价</h2>
+  <p>商品详情页 <code>/goods/detail?id=…</code> 显示：拍品编号（No: 商品 ID + 10000）、图片轮播、起拍价、加价幅度、保证金、当前价、截拍倒计时、出价记录、佣金说明，以及卖家店铺卡片（店铺星级、信誉分、消费保证金、粉丝数）。可以收藏拍品、关注店铺、咨询卖家。</p>
+  <div class="kv">
+    <div><b>佣金</b>平台按后台设定的比例在成交后从成交价中扣除。比例大于 0 时详情页显示绿色「有」，等于 0 时显示红色「无」。买家支付的金额不变，佣金由卖家承担。</div>
+    <div><b>保证金</b>拍品设有保证金时，首次出价会从可用余额冻结对应金额，未中标自动退回，中标后抵扣货款。</div>
+  </div>
+  <h3>出价规则</h3>
+  <ol>
+    <li>必须登录；不能给自己的拍品出价；只能在开拍后、截拍前出价。</li>
+    <li>出价不得低于「当前价 + 加价幅度」，并且必须是加价幅度的整数倍递增。</li>
+    <li>可用余额不足以冻结保证金时无法出价，请先充值。</li>
+    <li>截拍前若有人出价，按拍品或系统设置的「延时秒数」自动延长截拍时间，防止最后一秒截胡。</li>
+  </ol>
+  <h3>截拍与结算</h3>
+  <ul>
+    <li>无人出价，或最高价低于卖家设置的保留价：<b>流拍</b>，所有保证金退回，卖家可重新上架。</li>
+    <li>否则最高出价者<b>中标</b>，系统自动生成订单，其他出价者的保证金退回。</li>
+  </ul>
+
+  <h2 id="c2-4">2.4 买家订单</h2>
+  <p>「我的订单」<code>/order/list</code> 按状态分为：待付款、待发货、待收货、已完成、售后中。</p>
+  <table>
+    <tr><th style="width:18%">状态</th><th>你要做什么</th><th style="width:34%">系统会做什么</th></tr>
+    <tr><td>待付款</td><td>先填写收货地址，然后用余额付款。已冻结的保证金自动抵扣，不足部分从可用余额扣除。也可以主动取消订单</td><td>超过平台设定的小时数未付款，自动取消订单，保证金按平台规则处理（没收 / 赔付卖家 / 退回买家）</td></tr>
+    <tr><td>待发货</td><td>等待卖家发货</td><td>卖家长期不发货，系统每天催一次并扣卖家信誉分</td></tr>
+    <tr><td>待收货</td><td>查看物流单号，收到货后点「确认收货」</td><td>超过平台设定天数未确认，自动确认收货</td></tr>
+    <tr><td>已完成</td><td>如有问题可申请售后，填写原因</td><td>平台处理售后，同意退款时款项退回余额</td></tr>
+  </table>
+
+  <h2 id="c2-5">2.5 个人中心 <span class="muted">/user/center</span></h2>
+  <p>顶部显示头像、昵称、余额等信息；下方是订单入口、常用服务和功能菜单。</p>
+  <table>
+    <tr><th style="width:24%">功能</th><th>说明</th></tr>
+    <tr><td>修改资料</td><td>昵称、头像；卖家还可以修改店铺简介</td></tr>
+    <tr><td>修改密码</td><td>输入旧密码和新密码</td></tr>
+    <tr><td>收货地址</td><td>新增、编辑、删除地址，付款前必须有一个地址</td></tr>
+    <tr><td>实名认证</td><td>上传身份证正反面，等待平台或代理审核。成为卖家、提现之前必须完成实名认证</td></tr>
+    <tr><td>我的出价</td><td>参与过的所有出价，标注「领先」或「出局」</td></tr>
+    <tr><td>收藏 / 关注店铺 / 足迹</td><td>收藏的拍品、关注的店铺、最近浏览记录</td></tr>
+    <tr><td>我的邀请</td><td>查看并复制自己的邀请码，查看已邀请的会员列表</td></tr>
+    <tr><td>站内信</td><td>平台发送的系统通知、催发货、审核结果等</td></tr>
+    <tr><td>消息</td><td>与卖家 / 买家的站内聊天列表</td></tr>
+    <tr><td>联系客服</td><td>与平台管理员一对一聊天，见 2.7</td></tr>
+    <tr><td>关于我们</td><td>平台介绍与业务部门</td></tr>
+  </table>
+
+  <h2 id="c2-6">2.6 钱包、充值与提现</h2>
+  <h3>我的钱包 <span class="muted">/user/wallet</span></h3>
+  <p>顶部卡片显示总资产（可用 + 冻结）、总收入、总支出，并有「充值」「提现」按钮。下方「资产明细」按时间倒序列出每一笔变动，滚到底部自动加载更多。平台手动调整余额的记录会标注「后台调整」及备注。</p>
+  <h3>充值 <span class="muted">/user/recharge</span></h3>
+  <ol>
+    <li>输入充值金额，点击「提交充值申请」。</li>
+    <li>点击「充值方式」一行进入在线客服，联系客服完成转账。</li>
+    <li>平台审核通过后金额自动到账；被拒绝会显示拒绝理由。右上角图标可查看充值记录。</li>
+  </ol>
+  <div class="tip">同一时间只能有一笔充值申请在审核中，审核完成后才能再次提交。</div>
+  <h3>提现 <span class="muted">/user/withdraw</span></h3>
+  <ol>
+    <li>先在「提现账户」绑定收款方式：支付宝、微信、银行卡或 USDT。</li>
+    <li>输入提现金额提交申请。金额受平台设定的单笔最低 / 最高限制，并按比例扣除手续费，页面会显示实际到账金额。</li>
+    <li>提交后金额从可用余额转为冻结，平台审核通过后线下打款；拒绝则退回可用余额。可在「提现记录」查看进度。</li>
+  </ol>
+
+  <h2 id="c2-7">2.7 消息与在线客服</h2>
+  <ul>
+    <li><b>咨询卖家</b>：商品详情页点「咨询」进入与该卖家的聊天，卖家在「消息」中回复。</li>
+    <li><b>联系客服</b> <code>/service/index</code>：与平台管理员聊天，支持文字和图片（点输入框左侧图标选图）。管理员也可能主动发起会话。平台若配置了客服链接，聊天页右上角有「其他联系方式」。</li>
+    <li><b>发送频率</b>：聊天和客服共用限制，同一会员 3 秒内只能发一条，过快会提示「发送太频繁，请 3 秒后再试」。</li>
+    <li><b>新消息提示</b>：个人中心的「站内信」「消息」「联系客服」有未读时会变红、显示数字角标和「有新消息」。页面停留时每 60 秒自动查询一次，切回页面时立即查询，无需刷新。</li>
+  </ul>
+
+  <h2 id="c2-8">2.8 卖家功能</h2>
+  <h3>申请入驻 <span class="muted">/seller/apply</span></h3>
+  <p>需先完成实名认证。填写店铺名称、店铺介绍、企业资料图片（最多 5 张）。平台开启「卖家开通审核」时需等待平台或代理审核，关闭时立即生效。</p>
+  <h3>卖家面板</h3>
+  <p>审核通过的卖家登录后，前台任意页面右上方都有一个悬浮的圆形按钮。按住可以拖到任意位置，松手自动贴边，位置会记住。轻点按钮从左侧滑出卖家面板：</p>
+  <ul>
+    <li>头像、店铺名称、退出登录。</li>
+    <li>官方验证：企业认证通过后显示绿色勾和「企业认证」。</li>
+    <li>店铺星级、信誉分、店铺收藏数。</li>
+    <li>入口：首页、店铺首页、店铺商品、我的订单、我的钱包、店铺设置（修改资料页）。</li>
+  </ul>
+  <p class="muted">普通会员、未登录或退出登录后不显示该按钮。</p>
+  <h3>发布拍品 <span class="muted">/seller/goods_add</span></h3>
+  <table>
+    <tr><th style="width:22%">字段</th><th>说明</th></tr>
+    <tr><td>标题、分类、详情</td><td>详情支持多段文字</td></tr>
+    <tr><td>起拍价、加价幅度</td><td>买家每次出价必须按加价幅度整倍递增</td></tr>
+    <tr><td>保留价（可选）</td><td>最高出价低于保留价时流拍，买家看不到保留价</td></tr>
+    <tr><td>保证金</td><td>买家首次出价时冻结的金额，0 表示不需要</td></tr>
+    <tr><td>截拍时间、延时秒数</td><td>不填延时则使用平台默认值</td></tr>
+    <tr><td>商品图片</td><td>至少 4 张，第一张为封面</td></tr>
+  </table>
+  <p>发布前需勾选同意《发布协议》。平台开启「发布商品审核」时需先审核再上架。佣金比例由平台统一设置，卖家不能自定。</p>
+  <h3>我的商品 <span class="muted">/seller/goods_list</span></h3>
+  <p>按状态筛选：待审核、拍卖中、已成交、流拍、已下架、审核拒绝。拍卖中的可进入详情；流拍或下架的可设置新的截拍时间「重新上架」；已成交的不能操作。</p>
+  <h3>卖家订单 <span class="muted">/seller/orders</span></h3>
+  <p>买家付款后，点订单上的「发货」，在弹出的表单中填写快递公司和快递单号后确认。买家确认收货（或系统自动确认）后订单完成，成交价扣除平台佣金后计入卖家可用余额，钱包明细可查。</p>
+  <h3>店铺星级与信誉分</h3>
+  <ul>
+    <li><b>店铺星级</b>：0 到 5 星，由平台设置，买家在商品页和店铺页能看到。</li>
+    <li><b>信誉分</b>：初始 100 分。买家付款后长期不发货，系统每天催一次并扣 1 分，最低 0 分。平台可手动修正。</li>
+  </ul>
+</section>
+
+<!-- 3 代理端 -->
+<section class="chapter" id="c3">
+  <h1>3. 代理端</h1>
+
+  <h2 id="c3-1">3.1 什么是代理</h2>
+  <p>代理是一个被主后台标记为「代理」的前台会员。代理的下级是注册时填写了该代理邀请码的会员（直接下级）。代理端只能看到和操作自己直接下级的数据，看不到其他会员。</p>
+  <div class="tip">主后台可以修改任何会员的上级，改上级后该会员会立即归到新上级对应的代理名下。</div>
+
+  <h2 id="c3-2">3.2 登录</h2>
+  <ul>
+    <li>地址 <code>/agent/login/index</code>，用前台会员的手机号和密码登录，需图形验证码。</li>
+    <li>不是代理的账号会提示「该账号不是代理账号」。</li>
+    <li>代理端与前台共用登录状态：前台已登录的代理直接访问 <code>/agent</code> 无需再次登录，在代理端退出也会同时退出前台。</li>
+    <li>页面头部显示代理自己的邀请码，分享给好友注册即成为下级。</li>
+  </ul>
+
+  <h2 id="c3-3">3.3 功能菜单</h2>
+  <table>
+    <tr><th style="width:18%">菜单</th><th style="width:18%">页面</th><th>说明</th></tr>
+    <tr><td>团队概览</td><td>数据概览</td><td>下级人数、今日新增、下级卖家数、成交金额等汇总</td></tr>
+    <tr><td rowspan="3">会员管理</td><td>我的会员</td><td>下级会员列表（只读），可按手机号 / 昵称 / 邀请码搜索。手机号已脱敏，不显示余额</td></tr>
+    <tr><td>实名认证</td><td>审核下级提交的身份证资料，通过或拒绝（填写原因）</td></tr>
+    <tr><td>卖家审核</td><td>审核下级的卖家入驻申请，查看企业资料，通过或拒绝</td></tr>
+    <tr><td rowspan="2">产品管理</td><td>产品列表</td><td>下级卖家发布的拍品，可查看详情、上下架、删除；拍卖中和待审核的可修改开始 / 结束时间</td></tr>
+    <tr><td>产品审核</td><td>审核下级卖家发布的待审核拍品</td></tr>
+    <tr><td>数据报表</td><td>团队业绩</td><td>按时间段查看下级的成交笔数、成交金额（只读）</td></tr>
+  </table>
+  <div class="warn">代理审核与主后台审核效力相同，通过后会员或拍品即时生效。请核对资料后再操作。</div>
+</section>
+
+<!-- 4 主后台 -->
+<section class="chapter" id="c4">
+  <h1>4. 主后台</h1>
+
+  <h2 id="c4-1">4.1 登录与界面</h2>
+  <p>登录地址 <code>/admin1314/login/index</code>，管理员账号 + 密码 + 图形验证码。登录页有按钮可跳转到代理端登录。</p>
+  <p>左侧是菜单栏，「在线客服」菜单上的红色数字是待回复的客服消息数，每 30 秒自动刷新。右上角显示当前管理员并可退出。所有操作都会记入「操作日志」。</p>
+  <table>
+    <tr><th style="width:20%">菜单组</th><th>子菜单</th></tr>
+    <tr><td>仪表盘</td><td>系统概览</td></tr>
+    <tr><td>会员管理</td><td>会员列表、实名认证、卖家审核、咨询审核、在线客服</td></tr>
+    <tr><td>商品管理</td><td>商品列表、商品审核、分类管理</td></tr>
+    <tr><td>竞拍管理</td><td>出价记录</td></tr>
+    <tr><td>订单管理</td><td>订单列表、售后管理</td></tr>
+    <tr><td>数据报表</td><td>交易报表</td></tr>
+    <tr><td>财务管理</td><td>充值审核、提现审核、余额流水</td></tr>
+    <tr><td>系统设置</td><td>基础设置、轮播管理、管理员管理、操作日志</td></tr>
+  </table>
+
+  <h2 id="c4-2">4.2 会员管理</h2>
+  <h3>会员列表 <span class="muted">/admin1314/member/index</span></h3>
+  <p>搜索手机号 / 昵称 / 邀请码，可按是否卖家、是否代理、状态、注册时间筛选。列表显示每个会员的上级。</p>
+  <p><b>添加会员</b>：手机号、密码、昵称、初始余额，可选「普通会员 / 虚拟会员」，可勾选「同时开通卖家权限」「同时设为代理」。邀请码自动生成。</p>
+  <div class="tip">虚拟会员：选择后余额输入框默认填 100000，可修改。虚拟会员的余额永存，出价、付款后自动回补，不能充值提现，出价不冻结保证金，不记流水，用于活跃竞拍氛围。配合「竞拍管理 › 手动添加出价」使用。</div>
+  <p><b>每行操作</b>：</p>
+  <table>
+    <tr><th style="width:20%">操作</th><th>说明</th></tr>
+    <tr><td>详情</td><td>基本信息、上级会员（可点击跳转）、直接下级人数、店铺资料、提现账户、余额流水、出价记录</td></tr>
+    <tr><td>余额</td><td>增加或扣减可用余额，必须填备注，写入流水，前台显示为「后台调整」</td></tr>
+    <tr><td>重置密码</td><td>直接设定新密码</td></tr>
+    <tr><td>改上级</td><td>输入新上级的手机号 / 邀请码 / 会员 ID，留空则清空上级。不能设为自己或自己的下级</td></tr>
+    <tr><td>私信</td><td>给该会员发一条站内信</td></tr>
+    <tr><td>禁用 / 启用</td><td>禁用后无法登录</td></tr>
+    <tr><td>设为卖家 / 取消卖家、设为代理 / 取消代理</td><td>直接切换身份，不走审核</td></tr>
+  </table>
+  <h3>实名认证 <span class="muted">/admin1314/member/auth</span></h3>
+  <p>查看会员上传的身份证正反面，通过或拒绝（填写原因），结果以站内信通知会员。</p>
+  <h3>卖家审核 <span class="muted">/admin1314/member/seller</span></h3>
+  <p>审核入驻申请，查看企业资料，通过或拒绝。列表显示每个卖家的店铺星级和信誉分。在会员详情可编辑店铺资料：店铺介绍、消费保证金、店铺星级（0 到 5）、卖家信誉分（0 到 999）、粉丝数。</p>
+  <h3>咨询审核 <span class="muted">/admin1314/message/index</span></h3>
+  <p>查看买家与卖家之间的站内聊天记录，可修改或删除违规内容。</p>
+
+  <h2 id="c4-3">4.3 在线客服工作台 <span class="muted">/admin1314/service/index</span></h2>
+  <ul>
+    <li><b>会话列表</b>（左侧）：按最近消息排序，显示每个会员的未回复数，可勾选「只看未回复」。</li>
+    <li><b>对话窗口</b>（右侧）：显示往来消息，支持文字和图片回复，<span class="kbd">Enter</span> 发送。</li>
+    <li><b>主动发起</b>：搜索框可按手机号 / 昵称 / 店铺名搜到所有会员。已聊过的排在前面，没聊过的标记「发起」，点击后直接输入内容即可开启会话，会员在个人中心「联系客服」处收到未读提醒。</li>
+    <li>任何管理员都可以回复，记录中会记下回复人。</li>
+  </ul>
+
+  <h2 id="c4-4">4.4 商品管理与竞拍管理</h2>
+  <h3>商品列表 <span class="muted">/admin1314/goods/index</span></h3>
+  <p>全部拍品，按状态（待审核 / 拍卖中 / 已成交 / 流拍 / 已下架 / 审核拒绝）、分类、卖家筛选。</p>
+  <ul>
+    <li><b>发布商品</b>：后台代指定卖家发布，直接上架。系统里至少要有一个卖家会员。</li>
+    <li><b>修改时间</b>：拍卖中和待审核的拍品可修改开始时间和结束时间。</li>
+    <li><b>下架 / 上架、删除、详情</b>。</li>
+  </ul>
+  <h3>商品审核 <span class="muted">/admin1314/goods/check</span></h3>
+  <p>卖家发布的待审核拍品，通过后进入拍卖中，拒绝需填写原因。</p>
+  <h3>分类管理 <span class="muted">/admin1314/category/index</span></h3>
+  <p>分类名称（简 / 繁 / 英）、分类图片、排序、显示 / 隐藏。首页宫格显示前 7 个。</p>
+  <h3>出价记录 <span class="muted">/admin1314/bid/index</span></h3>
+  <p>查看所有出价记录。<b>手动添加出价</b>：选择一个拍卖中的拍品和一个会员，按加价规则录入一笔出价，通常配合虚拟会员使用，出价后同样触发延时规则。</p>
+
+  <h2 id="c4-5">4.5 订单管理</h2>
+  <h3>订单列表 <span class="muted">/admin1314/order/index</span></h3>
+  <p>按订单状态、支付状态、时间筛选。可查看详情、代卖家发货（填物流单号）、手动完成订单、取消订单。</p>
+  <h3>售后管理 <span class="muted">/admin1314/after_sale/index</span></h3>
+  <p>处理买家提交的售后申请。同意退款时款项退回买家余额，并从卖家的成交收入中扣回；拒绝需填写原因。</p>
+
+  <h2 id="c4-6">4.6 财务管理与数据报表</h2>
+  <table>
+    <tr><th style="width:20%">页面</th><th>说明</th></tr>
+    <tr><td>充值审核</td><td>会员提交的充值申请。核对到账后点通过，金额进入会员可用余额；拒绝需填写原因，会员端可看到</td></tr>
+    <tr><td>提现审核</td><td>显示会员的收款账户和实际到账金额。线下打款后点通过标记完成；拒绝则冻结金额退回可用余额</td></tr>
+    <tr><td>余额流水</td><td>全站资金变动记录，可按会员、类型（充值、提现、出价冻结、退回、成交、佣金、后台调整等）筛选</td></tr>
+    <tr><td>交易报表</td><td>按时间段统计成交额、佣金收入、订单数、新增会员等</td></tr>
+  </table>
+
+  <h2 id="c4-7">4.7 系统设置</h2>
+  <h3>基础设置 <span class="muted">/admin1314/setting/index</span></h3>
+  <p>页面左侧是五个分组，右侧是对应的设置项。修改后底部保存栏会提示「有未保存的修改」，哪个分组有改动会显示橙色圆点。点「保存全部设置」或按 <span class="kbd">Ctrl</span> + <span class="kbd">S</span> 保存；「放弃修改」会恢复到上次保存的状态。</p>
+  <table>
+    <tr><th style="width:16%">分组</th><th style="width:28%">设置项</th><th>说明</th></tr>
+    <tr><td rowspan="2">站点信息</td><td>站点名称、站点网址、Logo</td><td>前台首页顶部与浏览器标题。Logo 建议透明底 PNG，不传则显示站点名称文字</td></tr>
+    <tr><td>客服电话、QQ、客服链接</td><td>客服链接是客服聊天页「其他联系方式」跳转的外部地址</td></tr>
+    <tr><td rowspan="4">拍卖与交易</td><td>注册必须填写邀请码</td><td>开启：注册页标注「必须填写」；关闭：标注「如无可不填」</td></tr>
+    <tr><td>卖家开通审核、发布商品审核</td><td>开启则需人工审核，关闭则即时生效</td></tr>
+    <tr><td>平台佣金比例、竞拍默认延时</td><td>佣金成交后从成交价扣除，0 为不收；延时为截拍前 N 秒内出价自动延长</td></tr>
+    <tr><td>待付款超时、保证金处理、自动确认收货、未发货提醒</td><td>订单自动处理规则，由系统定时执行，填 0 表示关闭对应功能</td></tr>
+    <tr><td>资金与提现</td><td>提现手续费、单笔最低 / 最高金额</td><td>约束前台提现，0 表示不限制</td></tr>
+    <tr><td rowspan="2">关于我们</td><td>背景图、正文（简 / 繁 / 英）</td><td>首页「关于我们」卡片和 <code>/about</code> 页面正文</td></tr>
+    <tr><td>业务部门（简 / 繁 / 英）</td><td>每个部门一段，段间空一行；第一行部门名称，其余每行「岗位：姓名 姓名」。姓名过多可换行接着写，不带冒号的行会并入上一岗位</td></tr>
+    <tr><td>协议与政策</td><td>用户协议、隐私政策、发布协议（简 / 繁 / 英）</td><td>繁体、英文未填时自动使用简体内容。每个协议旁有「预览前台」链接</td></tr>
+  </table>
+  <div class="tip">多语言文本用「简体 / 繁体 / English」子标签切换，标签前的绿点表示该语言已填写。保存时只更新本次提交的字段。</div>
+  <h3>其他</h3>
+  <ul>
+    <li><b>轮播管理</b>：首页轮播图片、跳转链接、排序、启用状态。只有启用的才会显示。</li>
+    <li><b>管理员管理</b>：新增管理员、修改密码、删除。</li>
+    <li><b>操作日志</b>：所有后台操作记录，可按时间查看，可清空。</li>
+  </ul>
+</section>
+
+<!-- 5 常见问题 -->
+<section class="chapter" id="c5">
+  <h1>5. 常见问题</h1>
+  <table>
+    <tr><th style="width:34%">问题</th><th>处理方法</th></tr>
+    <tr><td>注册时提示「邀请码不存在」</td><td>邀请码是 8 位纯数字，请向邀请人核对。平台关闭邀请码开关后可以不填</td></tr>
+    <tr><td>登录提示锁定</td><td>连续输错密码触发保护，等几分钟后再试。忘记密码可联系客服，由后台重置</td></tr>
+    <tr><td>出价提示「余额不足」</td><td>拍品设有保证金，可用余额不够冻结。请先充值</td></tr>
+    <tr><td>出价被拒绝「不符合加价幅度」</td><td>出价必须不低于当前价 + 加价幅度，且为加价幅度的整数倍</td></tr>
+    <tr><td>中标了但付不了款</td><td>先在个人中心添加收货地址；确认可用余额加已冻结保证金足够支付</td></tr>
+    <tr><td>付款后卖家一直不发货</td><td>系统会按设置每天催卖家并扣信誉分，也可以联系在线客服介入</td></tr>
+    <tr><td>提现被拒绝</td><td>钱包「提现记录」查看拒绝理由，金额已退回可用余额，核对收款账户后重新提交</td></tr>
+    <tr><td>无法申请入驻 / 提现</td><td>需先完成实名认证并等待审核通过</td></tr>
+    <tr><td>发布拍品后前台看不到</td><td>平台开启了发布审核，需等平台或代理审核通过；也可能开拍时间未到</td></tr>
+    <tr><td>看不到卖家悬浮按钮</td><td>只有审核通过的卖家登录后才显示；按钮可拖动，可能被拖到了屏幕边缘</td></tr>
+    <tr><td>卖家点「发货」没有反应</td><td>发货需要在弹出的表单里填写快递公司和快递单号，两项都不能为空</td></tr>
+    <tr><td>后台改了设置前台没变化</td><td>确认已点「保存全部设置」；前台页面刷新一次即可</td></tr>
+    <tr><td>拍品到期没有自动结算</td><td>稍等片刻刷新页面，系统会自动补结算；长时间未结算请联系平台技术人员</td></tr>
+  </table>
+</section>
+
+</body>
+</html>

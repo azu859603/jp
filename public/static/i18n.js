@@ -32,6 +32,7 @@ var LANG = (metaLang ? metaLang.getAttribute('content') : '') || getCookie(COOKI
         '加载中': ['載入中', 'Loading'],
         '加载中...': ['載入中...', 'Loading...'],
         '发送太频繁，请3秒后再试': ['傳送太頻繁，請3秒後再試', 'Too fast, please wait 3 seconds'],
+        '请填写快递公司和单号': ['請填寫快遞公司和單號', 'Please enter courier and tracking number'],
         '上拉加载更多': ['上拉載入更多', 'Scroll to load more'],
         '1个月': ['1個月', '1 month'],
         '后': ['後', ' later'],

@@ -43,14 +43,38 @@
 <div class="no-more">{:lang('—— 没有更多数据了 ——')}</div>
 {/if}
 {/if}
+<!-- 发货弹层 -->
+<div class="mask" id="shipMask" onclick="closeShip()"></div>
+<div class="sheet" id="shipSheet">
+    <div class="s-title">{:lang('确认发货')} <span class="s-close" onclick="closeShip()">×</span></div>
+    <div class="form-card" style="margin:8px 12px 0;">
+        <div class="form-row"><span class="fl">{:lang('快递公司')}</span><div class="fr"><input type="text" id="shipCompany" placeholder="{:lang('请输入快递公司')}"></div></div>
+        <div class="form-row"><span class="fl">{:lang('快递单号')}</span><div class="fr"><input type="text" id="shipNo" placeholder="{:lang('请输入快递单号')}"></div></div>
+    </div>
+    <div style="padding:14px 20px 0;"><button class="btn btn-red" style="width:100%;" onclick="submitShip()">{:lang('确认发货')}</button></div>
+</div>
 {/block}
 {block name="script"}
 <script>
+var shipOrderId = 0;
 function shipOrder(id) {
-    confirmBox('确定已发货？', '提示', function(){
-        ajaxPost('/seller/ship', {id: id}, function(res){
-            if(res.code==1){ toast('已标记发货'); location.reload(); } else { toast(res.msg); }
-        });
+    shipOrderId = id;
+    document.getElementById('shipCompany').value = '';
+    document.getElementById('shipNo').value = '';
+    document.getElementById('shipMask').classList.add('show');
+    document.getElementById('shipSheet').classList.add('show');
+}
+function closeShip() {
+    document.getElementById('shipMask').classList.remove('show');
+    document.getElementById('shipSheet').classList.remove('show');
+}
+function submitShip() {
+    var company = document.getElementById('shipCompany').value.trim();
+    var no = document.getElementById('shipNo').value.trim();
+    if (!company || !no) { toast(t('请填写快递公司和单号')); return; }
+    ajaxPost('/seller/ship', {id: shipOrderId, ship_company: company, ship_no: no}, function(res){
+        toast(res.msg);
+        if (res.code == 1) { closeShip(); setTimeout(function(){ location.reload(); }, 600); }
     });
 }
 </script>
