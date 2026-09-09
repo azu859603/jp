@@ -74,7 +74,7 @@ function clean_html($html)
  * 生成唯一的纯数字邀请码（8 位，首位不为 0）
  * 后台添加会员与前台注册统一使用
  */
-function generate_invite_code($length = 8)
+function generate_invite_code($length = 6)
 {
     $length = max(6, (int)$length);
     do {
