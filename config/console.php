@@ -17,5 +17,7 @@ return [
         'user:init'     => \app\command\UserInit::class,
         // 采集远端商品并下载图片到本地（手动执行）：php think goods:collect [--start=11] [--end=N] [--limit=N] [--update]
         'goods:collect' => \app\command\GoodsCollect::class,
+        // 清理表结构缓存（数据库加字段后执行）
+        'schema:clear'  => \app\command\SchemaClear::class,
     ],
 ];

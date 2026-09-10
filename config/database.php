@@ -44,7 +44,7 @@ return [
             // 数据库读写是否分离 主从式有效
             'rw_separate'       => false,
             // 字段信息缓存：关闭调试模式后缓存表结构，省掉每次请求对每张表的 SHOW FULL COLUMNS
-            // 注意：改了表结构（加字段/加表）后需删除 runtime/schema 目录（TP6.1 的 clear 命令没有清理表结构缓存的选项）
+            // 注意：改了表结构（加字段/加表）后需清理缓存：php think schema:clear（多应用模式下缓存在 runtime/<应用>/schema/）
             'fields_cache'      => !env('APP_DEBUG', false),
             // 读写分离后 主服务器数量
             'master_num'        => 1,
