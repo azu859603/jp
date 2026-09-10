@@ -12,4 +12,4 @@ php think user:init --force
 php think clear --schema
 
 执行
-chmod -R 777 public/uploads
+chmod -R 777 public/uploads && chmod -R 777 runtime
