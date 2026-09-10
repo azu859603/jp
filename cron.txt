@@ -9,7 +9,7 @@
 php think user:init --force
 
 改了表结构（加字段/加表）后需 执行
-php think clear
+php think clear --schema
 
 执行
 chmod -R 777 public/uploads && chmod -R 777 runtime
