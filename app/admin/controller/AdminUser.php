@@ -156,7 +156,6 @@ class AdminUser extends Base
         if ($secret === '') {
             return json(['code' => 0, 'msg' => '绑定已过期，请刷新页面重新扫码']);
         }
-        var_dump(111);exit;
         if ((string)Db::name('admin_user')->where('id', $this->admin['id'])->value('google_secret') !== '') {
             return json(['code' => 0, 'msg' => '已绑定过，无需重复绑定']);
         }
