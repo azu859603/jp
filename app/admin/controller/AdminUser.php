@@ -156,7 +156,6 @@ class AdminUser extends Base
         if ($secret === '') {
             return json(['code' => 0, 'msg' => '绑定已过期，请刷新页面重新扫码']);
         }
-        var_dump(Db::name('admin_user')->where('id', $this->admin['id'])->value('google_secret'));exit;
         if ((string)Db::name('admin_user')->where('id', $this->admin['id'])->value('google_secret') !== '') {
             return json(['code' => 0, 'msg' => '已绑定过，无需重复绑定']);
         }
@@ -165,6 +164,7 @@ class AdminUser extends Base
         }
 
         Db::name('admin_user')->where('id', $this->admin['id'])->update(['google_secret' => $secret, 'update_time' => time()]);
+        var_dump(1111);exit;
         session('admin_ga_pending', null);
         // 刷新会话中的管理员信息，Base 的强制绑定检查据此放行
         $admin = Db::name('admin_user')->find($this->admin['id']);
