@@ -237,10 +237,10 @@ function google_auth_code($secret, $timeSlice = null)
 }
 
 /**
- * 校验动态码：允许前后各 1 个时间片（±30 秒）的时钟误差
+ * 校验动态码：允许前后各 2 个时间片（±60 秒）的时钟误差，兼顾服务器与手机之间的小幅时间偏差
  * 返回命中的时间片（用于防重放），不匹配返回 false
  */
-function google_auth_verify($secret, $code, $window = 1)
+function google_auth_verify($secret, $code, $window = 2)
 {
     $code = preg_replace('/\D/', '', (string)$code);
     if ($secret === '' || strlen($code) !== 6) {

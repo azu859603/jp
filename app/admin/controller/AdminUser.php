@@ -164,7 +164,6 @@ class AdminUser extends Base
         }
 
         Db::name('admin_user')->where('id', $this->admin['id'])->update(['google_secret' => $secret, 'update_time' => time()]);
-        var_dump(123123111);exit;
         session('admin_ga_pending', null);
         // 刷新会话中的管理员信息，Base 的强制绑定检查据此放行
         $admin = Db::name('admin_user')->find($this->admin['id']);

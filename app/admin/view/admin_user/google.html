@@ -61,7 +61,7 @@
                 <input type="text" class="form-control ga-code" id="bindCode" maxlength="6" inputmode="numeric" placeholder="000000" autocomplete="one-time-code" autofocus>
             </div>
             <button class="btn btn-primary btn-block" style="padding:11px" onclick="doBind()">确认绑定</button>
-            <div class="ga-tip" style="margin-top:12px">动态码每 30 秒变化一次。若提示不正确，请确认手机系统时间为自动同步。</div>
+            <div class="ga-tip" style="margin-top:12px">动态码每 30 秒变化一次。若提示不正确，请确认手机系统时间为自动同步。<br>服务器当前时间：<b id="svrTime">{:date('Y-m-d H:i:s')}</b>，与手机时间相差应在 1 分钟以内。</div>
         </div>
     </div>
     <textarea id="otpUri" style="display:none">{$uri}</textarea>
@@ -82,6 +82,7 @@
         box.innerHTML = '<span class="ga-tip">二维码库加载失败，请用下方密钥手动添加</span>';
     }
 })();
+(function(){ var el = document.getElementById('svrTime'); if(!el) return; var base = new Date(el.textContent.replace(/-/g, '/')).getTime(), start = Date.now(); setInterval(function(){ var d = new Date(base + (Date.now() - start)); el.textContent = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0') + ' ' + String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0') + ':' + String(d.getSeconds()).padStart(2,'0'); }, 1000); })();
 function doBind(){
     var code = document.getElementById('bindCode').value.trim();
     if (!/^\d{6}$/.test(code)) { alert('请输入 6 位动态码'); return; }
