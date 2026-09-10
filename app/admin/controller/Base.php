@@ -87,6 +87,7 @@ class Base extends BaseController
                 ['title' => '轮播管理', 'url' => '/admin1314/banner/index'],
 //                ['title' => '新闻管理', 'url' => '/admin1314/news/index'],
                 ['title' => '管理员管理', 'url' => '/admin1314/admin_user/index'],
+                ['title' => '谷歌验证', 'url' => '/admin1314/admin_user/google'],
                 ['title' => '操作日志', 'url' => '/admin1314/log/index'],
             ],
         ],
@@ -104,6 +105,19 @@ class Base extends BaseController
             throw new HttpResponseException(response('', 302, ['Location' => '/admin1314/login/index']));
         }
         $this->admin = $admin;
+        // 谷歌验证开关开启时，未绑定验证器的管理员只能停留在绑定页（防止绕过二次验证）
+        // 绑定状态以数据库为准（超管重置他人绑定后，对方会话里的旧密钥立即失效）
+        if ((int)get_setting('admin_google_auth', 0) === 1
+            && (string)\think\facade\Db::name('admin_user')->where('id', $admin['id'])->value('google_secret') === '') {
+            $ctrl = strtolower($this->request->controller());
+            $act  = strtolower($this->request->action());
+            if (!($ctrl === 'adminuser' && in_array($act, ['google', 'googlebind'])) && $ctrl !== 'login') {
+                if ($this->request->isAjax()) {
+                    throw new HttpResponseException(json(['code' => -1, 'msg' => '请先绑定谷歌验证器', 'url' => '/admin1314/admin_user/google']));
+                }
+                throw new HttpResponseException(response('', 302, ['Location' => '/admin1314/admin_user/google']));
+            }
+        }
         View::assign('admin', $admin);
         View::assign('menus', $this->menus);
         // 在线客服未回复数（菜单角标）；页面内每 30 秒再拉一次 /service/unread 刷新

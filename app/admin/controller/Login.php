@@ -21,6 +21,8 @@ class Login extends BaseController
         if (session('admin')) {
             return redirect('/admin1314/index/index');
         }
+        // 是否开启谷歌验证码（登录页据此显示动态码输入框）
+        View::assign('ga_on', (int)get_setting('admin_google_auth', 0) === 1);
         return View::fetch();
     }
 
@@ -44,6 +46,7 @@ class Login extends BaseController
         $username = trim($this->request->post('username', ''));
         $password = trim($this->request->post('password', ''));
         $captcha  = trim($this->request->post('captcha', ''));
+        $gaCode   = trim($this->request->post('google_code', ''));
 
         // 同一 IP 连续失败达上限则临时锁定，防止口令爆破
         $lockKey = 'admin_login_fail_' . md5($this->request->ip());
@@ -71,6 +74,26 @@ class Login extends BaseController
             return json(['code' => 0, 'msg' => '账号已被禁用']);
         }
 
+        // 谷歌验证码（后台开关开启时）：已绑定的管理员必须提供正确的 6 位动态码；
+        // 未绑定的先放行登录，随后由 Base 强制跳转到绑定页完成绑定
+        $gaOn = (int)get_setting('admin_google_auth', 0) === 1;
+        if ($gaOn && !empty($admin['google_secret'])) {
+            if ($gaCode === '') {
+                return json(['code' => 0, 'msg' => '请输入谷歌验证码']);
+            }
+            $slice = google_auth_verify($admin['google_secret'], $gaCode);
+            if ($slice === false) {
+                $this->markFail($lockKey, $fails);
+                return json(['code' => 0, 'msg' => '谷歌验证码错误或已过期']);
+            }
+            // 同一动态码只能用一次，防止被截获后重放
+            $usedKey = 'admin_ga_used_' . $admin['id'];
+            if ((int)Cache::get($usedKey, 0) === $slice) {
+                return json(['code' => 0, 'msg' => '该谷歌验证码已使用，请等待下一个']);
+            }
+            Cache::set($usedKey, $slice, 120);
+        }
+
         // 登录成功，清空失败计数
         Cache::delete($lockKey);
 
@@ -88,6 +111,10 @@ class Login extends BaseController
         Db::name('admin_user')->where('id', $admin['id'])->update($loginUpdate);
         admin_log('登录后台', $admin['id']);
 
+        // 开启了谷歌验证但本人还没绑定：登录后直接进绑定页
+        if ($gaOn && empty($admin['google_secret'])) {
+            return json(['code' => 1, 'msg' => '登录成功，请先绑定谷歌验证器', 'url' => '/admin1314/admin_user/google']);
+        }
         return json(['code' => 1, 'msg' => '登录成功', 'url' => '/admin1314/index/index']);
     }
 

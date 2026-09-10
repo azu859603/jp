@@ -1,0 +1,109 @@
+{extend name="layout" /}
+
+{block name="title"}谷歌验证{/block}
+{block name="crumb"}系统设置 / <b>谷歌验证</b>{/block}
+
+{block name="content"}
+<style>
+.ga-wrap{max-width:760px}
+.ga-status{display:flex;align-items:center;gap:14px;padding:16px 20px;border-radius:10px;margin-bottom:20px;font-size:14px}
+.ga-status.on{background:#e6f7ee;color:#166534;border:1px solid #bbf7d0}
+.ga-status.off{background:#fffbeb;color:#92400e;border:1px solid #fde68a}
+.ga-status.warn{background:#fee2e2;color:#991b1b;border:1px solid #fecaca}
+.ga-status svg{width:26px;height:26px;flex:none}
+.ga-status b{display:block;font-size:15px;margin-bottom:2px}
+.ga-steps{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.ga-step{background:#fff;border-radius:10px;box-shadow:0 1px 3px rgba(0,0,0,.06);padding:20px 22px}
+.ga-step h4{font-size:14px;color:#1e293b;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.ga-step h4 i{width:22px;height:22px;border-radius:50%;background:#ff7a00;color:#fff;font-style:normal;font-size:12px;display:inline-flex;align-items:center;justify-content:center}
+.ga-qr{display:flex;flex-direction:column;align-items:center;gap:10px}
+.ga-qr #qrcode{padding:10px;background:#fff;border:1px solid #e2e8f0;border-radius:8px;min-height:180px;display:flex;align-items:center;justify-content:center}
+.ga-secret{font-family:Consolas,Menlo,monospace;font-size:16px;letter-spacing:2px;background:#f8fafc;border:1px dashed #cbd5e1;border-radius:6px;padding:8px 14px;user-select:all}
+.ga-tip{font-size:12px;color:#94a3b8;line-height:1.7}
+.ga-code{font-size:22px;letter-spacing:8px;text-align:center;font-family:Consolas,Menlo,monospace}
+.ga-apps{font-size:12px;color:#64748b;line-height:1.8;margin-top:10px}
+@media(max-width:900px){.ga-steps{grid-template-columns:1fr}}
+</style>
+
+<div class="ga-wrap">
+    {if $bound}
+    <div class="ga-status on">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6l8-3z"/><path d="M9 12l2 2 4-4"/></svg>
+        <div><b>已绑定谷歌验证器</b>{if $ga_on}登录后台时需要输入验证器上的 6 位动态码{else}后台开关目前是关闭状态，登录时暂不需要动态码；开启后即生效{/if}</div>
+    </div>
+    <div class="card" style="max-width:480px;">
+        <div class="card-title">解除绑定</div>
+        <p class="ga-tip" style="margin-bottom:12px">更换手机前请先解绑，再在新手机上重新绑定。解绑需要输入当前验证器上的动态码。</p>
+        <div class="form-group">
+            <input type="text" class="form-control ga-code" id="unbindCode" maxlength="6" inputmode="numeric" placeholder="000000" autocomplete="one-time-code">
+        </div>
+        <button class="btn btn-danger" onclick="doUnbind()">解除绑定</button>
+    </div>
+    {else}
+    <div class="ga-status {if $ga_on}warn{else}off{/if}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6l8-3z"/><path d="M12 8v4M12 16h.01"/></svg>
+        <div><b>尚未绑定谷歌验证器</b>{if $ga_on}后台已开启谷歌验证，绑定完成前无法进入其他页面{else}后台开关目前关闭，可提前绑定，开启后登录即需动态码{/if}</div>
+    </div>
+    <div class="ga-steps">
+        <div class="ga-step">
+            <h4><i>1</i>用验证器 App 扫描二维码</h4>
+            <div class="ga-qr">
+                <div id="qrcode"></div>
+                <div class="ga-tip">无法扫码时，在 App 中选择「手动输入」，填入下面的密钥：</div>
+                <div class="ga-secret">{$secret}</div>
+                <div class="ga-tip">账户名 <b>{$admin.username}</b>，类型选「基于时间」</div>
+            </div>
+            <div class="ga-apps">支持 Google Authenticator、Microsoft Authenticator、Authy 等任意 TOTP 验证器 App。</div>
+        </div>
+        <div class="ga-step">
+            <h4><i>2</i>输入 App 显示的 6 位动态码</h4>
+            <div class="form-group">
+                <input type="text" class="form-control ga-code" id="bindCode" maxlength="6" inputmode="numeric" placeholder="000000" autocomplete="one-time-code" autofocus>
+            </div>
+            <button class="btn btn-primary btn-block" style="padding:11px" onclick="doBind()">确认绑定</button>
+            <div class="ga-tip" style="margin-top:12px">动态码每 30 秒变化一次。若提示不正确，请确认手机系统时间为自动同步。</div>
+        </div>
+    </div>
+    <textarea id="otpUri" style="display:none">{$uri}</textarea>
+    {/if}
+</div>
+{/block}
+
+{block name="script"}
+{if !$bound}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+(function(){
+    var uri = document.getElementById('otpUri').value;
+    var box = document.getElementById('qrcode');
+    if (window.QRCode) {
+        new QRCode(box, {text: uri, width: 180, height: 180, correctLevel: QRCode.CorrectLevel.M});
+    } else {
+        box.innerHTML = '<span class="ga-tip">二维码库加载失败，请用下方密钥手动添加</span>';
+    }
+})();
+function doBind(){
+    var code = document.getElementById('bindCode').value.trim();
+    if (!/^\d{6}$/.test(code)) { alert('请输入 6 位动态码'); return; }
+    ajaxPost('/admin1314/admin_user/googleBind', {code: code}, function(res){
+        alert(res.msg);
+        if (res.code == 1) location.href = res.url || '/admin1314/index/index';
+    });
+}
+document.getElementById('bindCode') && document.getElementById('bindCode').addEventListener('keydown', function(e){ if (e.key === 'Enter') doBind(); });
+</script>
+{else}
+<script>
+function doUnbind(){
+    var code = document.getElementById('unbindCode').value.trim();
+    if (!/^\d{6}$/.test(code)) { alert('请输入 6 位动态码'); return; }
+    confirmDialog('确定解除谷歌验证器绑定？', function(){
+        ajaxPost('/admin1314/admin_user/googleUnbind', {code: code}, function(res){
+            alert(res.msg);
+            if (res.code == 1) location.reload();
+        });
+    });
+}
+</script>
+{/if}
+{/block}

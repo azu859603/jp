@@ -51,6 +51,12 @@ body{font-family:"Microsoft YaHei",Arial,sans-serif;background:linear-gradient(1
                 <img src="/admin1314/login/captcha" alt="验证码" onclick="this.src='/admin1314/login/captcha?'+Math.random()" title="点击刷新">
             </div>
         </div>
+        {if !empty($ga_on)}
+        <div class="form-group">
+            <label>谷歌验证码 <span style="color:#94a3b8;font-weight:normal;">（首次登录未绑定可留空）</span></label>
+            <input type="text" class="form-control" id="google_code" placeholder="验证器 App 上的 6 位动态码" autocomplete="one-time-code" inputmode="numeric" maxlength="6">
+        </div>
+        {/if}
         <button type="submit" class="btn-login" id="loginBtn">登 录</button>
     </form>
     <div class="alt-sep"><span>或</span></div>
@@ -68,7 +74,8 @@ function doLogin(){
     var data = {
         username: document.getElementById('username').value.trim(),
         password: document.getElementById('password').value,
-        captcha: document.getElementById('captcha').value.trim()
+        captcha: document.getElementById('captcha').value.trim(),
+        google_code: document.getElementById('google_code') ? document.getElementById('google_code').value.trim() : ''
     };
     if(!data.username || !data.password){ tip.innerHTML = '请输入用户名和密码'; tip.style.display='block'; return false; }
     if(!data.captcha){ tip.innerHTML = '请输入验证码'; tip.style.display='block'; return false; }

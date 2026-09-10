@@ -16,7 +16,7 @@
         <table class="table">
             <thead>
             <tr>
-                <th>ID</th><th>用户名</th><th>姓名</th><th>角色</th><th>状态</th>
+                <th>ID</th><th>用户名</th><th>姓名</th><th>角色</th><th>状态</th><th>谷歌验证</th>
                 <th>最后登录</th><th>创建时间</th><th>操作</th>
             </tr>
             </thead>
@@ -70,6 +70,7 @@
 <script>
 var listData = [];
 var myId = {$admin.id};
+var myRole = {$admin.role};
 
 function loadList(){
     fetch('/admin1314/admin_user/index', {headers:{'X-Requested-With':'XMLHttpRequest'}})
@@ -78,7 +79,7 @@ function loadList(){
             listData = res.data || [];
             var html = '';
             if(!listData.length){
-                html = '<tr><td colspan="8" class="empty">暂无数据</td></tr>';
+                html = '<tr><td colspan="9" class="empty">暂无数据</td></tr>';
             } else {
                 listData.forEach(function(a){
                     var roleHtml = a.role == 1 ? '<span class="tag tag-orange">超级管理员</span>' : '<span class="tag tag-gray">普通管理员</span>';
@@ -89,11 +90,13 @@ function loadList(){
                         + '<td>' + (a.real_name || '-') + '</td>'
                         + '<td>' + roleHtml + '</td>'
                         + '<td>' + stHtml + '</td>'
+                        + '<td>' + (a.ga_bound == 1 ? '<span class="tag tag-green">已绑定</span>' : '<span class="tag tag-gray">未绑定</span>') + '</td>'
                         + '<td>' + (a.last_login_time ? fmtTime(a.last_login_time) : '-') + '</td>'
                         + '<td>' + (a.create_time ? fmtTime(a.create_time) : '-') + '</td>'
                         + '<td style="white-space:nowrap;">'
                         + '<a class="btn btn-sm" href="javascript:;" onclick="openEdit(' + a.id + ')">编辑</a> '
-                        + (a.id != 1 ? '<a class="btn btn-sm btn-danger" href="javascript:;" onclick="del(' + a.id + ')">删除</a>' : '')
+                        + (a.id != 1 ? '<a class="btn btn-sm btn-danger" href="javascript:;" onclick="del(' + a.id + ')">删除</a> ' : '')
+                        + (a.ga_bound == 1 && myRole == 1 && a.id != myId ? '<a class="btn btn-sm" href="javascript:;" onclick="gaReset(' + a.id + ')">重置谷歌验证</a>' : '')
                         + '</td></tr>';
                 });
             }
@@ -147,6 +150,14 @@ function doSave(){
             document.getElementById('editMask').classList.remove('show');
             loadList();
         }
+    });
+}
+
+function gaReset(id){
+    confirmDialog('确定重置该管理员的谷歌验证器？重置后对方下次登录需要重新扫码绑定。', function(){
+        ajaxPost('/admin1314/admin_user/googleReset', {id:id}, function(res){
+            alert(res.msg); if(res.code == 1) loadList();
+        });
     });
 }
 

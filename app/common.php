@@ -185,3 +185,81 @@ function get_setting($name, $default = '')
     $settings = site_settings();
     return isset($settings[$name]) && $settings[$name] !== '' ? $settings[$name] : $default;
 }
+
+/* ==================== 谷歌验证器（TOTP，RFC 6238） ==================== */
+
+/**
+ * 生成随机 Base32 密钥（16 位，Google Authenticator 可直接识别）
+ */
+function google_auth_secret($length = 16)
+{
+    $chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+    $secret = '';
+    for ($i = 0; $i < $length; $i++) {
+        $secret .= $chars[random_int(0, 31)];
+    }
+    return $secret;
+}
+
+/**
+ * Base32 解码
+ */
+function google_auth_base32_decode($b32)
+{
+    $chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+    $b32 = strtoupper(preg_replace('/[^A-Za-z2-7]/', '', (string)$b32));
+    $bits = '';
+    for ($i = 0, $n = strlen($b32); $i < $n; $i++) {
+        $bits .= str_pad(decbin(strpos($chars, $b32[$i])), 5, '0', STR_PAD_LEFT);
+    }
+    $out = '';
+    for ($i = 0; $i + 8 <= strlen($bits); $i += 8) {
+        $out .= chr(bindec(substr($bits, $i, 8)));
+    }
+    return $out;
+}
+
+/**
+ * 计算某个 30 秒时间片的 6 位动态码
+ */
+function google_auth_code($secret, $timeSlice = null)
+{
+    if ($timeSlice === null) {
+        $timeSlice = (int)floor(time() / 30);
+    }
+    $key  = google_auth_base32_decode($secret);
+    $time = pack('N*', 0) . pack('N*', $timeSlice);
+    $hash = hash_hmac('sha1', $time, $key, true);
+    $offset = ord(substr($hash, -1)) & 0x0F;
+    $part = substr($hash, $offset, 4);
+    $value = unpack('N', $part)[1] & 0x7FFFFFFF;
+    return str_pad((string)($value % 1000000), 6, '0', STR_PAD_LEFT);
+}
+
+/**
+ * 校验动态码：允许前后各 1 个时间片（±30 秒）的时钟误差
+ * 返回命中的时间片（用于防重放），不匹配返回 false
+ */
+function google_auth_verify($secret, $code, $window = 1)
+{
+    $code = preg_replace('/\D/', '', (string)$code);
+    if ($secret === '' || strlen($code) !== 6) {
+        return false;
+    }
+    $now = (int)floor(time() / 30);
+    for ($i = -$window; $i <= $window; $i++) {
+        if (hash_equals(google_auth_code($secret, $now + $i), $code)) {
+            return $now + $i;
+        }
+    }
+    return false;
+}
+
+/**
+ * 生成 otpauth 链接（用于生成二维码，Google Authenticator / Microsoft Authenticator 扫码绑定）
+ */
+function google_auth_uri($secret, $account, $issuer)
+{
+    return 'otpauth://totp/' . rawurlencode($issuer . ':' . $account)
+        . '?secret=' . $secret . '&issuer=' . rawurlencode($issuer) . '&algorithm=SHA1&digits=6&period=30';
+}
