@@ -40,6 +40,19 @@
                 <td>{$member.shop_name|default='-'}</td>
             </tr>
             <tr>
+                <th>店铺资料</th>
+                <td colspan="3">
+                    {if $member.is_seller==1 && $member.seller_check==1}
+                    <span style="margin-right:14px;">星级 <b>{$member.shop_score|default='5'}</b></span>
+                    <span style="margin-right:14px;">信誉分 <b>{$member.credit_score|default='100'}</b></span>
+                    <span style="margin-right:14px;">消费保证金 <b>¥{$member.deposit|number_format=2}</b></span>
+                    <span style="margin-right:14px;">粉丝 <b>{$member.fans_count|default='0'}</b></span>
+                    <a class="btn btn-sm" href="/agent/member/index?keyword={$member.mobile}">去列表编辑店铺资料</a>
+                    {if !empty($member.seller_intro)}<div class="gray" style="margin-top:6px;font-size:12px;">介绍：{$member.seller_intro}</div>{/if}
+                    {else /}<span class="gray">该会员还不是卖家</span>{/if}
+                </td>
+            </tr>
+            <tr>
                 <th>注册时间</th><td>{if $member.reg_time>0}{$member.reg_time|date='Y-m-d H:i:s'}{else /}-{/if}</td>
                 <th>最后登录</th><td>{if $member.last_login_time>0}{$member.last_login_time|date='Y-m-d H:i:s'}{else /}<span class="gray">未登录</span>{/if}</td>
             </tr>
@@ -134,4 +147,5 @@
         </table>
     </div>
 </div>
+
 {/block}

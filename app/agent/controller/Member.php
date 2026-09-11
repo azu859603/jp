@@ -7,7 +7,7 @@ use think\facade\View;
 /**
  * 代理后台 - 我的会员
  *
- * 可添加会员（新会员上级固定为当前代理）；会员资料只读（改余额/改状态/重置密码/发私信均不开放，需要变更请走平台后台）；
+ * 可添加会员（新会员上级固定为当前代理）、编辑下级卖家的店铺资料；其余会员资料只读（改余额/改状态/重置密码/发私信均不开放，需要变更请走平台后台）；
  * 开放两类审核动作：实名认证审核、卖家入驻审核，且仅限本团队会员。
  * 新增方法时务必保持数据范围经 memberQuery()/assertMyMember() 收口。
  */
@@ -75,7 +75,7 @@ class Member extends Base
         $total = $query->count();
         $list  = $query->order('id', 'desc')
             ->page($page, $limit)
-            ->field('id,nickname,avatar,mobile,invite_code,is_seller,seller_check,is_virtual,status,balance,freeze_balance,total_buy,total_sell,reg_time,last_login_time')
+            ->field('id,nickname,avatar,mobile,invite_code,is_seller,seller_check,is_virtual,status,balance,freeze_balance,total_buy,total_sell,reg_time,last_login_time,shop_name,seller_intro,deposit,shop_score,credit_score,fans_count')
             ->select()
             ->toArray();
 
@@ -366,5 +366,37 @@ class Member extends Base
             return json(['code' => 0, 'msg' => '添加失败：' . $e->getMessage()]);
         }
         return json(['code' => 1, 'msg' => '添加成功，该会员已归入您的团队', 'id' => $userId]);
+    }    /**
+     * 编辑店铺资料（仅限我的下级中已开通的卖家），字段与主后台一致
+     */
+    public function updateShop()
+    {
+        if (!$this->request->isPost()) {
+            return json(['code' => 0, 'msg' => '请求方式错误']);
+        }
+        $member = $this->assertMyMember($this->request->post('id', 0));
+        if ((int)$member['is_seller'] !== 1 || (int)$member['seller_check'] !== 1) {
+            return json(['code' => 0, 'msg' => '该会员还不是卖家，无法编辑店铺资料']);
+        }
+        $intro   = trim($this->request->post('seller_intro', ''));
+        $deposit = round((float)$this->request->post('deposit', 0), 2);
+        $score   = round((float)$this->request->post('shop_score', 5), 1);
+        $fans    = max((int)$this->request->post('fans_count', 0), 0);
+        $credit  = (int)$this->request->post('credit_score', $member['credit_score'] ?? 100);
+        if ($deposit < 0 || $score < 0 || $score > 5 || $fans < 0) {
+            return json(['code' => 0, 'msg' => '参数不正确']);
+        }
+        if ($credit < 0 || $credit > 999) {
+            return json(['code' => 0, 'msg' => '信誉分范围 0 ~ 999']);
+        }
+        Db::name('user')->where('id', $member['id'])->update([
+            'seller_intro' => mb_substr($intro, 0, 200),
+            'deposit'      => $deposit,
+            'shop_score'   => $score,
+            'credit_score' => $credit,
+            'fans_count'   => $fans,
+            'update_time'  => time(),
+        ]);
+        return json(['code' => 1, 'msg' => '已保存']);
     }
 }

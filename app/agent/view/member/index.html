@@ -32,6 +32,41 @@
     <button class="btn btn-primary" onclick="openAdd()">+ 添加会员</button>
 </div>
 
+<!-- 编辑店铺资料弹层 -->
+<div class="mask" id="shopEditMask">
+    <div class="dialog">
+        <div class="dialog-title" id="shopEditTitle">编辑店铺资料</div>
+        <div class="dialog-body">
+            <input type="hidden" id="se_id" value="0">
+            <div class="form-group" style="margin-bottom:12px;">
+                <label>店铺介绍</label>
+                <textarea class="form-control" id="se_intro" rows="3" maxlength="200" placeholder="请输入店铺介绍"></textarea>
+            </div>
+            <div class="form-group" style="margin-bottom:12px;">
+                <label>消费保证金（元）</label>
+                <input class="form-control" type="number" id="se_deposit" min="0" step="0.01" placeholder="0.00">
+            </div>
+            <div class="form-group" style="margin-bottom:12px;">
+                <label>店铺星级（0-5）</label>
+                <input class="form-control" type="number" id="se_score" min="0" max="5" step="0.1" placeholder="5.0">
+            </div>
+            <div class="form-group" style="margin-bottom:12px;">
+                <label>卖家信誉分（0-999，初始 100）</label>
+                <input class="form-control" type="number" id="se_credit" min="0" max="999" step="1" placeholder="100">
+                <div class="tip">买家付款后卖家长期未发货，系统每天提醒一次并扣 1 分；此处可手动修正</div>
+            </div>
+            <div class="form-group">
+                <label>粉丝数量</label>
+                <input class="form-control" type="number" id="se_fans" min="0" step="1" placeholder="0">
+            </div>
+        </div>
+        <div class="dialog-footer">
+            <button class="btn" onclick="document.getElementById('shopEditMask').classList.remove('show')">取消</button>
+            <button class="btn btn-primary" onclick="saveShop()">保存</button>
+        </div>
+    </div>
+</div>
+
 <!-- 添加会员弹层 -->
 <div class="mask" id="addMask">
     <div class="dialog">
@@ -93,6 +128,7 @@
 <script>
 var PAGE_SIZE = 15;
 var currentPage = 1;
+var listData = [];
 
 function loadList(page){
     currentPage = page;
@@ -106,6 +142,7 @@ function loadList(page){
         .then(function(r){ return r.json(); })
         .then(function(res){
             if(res.code === -1){ alert(res.msg || '登录已失效'); location.href = res.url || '/user/login'; return; }
+            listData = res.data || [];
             var html = '';
             if(!res.data || !res.data.length){
                 html = '<tr><td colspan="11" class="empty">暂无数据</td></tr>';
@@ -129,7 +166,9 @@ function loadList(page){
                         + '<td>' + statusHtml + '</td>'
                         + '<td>' + (u.reg_time ? fmtTime(u.reg_time) : '-') + '</td>'
                         + '<td>' + (u.last_login_time ? fmtTime(u.last_login_time) : '<span class="gray">未登录</span>') + '</td>'
-                        + '<td><a class="btn btn-sm" href="/agent/member/detail?id=' + u.id + '">详情</a></td>'
+                        + '<td style="white-space:nowrap;"><a class="btn btn-sm" href="/agent/member/detail?id=' + u.id + '">详情</a>'
+                        + ((u.is_seller == 1 && u.seller_check == 1) ? ' <a class="btn btn-sm btn-primary" href="javascript:;" onclick="openShopEdit(' + u.id + ')">编辑店铺</a>' : '')
+                        + '</td>'
                         + '</tr>';
                 });
             }
@@ -151,6 +190,33 @@ function renderPagination(total, page){
     html += '<a class="' + (page >= pages ? 'disabled' : '') + '" href="javascript:;" onclick="loadList(' + (page + 1) + ')">下一页</a>';
     html += '<a class="' + (page >= pages ? 'disabled' : '') + '" href="javascript:;" onclick="loadList(' + pages + ')">末页</a>';
     document.getElementById('pagination').innerHTML = html;
+}
+
+function openShopEdit(id){
+    var u = null; listData.forEach(function(x){ if(x.id == id) u = x; });
+    if(!u) return;
+    document.getElementById('se_id').value = u.id;
+    document.getElementById('shopEditTitle').textContent = '编辑店铺资料 - ' + (u.shop_name || u.nickname || u.mobile);
+    document.getElementById('se_intro').value = u.seller_intro || '';
+    document.getElementById('se_deposit').value = u.deposit || 0;
+    document.getElementById('se_score').value = u.shop_score || 5;
+    document.getElementById('se_credit').value = (u.credit_score === undefined || u.credit_score === null) ? 100 : u.credit_score;
+    document.getElementById('se_fans').value = u.fans_count || 0;
+    document.getElementById('shopEditMask').classList.add('show');
+}
+
+function saveShop(){
+    ajaxPost('/agent/member/updateShop', {
+        id: document.getElementById('se_id').value,
+        seller_intro: document.getElementById('se_intro').value.trim(),
+        deposit: document.getElementById('se_deposit').value,
+        shop_score: document.getElementById('se_score').value,
+        credit_score: document.getElementById('se_credit').value,
+        fans_count: document.getElementById('se_fans').value
+    }, function(res){
+        alert(res.msg);
+        if(res.code == 1){ document.getElementById('shopEditMask').classList.remove('show'); loadList(currentPage); }
+    });
 }
 
 function openAdd(){
