@@ -272,6 +272,7 @@ class Member extends Base
         if (!$user) {
             return json(['code' => 0, 'msg' => '会员不存在']);
         }
+        $shopName = trim($this->request->post('shop_name', $user['shop_name'] ?? ''));
         $intro = trim($this->request->post('seller_intro', ''));
         $deposit = round((float)$this->request->post('deposit', 0), 2);
         $score = round((float)$this->request->post('shop_score', 5), 1);
@@ -284,6 +285,7 @@ class Member extends Base
             return json(['code' => 0, 'msg' => '信誉分范围 0 ~ 999']);
         }
         Db::name('user')->where('id', $id)->update([
+            'shop_name'    => mb_substr($shopName, 0, 50),
             'seller_intro' => mb_substr($intro, 0, 200),
             'deposit'      => $deposit,
             'shop_score'   => $score,
