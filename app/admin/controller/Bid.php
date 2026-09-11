@@ -38,20 +38,8 @@ class Bid extends Base
             return json(['code' => 0, 'msg' => '', 'count' => $total, 'data' => $list]);
         }
 
-        // 手动添加出价：下拉数据（拍卖中商品 + 正常用户）
-        $goodsList = Db::name('goods')->where('status', 1)->order('id', 'desc')->limit(300)->select()->toArray();
-        foreach ($goodsList as &$g) {
-            $g['top_price'] = (float)Db::name('bid_record')->where('goods_id', $g['id'])->where('status', 0)->max('price');
-            $g['top_price'] = max($g['top_price'], (float)$g['start_price']);
-        }
-        unset($g);
-        $userList = Db::name('user')->where('status', 1)->order('id', 'desc')->limit(300)->select()->toArray();
-
-        View::assign([
-            'menu_active' => '/admin1314/bid/index',
-            'goods_list'  => $goodsList,
-            'user_list'   => $userList,
-        ]);
+        // 手动添加出价：拍品与买家改为按关键词搜索（searchGoods / searchUser），不再预加载下拉
+        View::assign(['menu_active' => '/admin1314/bid/index']);
         return View::fetch();
     }
 
@@ -152,5 +140,59 @@ class Bid extends Base
 
         admin_log('手动添加出价：商品「' . $goods['title'] . '」 买家ID ' . $userId . ' 出价 ' . number_format($price, 2) . ' 元');
         return json(['code' => 1, 'msg' => '已添加出价记录']);
+    }    /**
+     * 添加出价：搜索拍卖中的拍品（按拍品 ID 精确或标题模糊）
+     */
+    public function searchGoods()
+    {
+        $kw = trim((string)$this->request->param('kw', ''));
+        $now = time();
+        $query = Db::name('goods')->where('status', 1)->where('end_time', '>', $now);
+        if ($kw !== '') {
+            if (ctype_digit($kw)) {
+                // 纯数字：优先按拍品 ID 匹配，同时兼容标题里含该数字
+                $query->where(function ($q) use ($kw) {
+                    $q->where('id', (int)$kw)->whereOr('title', 'like', "%{$kw}%");
+                });
+            } else {
+                $query->where('title', 'like', "%{$kw}%");
+            }
+        }
+        $list = $query->field('id,title,cover,start_price,raise_price,end_time,bid_count')->order('id', 'desc')->limit(20)->select()->toArray();
+        // 当前最高价：一条 GROUP BY 批量取
+        $ids = array_column($list, 'id');
+        $tops = [];
+        if ($ids) {
+            $rows = Db::name('bid_record')->whereIn('goods_id', $ids)->where('status', 0)->field('goods_id, MAX(price) AS top')->group('goods_id')->select()->toArray();
+            foreach ($rows as $r) {
+                $tops[(int)$r['goods_id']] = (float)$r['top'];
+            }
+        }
+        foreach ($list as &$g) {
+            $g['top_price'] = max($tops[(int)$g['id']] ?? 0, (float)$g['start_price']);
+            $g['raise_price'] = (float)$g['raise_price'] > 0 ? (float)$g['raise_price'] : 1;
+            $g['end_text'] = date('m-d H:i', (int)$g['end_time']);
+        }
+        unset($g);
+        return json(['code' => 1, 'data' => $list]);
+    }
+
+    /**
+     * 添加出价：搜索买家（手机号 / 昵称模糊，或会员 ID 精确）
+     */
+    public function searchUser()
+    {
+        $kw = trim((string)$this->request->param('kw', ''));
+        $query = Db::name('user')->where('status', 1);
+        if ($kw !== '') {
+            $query->where(function ($q) use ($kw) {
+                $q->where('mobile', 'like', "%{$kw}%")->whereOr('nickname', 'like', "%{$kw}%");
+                if (ctype_digit($kw)) {
+                    $q->whereOr('id', (int)$kw);
+                }
+            });
+        }
+        $list = $query->field('id,mobile,nickname,is_virtual,balance')->order('id', 'desc')->limit(20)->select()->toArray();
+        return json(['code' => 1, 'data' => $list]);
     }
 }

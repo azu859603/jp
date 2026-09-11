@@ -260,7 +260,8 @@ class Goods extends Base
                 $deposit = (float)$goods['deposit'];
                 if ($user['balance'] < $deposit) {
                     Db::rollback();
-                    return json(['code' => 0, 'msg' => lang('可用余额不足，无法缴纳保证金（需 ') . number_format($deposit, 2) . lang('元），请先充值')]);
+                    // code=-2：余额不足，前端提示后跳转到充值页
+                    return json(['code' => -2, 'msg' => lang('可用余额不足，无法缴纳保证金（需 ') . number_format($deposit, 2) . lang('元），请先充值'), 'url' => '/user/recharge']);
                 }
                 $newBalance = round($user['balance'] - $deposit, 2);
                 $newFreeze = round($user['freeze_balance'] + $deposit, 2);

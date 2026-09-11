@@ -5,9 +5,9 @@ use think\facade\Db;
 use think\facade\View;
 
 /**
- * 代理后台 - 我的会员（只读）
+ * 代理后台 - 我的会员
  *
- * 会员资料只读（改余额/改状态/重置密码/发私信均不开放，需要变更请走平台后台）；
+ * 可添加会员（新会员上级固定为当前代理）；会员资料只读（改余额/改状态/重置密码/发私信均不开放，需要变更请走平台后台）；
  * 开放两类审核动作：实名认证审核、卖家入驻审核，且仅限本团队会员。
  * 新增方法时务必保持数据范围经 memberQuery()/assertMyMember() 收口。
  */
@@ -75,16 +75,11 @@ class Member extends Base
         $total = $query->count();
         $list  = $query->order('id', 'desc')
             ->page($page, $limit)
-            ->field('id,nickname,avatar,mobile,invite_code,is_seller,seller_check,is_virtual,status,total_buy,total_sell,reg_time,last_login_time')
+            ->field('id,nickname,avatar,mobile,invite_code,is_seller,seller_check,is_virtual,status,balance,freeze_balance,total_buy,total_sell,reg_time,last_login_time')
             ->select()
             ->toArray();
 
-        foreach ($list as &$u) {
-            // 代理只看到脱敏手机号；余额等资金字段一律不下发
-            $u['mobile_mask'] = $this->maskMobile($u['mobile']);
-            unset($u['mobile']);
-        }
-        unset($u);
+        // 手机号、余额对代理完整展示（代理需要了解自己下级的情况）
 
         return json(['code' => 0, 'msg' => '', 'count' => $total, 'data' => $list]);
     }
@@ -98,8 +93,8 @@ class Member extends Base
         $member = $this->assertMyMember($this->request->param('id', 0));
         $mid    = (int)$member['id'];
 
-        $member['mobile_mask'] = $this->maskMobile($member['mobile']);
-        unset($member['mobile'], $member['id_card'], $member['id_card_front'], $member['id_card_back']);
+        // 手机号、余额完整展示；身份证信息仍不下发
+        unset($member['id_card'], $member['id_card_front'], $member['id_card_back']);
 
         // 该会员作为买家的订单
         $orders = Db::name('order')
@@ -302,5 +297,74 @@ class Member extends Base
             return $idCard === '' ? '' : str_repeat('*', $len);
         }
         return substr($idCard, 0, 4) . str_repeat('*', $len - 8) . substr($idCard, -4);
+    }    /**
+     * 添加会员：新会员的上级固定为当前代理（pid = 我）
+     * 可设置会员类型（普通 / 虚拟）、初始余额、是否同时开通卖家权限，规则与主后台添加会员一致
+     */
+    public function add()
+    {
+        if (!$this->request->isPost()) {
+            return json(['code' => 0, 'msg' => '请求方式错误']);
+        }
+        $mobile   = trim($this->request->post('mobile', ''));
+        $password = trim($this->request->post('password', ''));
+        $nickname = trim($this->request->post('nickname', ''));
+        $balance   = round((float)$this->request->post('balance', 0), 2);
+        $isSeller  = (int)$this->request->post('is_seller', 0) === 1;
+        $isVirtual = (int)$this->request->post('is_virtual', 0) === 1;
+
+        if (!preg_match('/^1\d{10}$/', $mobile)) {
+            return json(['code' => 0, 'msg' => '手机号格式不正确']);
+        }
+        if (strlen($password) < 6) {
+            return json(['code' => 0, 'msg' => '密码至少 6 位']);
+        }
+        if ($balance < 0) {
+            return json(['code' => 0, 'msg' => '初始余额不能为负数']);
+        }
+        if ($nickname === '') {
+            $nickname = '用户' . substr($mobile, -4);
+        }
+        if (Db::name('user')->where('mobile', $mobile)->find()) {
+            return json(['code' => 0, 'msg' => '该手机号已注册']);
+        }
+
+        $now = time();
+        Db::startTrans();
+        try {
+            $userId = Db::name('user')->insertGetId([
+                'mobile'       => $mobile,
+                'password'     => hash_password($password),
+                'nickname'     => mb_substr($nickname, 0, 30),
+                'invite_code'  => generate_invite_code(),
+                'pid'          => $this->uid,
+                // 虚拟会员：余额 = 表单填写的金额（默认 100000），永存不减、不审计流水
+                'balance'      => $balance,
+                'is_virtual'   => $isVirtual ? 1 : 0,
+                'is_seller'    => $isSeller ? 1 : 0,
+                'seller_check' => $isSeller ? 1 : 0,
+                'status'       => 1,
+                'reg_ip'       => $this->request->ip(),
+                'reg_time'     => $now,
+                'create_time'  => $now,
+                'update_time'  => $now,
+            ]);
+            // 普通会员的初始余额写流水；虚拟会员不写
+            if (!$isVirtual && $balance > 0) {
+                Db::name('balance_log')->insert([
+                    'user_id'     => $userId,
+                    'type'        => 'recharge',
+                    'amount'      => $balance,
+                    'balance'     => $balance,
+                    'remark'      => '代理添加会员赠送余额',
+                    'create_time' => $now,
+                ]);
+            }
+            Db::commit();
+        } catch (\Throwable $e) {
+            Db::rollback();
+            return json(['code' => 0, 'msg' => '添加失败：' . $e->getMessage()]);
+        }
+        return json(['code' => 1, 'msg' => '添加成功，该会员已归入您的团队', 'id' => $userId]);
     }
 }

@@ -22,8 +22,12 @@
 .picker-sel b{color:#1e293b}
 .picker-sel a{color:#94a3b8;margin-left:8px}
 </style>
+<div class="readonly-tip"><span>🔒</span><span><b>数据范围</b>：仅包含您团队卖家发布的拍品上的出价，以及您团队会员参与的出价。添加出价只能选择团队内的拍品和买家。</span></div>
 <div class="search-bar">
-    <input type="text" class="form-control" id="keyword" placeholder="商品标题/会员手机号">
+    <div class="search-input">
+        <svg class="s-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/></svg>
+        <input type="text" class="form-control" id="keyword" placeholder="拍品标题 / 会员手机号 / 昵称">
+    </div>
     <button class="btn btn-primary" onclick="loadList(1)">查询</button>
     <button class="btn" onclick="resetSearch()">重置</button>
     <button class="btn btn-primary" onclick="openBidAdd()">添加出价</button>
@@ -34,7 +38,7 @@
         <table class="table">
             <thead>
             <tr>
-                <th>ID</th><th>商品</th><th>出价人</th><th>出价金额</th><th>状态</th><th>是否得标</th><th>时间</th>
+                <th>ID</th><th>拍品</th><th>出价人</th><th>出价金额</th><th>状态</th><th>是否得标</th><th>归属</th><th>时间</th>
             </tr>
             </thead>
             <tbody id="tbody"></tbody>
@@ -49,7 +53,7 @@
         <div class="dialog-title">手动添加出价</div>
         <div class="dialog-body">
             <div class="form-group" style="margin-bottom:12px;">
-                <label>拍品 <span class="tip" style="display:inline">（输入拍品 ID 或标题关键词搜索，只列拍卖中的拍品）</span></label>
+                <label>拍品 <span class="tip" style="display:inline">（输入拍品 ID 或标题关键词，只列团队卖家拍卖中的拍品）</span></label>
                 <div class="picker" id="goodsPicker">
                     <input type="text" class="form-control" id="goodsKw" placeholder="拍品 ID / 标题关键词" autocomplete="off">
                     <input type="hidden" id="addGoods" value="">
@@ -58,7 +62,7 @@
                 <div class="picker-sel" id="goodsSel"></div>
             </div>
             <div class="form-group" style="margin-bottom:12px;">
-                <label>买家 <span class="tip" style="display:inline">（输入手机号、昵称或会员 ID 搜索）</span></label>
+                <label>买家 <span class="tip" style="display:inline">（输入手机号、昵称或会员 ID，只列团队内会员）</span></label>
                 <div class="picker" id="userPicker">
                     <input type="text" class="form-control" id="userKw" placeholder="手机号 / 昵称 / 会员 ID" autocomplete="off">
                     <input type="hidden" id="addUser" value="">
@@ -81,12 +85,12 @@
 
 <script>
 function loadList(page){
-    fetch('/admin1314/bid/index?page=' + page + '&limit=15&keyword=' + encodeURIComponent(document.getElementById('keyword').value), {headers:{'X-Requested-With':'XMLHttpRequest'}})
+    fetch('/agent/bid/index?page=' + page + '&limit=15&keyword=' + encodeURIComponent(document.getElementById('keyword').value), {headers:{'X-Requested-With':'XMLHttpRequest'}})
         .then(function(r){ return r.json(); })
         .then(function(res){
             var html = '';
             if(!res.data || !res.data.length){
-                html = '<tr><td colspan="7" class="empty">暂无数据</td></tr>';
+                html = '<tr><td colspan="8" class="empty">暂无数据</td></tr>';
             } else {
                 res.data.forEach(function(b){
                     var stHtml = b.status == 1 ? '<span class="tag tag-green">成交</span>'
@@ -99,6 +103,7 @@ function loadList(page){
                         + '<td class="price">￥' + b.price + '</td>'
                         + '<td>' + stHtml + '</td>'
                         + '<td>' + winHtml + '</td>'
+                        + '<td>' + (b.seller_in_team == 1 ? '<span class="tag tag-orange">团队拍品</span> ' : '') + (b.buyer_in_team == 1 ? '<span class="tag tag-blue">团队买家</span>' : '') + '</td>'
                         + '<td>' + fmtTime(b.create_time) + '</td></tr>';
                 });
             }
@@ -180,14 +185,14 @@ function showGoodsTip(g){
 }
 function initPickers(){
     goodsPicker = makePicker({
-        kw: 'goodsKw', hidden: 'addGoods', list: 'goodsList', sel: 'goodsSel', url: '/admin1314/bid/searchGoods',
-        row: function(g){ return '<img src="' + esc(g.cover || '') + '" onerror="this.style.visibility=\'hidden\'"><div class="pi-main"><div class="pi-title">' + esc(g.title) + '</div><div class="pi-sub">当前价 ¥' + (parseFloat(g.top_price)||0).toFixed(2) + ' · 加价 ¥' + (parseFloat(g.raise_price)||0).toFixed(2) + ' · ' + (g.bid_count||0) + ' 次出价 · 截拍 ' + esc(g.end_text) + '</div></div><span class="pi-id">ID ' + g.id + '</span>'; },
+        kw: 'goodsKw', hidden: 'addGoods', list: 'goodsList', sel: 'goodsSel', url: '/agent/bid/searchGoods',
+        row: function(g){ return '<img src="' + esc(g.cover || '') + '" onerror="this.style.visibility=\'hidden\'"><div class="pi-main"><div class="pi-title">' + esc(g.title) + '</div><div class="pi-sub">' + (g.seller_name ? esc(g.seller_name) + ' · ' : '') + '当前价 ¥' + (parseFloat(g.top_price)||0).toFixed(2) + ' · 加价 ¥' + (parseFloat(g.raise_price)||0).toFixed(2) + ' · ' + (g.bid_count||0) + ' 次出价 · 截拍 ' + esc(g.end_text) + '</div></div><span class="pi-id">ID ' + g.id + '</span>'; },
         text: function(g){ return '[' + g.id + '] ' + g.title; },
         onPick: function(g){ pickedGoods = g; showGoodsTip(g); },
         onClear: function(){ pickedGoods = null; showGoodsTip(null); }
     });
     userPicker = makePicker({
-        kw: 'userKw', hidden: 'addUser', list: 'userList', sel: 'userSel', url: '/admin1314/bid/searchUser',
+        kw: 'userKw', hidden: 'addUser', list: 'userList', sel: 'userSel', url: '/agent/bid/searchUser',
         row: function(u){ return '<div class="pi-main"><div class="pi-title">' + esc(u.nickname || '-') + (u.is_virtual == 1 ? ' <span class="tag tag-purple">虚拟会员</span>' : ' <span class="tag tag-green">正常会员</span>') + '</div><div class="pi-sub">' + esc(u.mobile) + ' · 余额 ¥' + (parseFloat(u.balance)||0).toFixed(2) + '</div></div><span class="pi-id">ID ' + u.id + '</span>'; },
         text: function(u){ return (u.nickname || u.mobile) + (u.is_virtual == 1 ? '【虚拟会员】' : '【正常会员】') + '（' + u.mobile + '）'; }
     });
@@ -210,7 +215,7 @@ function doBidAdd(){
     if(!goodsId){ alert('请先搜索并选择拍品'); return; }
     if(!userId){ alert('请先搜索并选择买家'); return; }
     if(!price || parseFloat(price) <= 0){ alert('请填写出价金额'); return; }
-    ajaxPost('/admin1314/bid/add', {goods_id: goodsId, user_id: userId, price: price}, function(res){
+    ajaxPost('/agent/bid/add', {goods_id: goodsId, user_id: userId, price: price}, function(res){
         alert(res.msg);
         if(res.code == 1){ closeBidAdd(); loadList(1); }
     });

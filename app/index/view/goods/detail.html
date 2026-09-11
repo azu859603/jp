@@ -540,6 +540,11 @@ function doBid() {
             setTimeout(function(){ location.reload(); }, 800);
         } else if (res.code === -1) {
             location.href = '/user/login';
+        } else if (res.code === -2) {
+            // 余额不足：提示后跳转充值页
+            toast(res.msg, 2500);
+            closeBid();
+            setTimeout(function(){ location.href = res.url || '/user/recharge'; }, 1500);
         } else {
             toast(res.msg);
         }

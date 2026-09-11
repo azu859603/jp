@@ -52,6 +52,13 @@ class Base extends BaseController
                 ['title' => '产品审核', 'url' => '/agent/goods/check'],
             ],
         ],
+        'bid' => [
+            'title' => '竞拍管理',
+            'icon'  => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 4l6 6-8 8-6-6z"/><path d="M3 21l6-6"/><path d="M15 3l6 6"/></svg>',
+            'items' => [
+                ['title' => '出价记录', 'url' => '/agent/bid/index'],
+            ],
+        ],
         'report' => [
             'title' => '数据报表',
             'icon'  => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="4" y1="20" x2="20" y2="20"/><rect x="6" y="11" width="3" height="7" rx="1"/><rect x="11" y="6" width="3" height="12" rx="1"/><rect x="16" y="14" width="3" height="4" rx="1"/></svg>',
