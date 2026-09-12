@@ -164,6 +164,11 @@
     </span>
     <span class="sz-btn">{:lang('进入')} ›</span>
 </a>
+<div class="sz-links">
+    <a href="/seller/goods_list"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 8 12 3 3 8v8l9 5 9-5V8z"/><path d="M3 8l9 5 9-5"/><path d="M12 13v8"/></svg><span>{:lang('我的商品')}</span></a>
+    <a href="/seller/orders?order_status=1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18"/><path d="M8 15h4"/></svg><span>{:lang('卖家订单')}</span>{if !empty($data.pending_ship)}<i class="sz-badge">{$data.pending_ship}</i>{/if}</a>
+    <a href="/shop/detail?id={$user.id}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 9l1-5h16l1 5"/><path d="M4 9v11h16V9"/><path d="M9 20v-6h6v6"/></svg><span>{:lang('店铺首页')}</span></a>
+</div>
 {else}
 <a class="seller-zone apply" href="/seller/apply">
     <span class="sz-ico">

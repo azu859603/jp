@@ -286,9 +286,17 @@ class Goods extends Base
             return json(['code' => 0, 'msg' => '已结束的商品不能上下架']);
         }
 
-        Db::name('goods')->where('id', $id)->update(['status' => $status]);
-        admin_log(($status == 1 ? '上架' : '下架') . '商品：' . $goods['title']);
-        return json(['code' => 1, 'msg' => '操作成功']);
+        $refunded = 0;
+        if ($status == 4 && $goods['status'] == 1) {
+            $refunded = release_goods_bids($id, '平台下架');
+        }
+        if ($status == 1 && $goods['status'] == 4) {
+            Db::name('bid_record')->where('goods_id', $id)->delete();
+            Db::name('goods')->where('id', $id)->update(['bid_count' => 0, 'winner_id' => 0, 'final_price' => 0]);
+        }
+        Db::name('goods')->where('id', $id)->update(['status' => $status, 'update_time' => time()]);
+        admin_log(($status == 1 ? '上架' : '下架') . '商品：' . $goods['title'] . ($refunded > 0 ? '，退回保证金 ' . $refunded . ' 笔' : ''));
+        return json(['code' => 1, 'msg' => $refunded > 0 ? '已下架，已退回 ' . $refunded . ' 笔买家保证金' : '操作成功']);
     }
 
     /**
@@ -321,6 +329,10 @@ class Goods extends Base
                 $delIds[] = $g['id'];
             }
             if (!empty($delIds)) {
+                foreach ($delIds as $gid) {
+                    release_goods_bids($gid, '平台删除');
+                }
+                Db::name('bid_record')->whereIn('goods_id', $delIds)->delete();
                 Db::name('goods')->whereIn('id', $delIds)->delete();
                 admin_log('批量删除商品：' . implode(',', $delIds));
             }
@@ -340,6 +352,8 @@ class Goods extends Base
             return json(['code' => 0, 'msg' => '已成交商品不能删除']);
         }
 
+        release_goods_bids($id, '平台删除');
+        Db::name('bid_record')->where('goods_id', $id)->delete();
         Db::name('goods')->where('id', $id)->delete();
         admin_log('删除商品：' . $goods['title']);
         return json(['code' => 1, 'msg' => '删除成功']);

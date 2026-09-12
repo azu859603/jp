@@ -263,3 +263,66 @@ function google_auth_uri($secret, $account, $issuer)
     return 'otpauth://totp/' . rawurlencode($issuer . ':' . $account)
         . '?secret=' . $secret . '&issuer=' . rawurlencode($issuer) . '&algorithm=SHA1&digits=6&period=30';
 }
+
+/**
+ * 商品下架 / 删除时释放出价：所有有效出价标记为流拍，逐个买家退回冻结的保证金并写流水、发站内信。
+ * 前台卖家、主后台、代理端三处的下架与删除都必须先调用它，避免买家保证金被永久冻结。
+ *
+ * @param int    $goodsId
+ * @param string $reason  站内信与流水里的原因文字，如「卖家下架」「平台下架」「平台删除」
+ * @return int   退回保证金的出价记录条数
+ */
+function release_goods_bids($goodsId, $reason = '商品下架')
+{
+    $db = \think\facade\Db::class;
+    $goods = $db::name('goods')->where('id', (int)$goodsId)->find();
+    if (!$goods) {
+        return 0;
+    }
+    $bids = $db::name('bid_record')->where('goods_id', $goods['id'])->where('status', 0)->select()->toArray();
+    if (empty($bids)) {
+        return 0;
+    }
+    $now = time();
+    $refunded = 0;
+    $notified = [];
+    $db::startTrans();
+    try {
+        $db::name('bid_record')->where('goods_id', $goods['id'])->where('status', 0)->update(['status' => 2, 'is_winner' => 0]);
+        foreach ($bids as $b) {
+            if ((float)$b['deposit'] > 0) {
+                $user = $db::name('user')->where('id', $b['user_id'])->lock(true)->find();
+                if ($user) {
+                    $newBalance = round($user['balance'] + $b['deposit'], 2);
+                    $newFreeze  = round(max($user['freeze_balance'] - $b['deposit'], 0), 2);
+                    $db::name('user')->where('id', $user['id'])->update(['balance' => $newBalance, 'freeze_balance' => $newFreeze, 'update_time' => $now]);
+                    $db::name('balance_log')->insert([
+                        'user_id'     => $user['id'],
+                        'type'        => 'refund',
+                        'amount'      => $b['deposit'],
+                        'balance'     => $newBalance,
+                        'remark'      => $reason . '，保证金退回（' . $goods['title'] . '）',
+                        'create_time' => $now,
+                    ]);
+                    $refunded++;
+                }
+            }
+            if (!isset($notified[$b['user_id']])) {
+                $notified[$b['user_id']] = true;
+                $db::name('sys_message')->insert([
+                    'user_id'     => $b['user_id'],
+                    'admin_id'    => 0,
+                    'title'       => '拍品下架通知',
+                    'content'     => '您参与竞拍的「' . $goods['title'] . '」已' . $reason . '，本次竞拍取消，已缴纳的保证金已退回您的可用余额。',
+                    'is_read'     => 0,
+                    'create_time' => $now,
+                ]);
+            }
+        }
+        $db::commit();
+    } catch (\Throwable $e) {
+        $db::rollback();
+        throw $e;
+    }
+    return $refunded;
+}

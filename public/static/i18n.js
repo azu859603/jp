@@ -125,6 +125,7 @@ var LANG = (metaLang ? metaLang.getAttribute('content') : '') || getCookie(COOKI
         '申请已提交': ['申請已提交', 'Application submitted'],
         '已上架': ['已上架', 'Listed'],
         '已下架': ['已下架', 'Taken down'],
+        '当前已有 %d 次出价，下架后本次竞拍取消并退还全部买家保证金，确定下架？': ['目前已有 %d 次出價，下架後本次競拍取消並退還全部買家保證金，確定下架？', 'There are %d bids. Taking it down cancels this auction and refunds all deposits. Continue?'],
         '已删除': ['已刪除', 'Deleted'],
         '已重新上架': ['已重新上架', 'Relisted'],
         '已标记发货': ['已標記發貨', 'Marked as shipped'],

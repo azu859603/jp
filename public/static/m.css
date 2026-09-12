@@ -1410,3 +1410,10 @@ b,strong,.num,.price,.wl-total,.g-price{font-variant-numeric:tabular-nums;}
 
 /* 提现页：已绑定信息旁的「修改绑定」链接 */
 .w-bindinfo .w-edit-link{display:inline-block;margin-left:8px;color:#E4393C;font-size:13px;white-space:nowrap;}
+
+/* 个人中心：卖家中心下方的快捷入口（我的商品 / 卖家订单(待发货角标) / 店铺首页） */
+.sz-links{display:flex;margin:8px 14px 0;background:#fff;border-radius:12px;box-shadow:var(--shadow);overflow:hidden;}
+.sz-links a{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 0 11px;font-size:12px;color:#333;position:relative;}
+.sz-links a+a{border-left:1px solid #F5F5F5;}
+.sz-links a svg{width:22px;height:22px;color:#E4393C;}
+.sz-links .sz-badge{position:absolute;top:8px;left:calc(50% + 8px);min-width:16px;height:16px;line-height:16px;padding:0 4px;border-radius:8px;background:#E4393C;color:#fff;font-size:10px;font-style:normal;text-align:center;}

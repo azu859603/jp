@@ -223,6 +223,8 @@ class Seller extends Base
         }
         $total = $query->count();
         $list = $query->order('id', 'desc')->page($page, $limit)->select()->toArray();
+        // 流拍数量：>0 时页面显示「一键重新上架」
+        $failCount = (int)Db::name('goods')->where('seller_id', $id)->where('status', 3)->count();
 
         // 当前价
         $tops = bid_top_prices(array_column($list, 'id'));
@@ -238,6 +240,7 @@ class Seller extends Base
             'page'       => $page,
             'limit'      => $limit,
             'status'     => $status,
+            'fail_count' => $failCount,
             'now'        => time(),
             'page_title' => lang('我的商品'),
             'center_tab' => 'seller',
@@ -292,11 +295,24 @@ class Seller extends Base
             return json(['code' => 1, 'msg' => lang('已重新上架')]);
         }
 
+        $refunded = 0;
+        if ($status == 4 && $goods['status'] == 1) {
+            // 拍卖中下架：视同流拍，退回所有买家的保证金
+            $refunded = release_goods_bids($goodsId, '卖家下架');
+        }
+        if ($status == 1 && $goods['status'] == 4) {
+            // 下架后重新上架：旧出价已在下架时作废，清掉记录并归零出价次数
+            Db::name('bid_record')->where('goods_id', $goodsId)->delete();
+            Db::name('goods')->where('id', $goodsId)->update(['bid_count' => 0, 'winner_id' => 0, 'final_price' => 0]);
+        }
         Db::name('goods')->where('id', $goodsId)->update([
             'status'      => $status,
             'update_time' => time(),
         ]);
-        return json(['code' => 1, 'msg' => $status == 1 ? lang('已上架') : lang('已下架')]);
+        if ($status == 4) {
+            return json(['code' => 1, 'msg' => $refunded > 0 ? lang('已下架，已退回 %d 笔买家保证金', [$refunded]) : lang('已下架')]);
+        }
+        return json(['code' => 1, 'msg' => lang('已上架')]);
     }
 
     /**
@@ -316,6 +332,8 @@ class Seller extends Base
         if (in_array($goods['status'], [1, 2])) {
             return json(['code' => 0, 'msg' => lang('拍卖中/已成交商品不能删除')]);
         }
+        release_goods_bids($goodsId, '卖家删除');
+        Db::name('bid_record')->where('goods_id', $goodsId)->delete();
         Db::name('goods')->where('id', $goodsId)->delete();
         return json(['code' => 1, 'msg' => lang('已删除')]);
     }
@@ -393,5 +411,49 @@ class Seller extends Base
             'update_time'  => time(),
         ]);
         return json(['code' => 1, 'msg' => lang('发货成功')]);
+    }    /**
+     * 一键重新上架：把当前卖家所有流拍(3)的拍品重新开拍
+     * end_time 为统一的结束时间；stagger=1 时每件在此基础上随机延后 0～6 小时，避免同时截拍
+     */
+    public function relist_all()
+    {
+        $this->checkSeller();
+        if (!$this->request->isPost()) {
+            return json(['code' => 0, 'msg' => lang('请求方式错误')]);
+        }
+        $endTime = trim((string)$this->request->post('end_time', ''));
+        $stagger = (int)$this->request->post('stagger', 1) === 1;
+        if ($endTime === '') {
+            return json(['code' => 0, 'msg' => lang('请选择结束时间')]);
+        }
+        $et = strtotime(str_replace('T', ' ', $endTime));
+        if (!$et || $et <= time() + 60) {
+            return json(['code' => 0, 'msg' => lang('结束时间需晚于当前时间')]);
+        }
+        $ids = Db::name('goods')->where('seller_id', $this->user['id'])->where('status', 3)->column('id');
+        if (empty($ids)) {
+            return json(['code' => 0, 'msg' => lang('没有流拍的拍品')]);
+        }
+        $now = time();
+        Db::startTrans();
+        try {
+            Db::name('bid_record')->whereIn('goods_id', $ids)->delete();
+            foreach ($ids as $gid) {
+                Db::name('goods')->where('id', $gid)->update([
+                    'status'      => 1,
+                    'start_time'  => $now,
+                    'end_time'    => $stagger ? $et + mt_rand(0, 6 * 3600) : $et,
+                    'bid_count'   => 0,
+                    'winner_id'   => 0,
+                    'final_price' => 0,
+                    'update_time' => $now,
+                ]);
+            }
+            Db::commit();
+        } catch (\Throwable $e) {
+            Db::rollback();
+            return json(['code' => 0, 'msg' => lang('操作失败：') . $e->getMessage()]);
+        }
+        return json(['code' => 1, 'msg' => lang('已重新上架 %d 件拍品', [count($ids)]), 'count' => count($ids)]);
     }
 }
