@@ -121,6 +121,7 @@ function selectPay(p) {
         var txt = t('已绑定') + typeName[p] + colon + ((p === 'alipay' || p === 'wechat') ? t('收款码已上传') : (a.real_name ? a.real_name + lb + maskAccount(p, a) + rb : maskAccount(p, a)));
         if (p === 'bank') { txt += '<br>' + t('银行：') + a.bank_name + (a.bank_branch ? ' · ' + t('开户行：') + a.bank_branch : ''); }
         if (p === 'usdt') { txt += '<br>' + t('网络：') + 'USDT-TRC20'; }
+        txt += ' <a href="/user/pay_account?type=' + typeKey[p] + '" class="w-edit-link">' + t('修改绑定') + ' ›</a>';
         bindInfo.innerHTML = txt;
         bindInfo.style.display = '';
         unbindBox.style.display = 'none';

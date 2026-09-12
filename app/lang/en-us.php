@@ -328,6 +328,7 @@ return [
     '请至少上传4张不同角度的商品照片' => 'Upload at least 4 photos from different angles',
     '取消' => 'Cancel',
     '去绑定' => 'Bind',
+    '修改绑定' => 'Edit binding',
     '去出价' => 'Bid',
     '去发布拍品' => 'Publish Item',
     '去付款' => 'Pay',

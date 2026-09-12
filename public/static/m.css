@@ -1407,3 +1407,6 @@ b,strong,.num,.price,.wl-total,.g-price{font-variant-numeric:tabular-nums;}
   /* PC 居中列：阴影带贴在列的左边缘 */
   .app::before{left:50%;margin-left:calc(var(--col) / -2);}
 }
+
+/* 提现页：已绑定信息旁的「修改绑定」链接 */
+.w-bindinfo .w-edit-link{display:inline-block;margin-left:8px;color:#E4393C;font-size:13px;white-space:nowrap;}

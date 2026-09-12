@@ -95,6 +95,7 @@ var LANG = (metaLang ? metaLang.getAttribute('content') : '') || getCookie(COOKI
         '提交提现申请': ['提交提現申請', 'Submit Withdrawal'],
         '审核中，暂不可申请': ['審核中，暫不可申請', 'Reviewing, not submittable'],
         '去绑定': ['去綁定', 'Bind'],
+        '修改绑定': ['修改綁定', 'Edit binding'],
         '绑定': ['綁定', 'Bind '],
         '账号': ['帳號', 'Account'],
         '请输入收款账号': ['請輸入收款帳號', 'Enter account number'],
