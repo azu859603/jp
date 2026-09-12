@@ -131,7 +131,8 @@ function selectPay(p) {
         unbindBox.style.display = '';
         btn.textContent = t('去绑定') + typeName[p];
     }
-    btn.disabled = hasPending;
+    // 未绑定时按钮用于跳转绑定页，不受「审核中」限制
+    btn.disabled = hasPending && !!a;
 }
 
 function maskAccount(p, a) {
@@ -149,8 +150,8 @@ function goBind() {
 function doWithdraw() {
     var amount = document.getElementById('amount').value.trim();
     var a = accounts[typeKey[curPay]];
-    if (hasPending) { toast('您有一笔提现正在审核中，审核通过后方可提交下一笔'); return; }
     if (!a) { goBind(); return; }
+    if (hasPending) { toast('您有一笔提现正在审核中，审核通过后方可提交下一笔'); return; }
     if (!amount || parseFloat(amount) <= 0) { toast('请输入提现金额'); return; }
     ajaxPost('/user/withdraw', {amount: amount, pay_type: curPay}, function(res){
         if (res.code === 1) {

@@ -3,15 +3,15 @@
 <div class="pa-page">
     <!-- 提现方式选择 -->
     <div class="pa-types">
-        <div class="pa-type {if empty($accounts['1'])}un{/if}" data-type="1" onclick="selectType(1)">
-            <div class="pa-ico" style="color:#1677ff;">支</div>
-            <div class="pa-tname">{:lang('支付宝')}</div>
-            <div class="pa-state" id="paState1">{if !empty($accounts['1'])}{:lang('已绑定')}{else}{:lang('未绑定')}{/if}</div>
-        </div>
         <div class="pa-type {if empty($accounts['2'])}un{/if}" data-type="2" onclick="selectType(2)">
             <div class="pa-ico" style="color:#07c160;">微</div>
             <div class="pa-tname">{:lang('微信')}</div>
             <div class="pa-state" id="paState2">{if !empty($accounts['2'])}{:lang('已绑定')}{else}{:lang('未绑定')}{/if}</div>
+        </div>
+        <div class="pa-type {if empty($accounts['1'])}un{/if}" data-type="1" onclick="selectType(1)">
+            <div class="pa-ico" style="color:#1677ff;">支</div>
+            <div class="pa-tname">{:lang('支付宝')}</div>
+            <div class="pa-state" id="paState1">{if !empty($accounts['1'])}{:lang('已绑定')}{else}{:lang('未绑定')}{/if}</div>
         </div>
         <div class="pa-type {if empty($accounts['3'])}un{/if}" data-type="3" onclick="selectType(3)">
             <div class="pa-ico" style="color:#c76b00;">银</div>
@@ -113,7 +113,7 @@
 {block name="script"}
 <script>
 var accounts = {$pa_json|raw};
-var curType = 1;
+var curType = 2;
 var typeName = {1:t('支付宝'), 2:t('微信'), 3:t('银行卡'), 4:t('虚拟货币')};
 // 支持 URL 参数 ?type=N 初始选中对应提现方式
 var urlType = parseInt(new URLSearchParams(location.search).get('type') || '0', 10);
