@@ -91,7 +91,7 @@
 <!-- 成交记录：标题 + 向上循环滚动 -->
 {if !empty($deals)}
 <div class="deal-wrap">
-    <div class="deal-title"><i class="dt-ico">🔔</i>{:lang('成交记录')}<a class="deal-more" href="/deals">{:lang('更多')} ›</a></div>
+    <div class="deal-title"><i class="dt-ico">🔔</i>{:lang('成交记录')}<a class="deal-more" href="/deals" style="display: none">{:lang('更多')} ›</a></div>
     <div class="deal-bar" id="dealBar">
         <div class="deal-track" id="dealTrack">
             {foreach $deals as $d}<div class="deal-item"><span class="deal-txt">{:lang('恭喜 %s 以 ¥%s 成交「%s」', [$d.display_name, number_format($d.price, 2), $d.title])}</span><span class="deal-time">{$d.create_time|date='m-d H:i'}</span></div>{/foreach}

@@ -201,7 +201,7 @@ class Index extends Base
         }
         unset($c);
 
-        // 成交记录（最近5条成交）
+        // 成交记录（最近10条成交）
         $deals = Db::name('bid_record')->alias('b')
             ->leftJoin('goods g', 'b.goods_id = g.id')
             ->leftJoin('user u', 'b.user_id = u.id')
@@ -215,10 +215,34 @@ class Index extends Base
 
         foreach ($deals as &$d) {
             $d['display_name'] = '***'.mb_substr($d['nickname'], -4);
-//            $d['display_name'] = mb_substr($d['nickname'], 0, 2) . '***';
+            $d['is_mock'] = 0;
         }
         unset($d);
-//        var_dump($deals);exit;
+        // 不足 10 条时用在拍商品模拟补齐：随机取在拍拍品，价格按加价幅度在起拍价上加几档，
+        // 时间落在最近 3 天内；按小时固定随机种子，同一小时内刷新页面内容不变
+        $need = 10 - count($deals);
+        if ($need > 0) {
+            mt_srand((int)floor(time() / 3600));
+            $pool = Db::name('goods')->where('status', 1)->where('end_time', '>', $now)
+                ->field('title,start_price,raise_price')->orderRaw('RAND(' . (int)floor(time() / 3600) . ')')->limit($need)->select()->toArray();
+            if (count($pool) < $need && count($pool) > 0) {
+                while (count($pool) < $need) {
+                    $pool[] = $pool[mt_rand(0, count($pool) - 1)];
+                }
+            }
+            foreach ($pool as $g) {
+                $raise = (float)$g['raise_price'] > 0 ? (float)$g['raise_price'] : max(1, round((float)$g['start_price'] * 0.05));
+                $deals[] = [
+                    'price'        => round((float)$g['start_price'] + $raise * mt_rand(1, 8), 2),
+                    'create_time'  => $now - mt_rand(600, 3 * 86400),
+                    'title'        => $g['title'],
+                    'nickname'     => '',
+                    'display_name' => '***' . mt_rand(1000, 9999),
+                    'is_mock'      => 1,
+                ];
+            }
+            usort($deals, function ($x, $y) { return $y['create_time'] <=> $x['create_time']; });
+        }
 
         // 拍卖头条（对接新闻模块：最新3条已发布新闻）
         $langField = Lang::getLangSet() === 'zh-tw' ? 'title_tw' : (Lang::getLangSet() === 'en-us' ? 'title_en' : 'title');
