@@ -17,7 +17,7 @@
             <tbody>
             <tr><th style="width:140px;">会员ID</th><td>{$member.id}</td><th style="width:140px;">昵称</th><td>{$member.nickname|default='-'}</td></tr>
             <tr><th>手机号</th><td>{$member.mobile}</td><th>邀请码</th><td>{$member.invite_code|default='-'}</td></tr>
-            <tr><th>可用余额</th><td><span class="price">￥{$member.balance|number_format=2}</span></td><th>冻结余额</th><td>￥{$member.freeze_balance|number_format=2}{if $member.is_virtual==1} <span class="gray" style="font-size:12px;">（虚拟会员余额永存）</span>{/if}</td></tr>
+            <tr><th>可用余额</th><td><span class="price">￥{$member.balance|number_format=2}</span></td><th>冻结余额</th><td>￥{$member.freeze_balance|number_format=2}</td></tr>
             <tr>
                 <th>会员类型</th>
                 <td>

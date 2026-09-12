@@ -85,35 +85,27 @@ class Order extends Base
             // 应付 = 成交价 - 保证金（已冻结）
             $payAmount = round($order['price'] - $order['deposit'], 2);
             $user = Db::name('user')->where('id', $this->user['id'])->lock(true)->find();
-            $isVirtualBuyer = (int)$user['is_virtual'] === 1;
-            // 虚拟会员：无真实资金变动，跳过余额校验与扣款，订单直接支付成功
-            $freezeDeduct = 0;
-            $balanceDeduct = 0;
-            if (!$isVirtualBuyer) {
-                // 冻结余额不足以抵扣保证金时（历史订单/拍卖期间保证金变动），差额从可用余额补扣
-                $freezeDeduct = min($order['deposit'], $user['freeze_balance']);
-                $balanceDeduct = round($payAmount + ($order['deposit'] - $freezeDeduct), 2);
-                if ($user['balance'] < $balanceDeduct) {
-                    return json(['code' => 0, 'msg' => lang('余额不足，还需支付 ¥') . number_format($balanceDeduct, 2) . lang('，请先充值')]);
-                }
+            // 冻结余额不足以抵扣保证金时（历史订单/拍卖期间保证金变动），差额从可用余额补扣
+            $freezeDeduct = min($order['deposit'], $user['freeze_balance']);
+            $balanceDeduct = round($payAmount + ($order['deposit'] - $freezeDeduct), 2);
+            if ($user['balance'] < $balanceDeduct) {
+                return json(['code' => 0, 'msg' => lang('余额不足，还需支付 ¥') . number_format($balanceDeduct, 2) . lang('，请先充值')]);
             }
 
             $now = time();
             Db::startTrans();
             try {
-                if (!$isVirtualBuyer) {
-                    $newBalance = round($user['balance'] - $balanceDeduct, 2);
-                    $newFreeze = round($user['freeze_balance'] - $freezeDeduct, 2);
-                    Db::name('user')->where('id', $user['id'])->update([
-                        'balance'        => $newBalance,
-                        'freeze_balance' => $newFreeze,
-                        'update_time'    => $now,
-                    ]);
+                $newBalance = round($user['balance'] - $balanceDeduct, 2);
+                $newFreeze = round($user['freeze_balance'] - $freezeDeduct, 2);
+                Db::name('user')->where('id', $user['id'])->update([
+                    'balance'        => $newBalance,
+                    'freeze_balance' => $newFreeze,
+                    'update_time'    => $now,
+                ]);
 
-                    // 买家流水（仅记录实际扣款部分）
-                    if ($payAmount > 0) {
-                        $this->addBalanceLog($user['id'], 'pay', -$payAmount, $newBalance, '拍卖订单支付：' . $order['order_no']);
-                    }
+                // 买家流水（仅记录实际扣款部分）
+                if ($payAmount > 0) {
+                    $this->addBalanceLog($user['id'], 'pay', -$payAmount, $newBalance, '拍卖订单支付：' . $order['order_no']);
                 }
 
                 // 订单更新

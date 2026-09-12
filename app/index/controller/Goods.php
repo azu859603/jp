@@ -194,6 +194,14 @@ class Goods extends Base
         $goodsId = (int)$this->request->post('goods_id', 0);
         $price = round((float)$this->request->post('price', 0), 2);
 
+        // 出价前必须完成实名认证（以数据库实时状态为准，避免 session 过期数据）；虚拟会员为系统账号，不受此限
+        $authRow = Db::name('user')->where('id', $this->user['id'])->field('auth_status,is_virtual')->find();
+        if ($authRow && (int)$authRow['is_virtual'] !== 1 && (int)$authRow['auth_status'] !== 2) {
+            $msg = (int)$authRow['auth_status'] === 1 ? lang('实名认证审核中，审核通过后才能出价') : lang('请先完成实名认证后再出价');
+            // code=-3：未实名，前端提示后跳转实名认证页
+            return json(['code' => -3, 'msg' => $msg, 'url' => '/user/auth']);
+        }
+
         $goods = Db::name('goods')->where('id', $goodsId)->lock(true)->find();
         if (!$goods) {
             return json(['code' => 0, 'msg' => lang('商品不存在')]);
@@ -254,9 +262,9 @@ class Goods extends Base
                 ->order('id', 'asc')
                 ->find();
 
-            // 首次出价冻结保证金（虚拟会员免保证金，余额为永存金额不产生资金变动）
+            // 首次出价冻结保证金
             $freeze = 0.00;
-            if ($paidDeposit <= 0 && (float)$goods['deposit'] > 0 && (int)$user['is_virtual'] !== 1) {
+            if ($paidDeposit <= 0 && (float)$goods['deposit'] > 0) {
                 $deposit = (float)$goods['deposit'];
                 if ($user['balance'] < $deposit) {
                     Db::rollback();

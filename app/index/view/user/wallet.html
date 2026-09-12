@@ -15,14 +15,10 @@
                 <div class="v out">¥{$total_expense}</div>
             </div>
         </div>
-        {if isset($is_virtual) && $is_virtual}
-        <div class="wl-virtual">{:lang('虚拟会员：余额为系统永存金额，不支持充值/提现')}</div>
-        {else /}
         <div class="wl-btns">
             <a class="wl-btn" href="/user/withdraw"><i class="ic-wd"></i>{:lang('申请提现')}</a>
             <a class="wl-btn light" href="/user/recharge">{:lang('充值')}</a>
         </div>
-        {/if}
     </div>
 
     <div class="wl-list">

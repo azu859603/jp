@@ -121,15 +121,7 @@ class Base extends BaseController
      */
     protected function addBalanceLog($userId, $type, $amount, $balance, $remark)
     {
-        $user = Db::name('user')->where('id', $userId)->field('id, is_virtual')->find();
-        if ($user && (int)$user['is_virtual'] === 1) {
-            // 虚拟会员：不审计账单流水，余额永存——把本次变动回补，余额回到变动前（后台添加时设定的金额）
-            Db::name('user')->where('id', $userId)->update([
-                'balance'     => round((float)$balance - (float)$amount, 2),
-                'update_time' => time(),
-            ]);
-            return;
-        }
+        // 虚拟会员与普通会员在前台完全一致：余额真实增减、流水正常记录（原「余额永存 / 不记流水」逻辑已取消）
         Db::name('balance_log')->insert([
             'user_id'     => $userId,
             'type'        => $type,

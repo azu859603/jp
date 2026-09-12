@@ -32,6 +32,32 @@
     <button class="btn btn-primary" onclick="openAdd()">+ 添加会员</button>
 </div>
 
+<!-- 余额调整弹层 -->
+<div class="mask" id="balanceMask">
+    <div class="dialog">
+        <div class="dialog-title" id="balanceTitle">调整余额</div>
+        <div class="dialog-body">
+            <input type="hidden" id="balanceId" value="0">
+            <div class="form-group">
+                <label>当前可用余额</label>
+                <div id="balanceNow" style="font-size:18px;font-weight:bold;color:#ff7a00;">¥0.00</div>
+            </div>
+            <div class="form-group">
+                <label>调整金额（正数增加，负数扣减）</label>
+                <input type="number" step="0.01" class="form-control" id="balanceAmount" placeholder="例如：100 或 -50">
+            </div>
+            <div class="form-group">
+                <label>备注</label>
+                <input type="text" class="form-control" id="balanceRemark" maxlength="50" placeholder="调整原因（可不填）">
+            </div>
+        </div>
+        <div class="dialog-footer">
+            <button class="btn" onclick="document.getElementById('balanceMask').classList.remove('show')">取消</button>
+            <button class="btn btn-primary" onclick="doAdjustBalance()">确定</button>
+        </div>
+    </div>
+</div>
+
 <!-- 编辑店铺资料弹层 -->
 <div class="mask" id="shopEditMask">
     <div class="dialog">
@@ -94,7 +120,7 @@
             <div class="form-group">
                 <label>初始余额（元）</label>
                 <input type="number" step="0.01" min="0" class="form-control" id="addBalance" placeholder="0" value="0">
-                <div class="tip" id="addTypeTip" style="display:none;">虚拟会员余额永存：出价、付款后自动回补到此金额，不支持充值 / 提现，不记流水，用于活跃竞拍氛围</div>
+                <div class="tip" id="addTypeTip" style="display:none;">虚拟会员由平台创建，用于配合手动出价活跃气氛；前台功能与普通会员完全一致，余额正常增减并记录流水</div>
             </div>
             <div class="form-group">
                 <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:normal;font-size:13px;">
@@ -167,6 +193,7 @@ function loadList(page){
                         + '<td>' + (u.reg_time ? fmtTime(u.reg_time) : '-') + '</td>'
                         + '<td>' + (u.last_login_time ? fmtTime(u.last_login_time) : '<span class="gray">未登录</span>') + '</td>'
                         + '<td style="white-space:nowrap;"><a class="btn btn-sm" href="/agent/member/detail?id=' + u.id + '">详情</a>'
+                        + ' <a class="btn btn-sm" href="javascript:;" onclick="openBalance(' + u.id + ')">余额</a>'
                         + ((u.is_seller == 1 && u.seller_check == 1) ? ' <a class="btn btn-sm btn-primary" href="javascript:;" onclick="openShopEdit(' + u.id + ')">编辑店铺</a>' : '')
                         + '</td>'
                         + '</tr>';
@@ -190,6 +217,27 @@ function renderPagination(total, page){
     html += '<a class="' + (page >= pages ? 'disabled' : '') + '" href="javascript:;" onclick="loadList(' + (page + 1) + ')">下一页</a>';
     html += '<a class="' + (page >= pages ? 'disabled' : '') + '" href="javascript:;" onclick="loadList(' + pages + ')">末页</a>';
     document.getElementById('pagination').innerHTML = html;
+}
+
+function openBalance(id){
+    var u = null; listData.forEach(function(x){ if(x.id == id) u = x; });
+    if(!u) return;
+    document.getElementById('balanceId').value = u.id;
+    document.getElementById('balanceTitle').textContent = '调整余额 - ' + (u.nickname || u.mobile);
+    document.getElementById('balanceNow').textContent = '¥' + (parseFloat(u.balance) || 0).toFixed(2);
+    document.getElementById('balanceAmount').value = '';
+    document.getElementById('balanceRemark').value = '';
+    document.getElementById('balanceMask').classList.add('show');
+    setTimeout(function(){ document.getElementById('balanceAmount').focus(); }, 50);
+}
+
+function doAdjustBalance(){
+    var amount = document.getElementById('balanceAmount').value;
+    if(!amount || parseFloat(amount) == 0){ alert('请输入调整金额'); return; }
+    ajaxPost('/agent/member/adjustBalance', {id: document.getElementById('balanceId').value, amount: amount, remark: document.getElementById('balanceRemark').value.trim()}, function(res){
+        alert(res.msg);
+        if(res.code == 1){ document.getElementById('balanceMask').classList.remove('show'); loadList(currentPage); }
+    });
 }
 
 function openShopEdit(id){

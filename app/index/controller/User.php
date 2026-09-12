@@ -345,9 +345,6 @@ class User extends Base
         // 后台配置的客服链接
         $serviceLink = (string)Db::name('setting')->where('name', 'service_link')->value('value');
 
-        // 虚拟会员标识（隐藏充值/提现记录入口）
-        $isVirtual = (int)Db::name('user')->where('id', $id)->value('is_virtual') === 1;
-
         View::assign([
             'data'         => $data,
             'logs'         => $logs,
@@ -355,7 +352,6 @@ class User extends Base
             'level'        => $level,
             'share_users'  => $shareUsers,
             'service_link' => $serviceLink,
-            'is_virtual'   => $isVirtual,
             'page_title'   => lang('个人中心'),
             'tab_active'   => 'mine',
             'hide_header'  => true,
@@ -459,7 +455,6 @@ class User extends Base
         $this->checkLogin();
         $id = $this->user['id'];
         $user = Db::name('user')->find($id);
-        $isVirtual = (int)$user['is_virtual'] === 1;
 
         // 资产总额 = 可用 + 冻结
         $totalAssets = round($user['balance'] + $user['freeze_balance'], 2);
@@ -468,9 +463,8 @@ class User extends Base
         $page  = max((int)$this->request->param('page', 1), 1);
         $limit = 10;
         $logQuery = Db::name('balance_log')->where('user_id', $id);
-        // 虚拟会员：余额永存（后台添加时设定），不展示流水（不审计）
-        $total = $isVirtual ? 0 : $logQuery->count();
-        $logs  = $isVirtual ? [] : $logQuery->order('id', 'desc')->page($page, $limit)->select()->toArray();
+        $total = $logQuery->count();
+        $logs  = $logQuery->order('id', 'desc')->page($page, $limit)->select()->toArray();
         $typeNames = [
             'recharge' => lang('充值'), 'deposit' => lang('保证金'), 'pay' => lang('支付'), 'income' => lang('收入'),
             'refund' => lang('退回'), 'withdraw' => lang('提现'), 'reward' => lang('奖励'), 'forfeit' => lang('没收'),
@@ -488,12 +482,11 @@ class User extends Base
         }
 
         // 总收入 / 总支出：按流水正负汇总
-        $income  = $isVirtual ? 0 : (float)Db::name('balance_log')->where('user_id', $id)->where('amount', '>', 0)->sum('amount');
-        $expense = $isVirtual ? 0 : abs((float)Db::name('balance_log')->where('user_id', $id)->where('amount', '<', 0)->sum('amount'));
+        $income  = (float)Db::name('balance_log')->where('user_id', $id)->where('amount', '>', 0)->sum('amount');
+        $expense = abs((float)Db::name('balance_log')->where('user_id', $id)->where('amount', '<', 0)->sum('amount'));
 
         View::assign([
             'user'         => $user,
-            'is_virtual'   => $isVirtual,
             'total_assets' => number_format($totalAssets, 2),
             'total_income' => number_format($income, 2),
             'total_expense'=> number_format($expense, 2),
@@ -605,13 +598,6 @@ class User extends Base
     public function recharge()
     {
         $this->checkLogin();
-        // 虚拟会员无出入款操作
-        if (Db::name('user')->where('id', $this->user['id'])->value('is_virtual')) {
-            if ($this->request->isPost()) {
-                return json(['code' => 0, 'msg' => lang('虚拟会员不支持充值')]);
-            }
-            return $this->error(lang('虚拟会员不支持充值操作'), '/user/wallet');
-        }
         if ($this->request->isPost()) {
             $amount = round((float)$this->request->post('amount', 0), 2);
             $payType = (int)$this->request->post('pay_type', 1);
@@ -803,10 +789,6 @@ class User extends Base
     public function payAccount()
     {
         $this->checkLogin();
-        // 虚拟会员无出入款操作，不允许绑定提现账户
-        if ($this->request->isPost() && Db::name('user')->where('id', $this->user['id'])->value('is_virtual')) {
-            return json(['code' => 0, 'msg' => lang('虚拟会员不支持绑定提现账户')]);
-        }
         if ($this->request->isPost()) {
             $type = (int)$this->request->post('type', 0);
             $realName = trim($this->request->post('real_name', ''));
@@ -885,13 +867,6 @@ class User extends Base
     public function withdraw()
     {
         $this->checkLogin();
-        // 虚拟会员无出入款操作
-        if (Db::name('user')->where('id', $this->user['id'])->value('is_virtual')) {
-            if ($this->request->isPost()) {
-                return json(['code' => 0, 'msg' => lang('虚拟会员不支持提现')]);
-            }
-            return $this->error(lang('虚拟会员不支持提现操作'), '/user/wallet');
-        }
         if ($this->request->isPost()) {
             $amount = round((float)$this->request->post('amount', 0), 2);
             $payType = trim($this->request->post('pay_type', ''));

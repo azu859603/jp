@@ -545,6 +545,11 @@ function doBid() {
             toast(res.msg, 2500);
             closeBid();
             setTimeout(function(){ location.href = res.url || '/user/recharge'; }, 1500);
+        } else if (res.code === -3) {
+            // 未实名：提示后跳转实名认证页
+            toast(res.msg, 2500);
+            closeBid();
+            setTimeout(function(){ location.href = res.url || '/user/auth'; }, 1500);
         } else {
             toast(res.msg);
         }

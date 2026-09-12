@@ -355,8 +355,8 @@ class Member extends Base
                 'create_time' => $now,
                 'update_time' => $now,
             ]);
-            // 普通会员初始余额写流水；虚拟会员不写流水
-            if (!$isVirtual && $balance > 0) {
+            // 初始余额写流水（虚拟会员与普通会员一致）
+            if ($balance > 0) {
                 Db::name('balance_log')->insert([
                     'user_id'     => $userId,
                     'type'        => 'recharge',
@@ -474,9 +474,6 @@ class Member extends Base
         if (!$user) {
             return json(['code' => 0, 'msg' => '会员不存在']);
         }
-        if ((int)$user['is_virtual'] === 1) {
-            return json(['code' => 0, 'msg' => '虚拟会员余额为系统永存金额，不可手动调整']);
-        }
         if ($amount < 0 && ($user['balance'] + $amount) < 0) {
             return json(['code' => 0, 'msg' => '扣减金额超过会员余额']);
         }
@@ -484,7 +481,7 @@ class Member extends Base
         $newBalance = round($user['balance'] + $amount, 2);
         Db::startTrans();
         try {
-            Db::name('user')->where('id', $id)->update(['balance' => $newBalance]);
+            Db::name('user')->where('id', $id)->update(['balance' => $newBalance, 'update_time' => time()]);
             Db::name('balance_log')->insert([
                 'user_id'     => $id,
                 'type'        => $amount > 0 ? 'recharge' : 'refund',

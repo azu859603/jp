@@ -7,7 +7,7 @@ use think\facade\View;
 /**
  * 代理后台 - 我的会员
  *
- * 可添加会员（新会员上级固定为当前代理）、编辑下级卖家的店铺资料；其余会员资料只读（改余额/改状态/重置密码/发私信均不开放，需要变更请走平台后台）；
+ * 可添加会员（新会员上级固定为当前代理）、编辑下级卖家的店铺资料、调整下级余额；其余会员资料只读（改状态/重置密码/发私信均不开放，需要变更请走平台后台）；
  * 开放两类审核动作：实名认证审核、卖家入驻审核，且仅限本团队会员。
  * 新增方法时务必保持数据范围经 memberQuery()/assertMyMember() 收口。
  */
@@ -349,8 +349,8 @@ class Member extends Base
                 'create_time'  => $now,
                 'update_time'  => $now,
             ]);
-            // 普通会员的初始余额写流水；虚拟会员不写
-            if (!$isVirtual && $balance > 0) {
+            // 初始余额写流水（虚拟会员与普通会员一致）
+            if ($balance > 0) {
                 Db::name('balance_log')->insert([
                     'user_id'     => $userId,
                     'type'        => 'recharge',
@@ -398,5 +398,43 @@ class Member extends Base
             'update_time'  => time(),
         ]);
         return json(['code' => 1, 'msg' => '已保存']);
+    }    /**
+     * 调整下级会员余额（正数增加，负数扣减），规则与主后台一致
+     * 写流水，备注前缀「代理调整」（虚拟会员与普通会员一致）
+     */
+    public function adjustBalance()
+    {
+        if (!$this->request->isPost()) {
+            return json(['code' => 0, 'msg' => '请求方式错误']);
+        }
+        $member = $this->assertMyMember($this->request->post('id', 0));
+        $amount = round((float)$this->request->post('amount', 0), 2);
+        $remark = trim($this->request->post('remark', ''));
+        if ($amount == 0) {
+            return json(['code' => 0, 'msg' => '调整金额不能为0']);
+        }
+        if ($amount < 0 && ($member['balance'] + $amount) < 0) {
+            return json(['code' => 0, 'msg' => '扣减金额超过会员余额']);
+        }
+        $remark = '代理调整' . ($remark !== '' ? '：' . mb_substr($remark, 0, 50) : '');
+
+        $newBalance = round($member['balance'] + $amount, 2);
+        Db::startTrans();
+        try {
+            Db::name('user')->where('id', $member['id'])->update(['balance' => $newBalance, 'update_time' => time()]);
+            Db::name('balance_log')->insert([
+                'user_id'     => $member['id'],
+                'type'        => $amount > 0 ? 'recharge' : 'refund',
+                'amount'      => $amount,
+                'balance'     => $newBalance,
+                'remark'      => $remark,
+                'create_time' => time(),
+            ]);
+            Db::commit();
+        } catch (\Throwable $e) {
+            Db::rollback();
+            return json(['code' => 0, 'msg' => '操作失败：' . $e->getMessage()]);
+        }
+        return json(['code' => 1, 'msg' => '余额已调整，当前 ¥' . number_format($newBalance, 2)]);
     }
 }
