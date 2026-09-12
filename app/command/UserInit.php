@@ -22,6 +22,7 @@ use think\facade\Db;
  *
  * 商品（goods）按需求保留：清空后把商品的中标人/订单/成交价重置，成交(2)/流拍(3)
  *       状态回到拍卖中(1)，使其恢复为可竞拍的干净状态，避免悬空引用已删除的会员。
+ *       商品 ID 大于 --goods-max（默认 3067）的全部删除（会员自己发布的测试商品），采集来的基础商品保留。
  *       平台数据（管理员、系统设置、分类、轮播、新闻、管理员日志）一律不动。
  */
 class UserInit extends Command
@@ -55,12 +56,15 @@ class UserInit extends Command
     {
         $this->setName('user:init')
             ->addOption('force', 'f', Option::VALUE_NONE, '确认执行清空（不加则只演练不动数据）')
+            ->addOption('goods-max', null, Option::VALUE_OPTIONAL, '保留的商品最大 ID，大于此 ID 的商品全部删除（默认 3067，传 0 表示不删商品）', 3067)
             ->setDescription('初始化前台用户数据：TRUNCATE 清空会员及其全部衍生数据（保留商品与平台配置）');
     }
 
     protected function execute(Input $input, Output $output)
     {
         $force = $input->hasOption('force') && $input->getOption('force');
+        $goodsMax = (int)$input->getOption('goods-max');
+        $goodsDel = $goodsMax > 0 ? Db::name('goods')->where('id', '>', $goodsMax)->count() : 0;
 
         // 演练：仅统计，不动数据
         $output->writeln('');
@@ -77,6 +81,9 @@ class UserInit extends Command
         $output->writeln('受保护、<info>不会清空</info> 的表：' . implode('、', $this->protectedTables));
         $goodsAffected = Db::name('goods')->whereIn('status', [2, 3])->count();
         $output->writeln("商品（goods）保留，其中 {$goodsAffected} 件已成交/流拍将被重置为「拍卖中」。");
+        if ($goodsMax > 0) {
+            $output->writeln("商品 ID 大于 <comment>{$goodsMax}</comment> 的 <comment>{$goodsDel}</comment> 件将被删除。");
+        }
         $output->writeln('');
 
         if (!$force) {
@@ -95,6 +102,13 @@ class UserInit extends Command
             foreach ($this->truncateTables as $t) {
                 Db::execute('TRUNCATE TABLE `' . $prefix . $t . '`');
                 $output->writeln('  已清空 ' . $prefix . $t);
+            }
+
+            // 删除 ID 大于阈值的商品（会员发布的测试商品），采集的基础商品保留
+            $deleted = 0;
+            if ($goodsMax > 0) {
+                $deleted = Db::name('goods')->where('id', '>', $goodsMax)->delete();
+                $output->writeln("  已删除商品 ID > {$goodsMax} 的 {$deleted} 件");
             }
 
             // 商品恢复为可竞拍的干净状态（保留商品本身，只解除对已删会员/订单的引用）
