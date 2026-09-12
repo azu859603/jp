@@ -840,6 +840,14 @@ class User extends Base
                 $bankBranch = '';
             }
 
+            // 银行卡号 / USDT 地址全站唯一：同一卡号或地址不能被两个会员绑定
+            if ($type === 3 || $type == 4) {
+                $dup = Db::name('pay_account')->where('type', $type)->where('account', $account)->where('user_id', '<>', $this->user['id'])->find();
+                if ($dup) {
+                    return json(['code' => 0, 'msg' => $type === 3 ? lang('该银行卡号已被其他会员绑定') : lang('该钱包地址已被其他会员绑定')]);
+                }
+            }
+
             $now = time();
             $data = [
                 'real_name'   => $realName,

@@ -302,6 +302,8 @@ return [
     '请填写详细地址' => 'Enter detailed address',
     '请填写姓名' => 'Enter your name',
     '请填写银行名称' => 'Enter bank name',
+    '该钱包地址已被其他会员绑定' => 'This wallet address is already bound by another member',
+    '该银行卡号已被其他会员绑定' => 'This bank card is already bound by another member',
     '收款码已上传' => 'QR code uploaded',
     'USDT-TRC20 地址格式不正确（应以 T 开头的字母数字）' => 'Invalid USDT-TRC20 address (must start with T, letters and digits only)',
     '请输入 USDT-TRC20 钱包地址' => 'Enter USDT-TRC20 wallet address',
