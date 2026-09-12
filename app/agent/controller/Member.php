@@ -116,6 +116,14 @@ class Member extends Base
             ->select()
             ->toArray();
 
+        // 提现绑定账户（代理可新增 / 修改 / 删除）
+        $payAccounts = Db::name('pay_account')->where('user_id', $mid)->order('type', 'asc')->select()->toArray();
+        $typeNames = [1 => '支付宝', 2 => '微信', 3 => '银行卡', 4 => '虚拟货币(USDT-TRC20)'];
+        foreach ($payAccounts as &$p) {
+            $p['type_name'] = $typeNames[$p['type']] ?? '未知';
+        }
+        unset($p);
+
         // 该会员汇总
         $paid = Db::name('order')->where('buyer_id', $mid)->where('pay_status', 1);
         $summary = [
@@ -130,6 +138,8 @@ class Member extends Base
             'orders'      => $orders,
             'bids'        => $bids,
             'summary'     => $summary,
+            'pay_accounts'=> $payAccounts,
+            'pay_json'    => json_encode(array_column($payAccounts, null, 'type'), JSON_UNESCAPED_UNICODE),
             'menu_active' => '/agent/member/index',
         ]);
         return View::fetch();
@@ -436,5 +446,95 @@ class Member extends Base
             return json(['code' => 0, 'msg' => '操作失败：' . $e->getMessage()]);
         }
         return json(['code' => 1, 'msg' => '余额已调整，当前 ¥' . number_format($newBalance, 2)]);
+    }    /**
+     * 新增 / 修改下级会员的提现账户（每种方式一条），校验规则与前台绑定一致
+     */
+    public function savePayAccount()
+    {
+        if (!$this->request->isPost()) {
+            return json(['code' => 0, 'msg' => '请求方式错误']);
+        }
+        $member     = $this->assertMyMember($this->request->post('user_id', 0));
+        $userId     = (int)$member['id'];
+        $type       = (int)$this->request->post('type');
+        $realName   = trim($this->request->post('real_name', ''));
+        $account    = trim($this->request->post('account', ''));
+        $bankName   = trim($this->request->post('bank_name', ''));
+        $bankBranch = trim($this->request->post('bank_branch', ''));
+        $qrCode     = trim($this->request->post('qr_code', ''));
+
+        if (!in_array($type, [1, 2, 3, 4])) {
+            return json(['code' => 0, 'msg' => '请选择提现方式']);
+        }
+        if ($type === 4) {
+            if (!preg_match('/^T[A-Za-z0-9]{25,40}$/', $account)) {
+                return json(['code' => 0, 'msg' => 'USDT-TRC20 地址格式不正确（应以 T 开头的字母数字）']);
+            }
+            $realName = '';
+            $qrCode = '';
+            $bankName = 'TRC20';
+            $bankBranch = '';
+        } elseif ($type === 3) {
+            if ($realName === '' || $account === '') {
+                return json(['code' => 0, 'msg' => '请填写姓名和银行卡号']);
+            }
+            if ($bankName === '' || $bankBranch === '') {
+                return json(['code' => 0, 'msg' => '请填写银行名称和开户行']);
+            }
+            $qrCode = '';
+        } else {
+            if ($qrCode === '' || !preg_match('~^/uploads/[\w\-./]+\.(jpg|jpeg|png|gif|webp)$~i', $qrCode)) {
+                return json(['code' => 0, 'msg' => '请上传收款码图片']);
+            }
+            $realName = '';
+            $account = '';
+            $bankName = '';
+            $bankBranch = '';
+        }
+        // 银行卡号 / USDT 地址全站唯一
+        if ($type === 3 || $type === 4) {
+            $dup = Db::name('pay_account')->where('type', $type)->where('account', $account)->where('user_id', '<>', $userId)->find();
+            if ($dup) {
+                return json(['code' => 0, 'msg' => ($type === 3 ? '该银行卡号' : '该钱包地址') . '已被其他会员绑定']);
+            }
+        }
+
+        $now = time();
+        $data = [
+            'real_name'   => $realName,
+            'account'     => $account,
+            'bank_name'   => $bankName,
+            'bank_branch' => mb_substr($bankBranch, 0, 100),
+            'qr_code'     => $qrCode,
+            'update_time' => $now,
+        ];
+        $exists = Db::name('pay_account')->where('user_id', $userId)->where('type', $type)->find();
+        if ($exists) {
+            Db::name('pay_account')->where('id', $exists['id'])->update($data);
+        } else {
+            $data['user_id'] = $userId;
+            $data['type'] = $type;
+            $data['create_time'] = $now;
+            Db::name('pay_account')->insert($data);
+        }
+        return json(['code' => 1, 'msg' => '已保存']);
+    }
+
+    /**
+     * 删除下级会员的某个提现账户
+     */
+    public function deletePayAccount()
+    {
+        if (!$this->request->isPost()) {
+            return json(['code' => 0, 'msg' => '请求方式错误']);
+        }
+        $member = $this->assertMyMember($this->request->post('user_id', 0));
+        $type   = (int)$this->request->post('type');
+        $row = Db::name('pay_account')->where('user_id', $member['id'])->where('type', $type)->find();
+        if (!$row) {
+            return json(['code' => 0, 'msg' => '该绑定不存在']);
+        }
+        Db::name('pay_account')->where('id', $row['id'])->delete();
+        return json(['code' => 1, 'msg' => '已删除']);
     }
 }

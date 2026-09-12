@@ -6,7 +6,7 @@
 {block name="content"}
 <div class="readonly-tip">
     <span>👁</span>
-    <span><b>只读详情</b>：仅展示该会员的公开经营数据，实名信息、资金余额与联系方式不对代理开放。</span>
+    <span><b>会员详情</b>：可查看经营数据、维护提现账户；店铺资料在会员列表中编辑，身份证信息不对代理开放。</span>
 </div>
 
 <!-- 基本信息 -->
@@ -60,6 +60,124 @@
         </table>
     </div>
 </div>
+
+<!-- 提现账户 -->
+<div class="card">
+    <div class="card-head"><b>提现账户绑定</b><span class="spacer"></span><button class="btn btn-sm btn-primary" onclick="openPayEdit(0)">+ 新增绑定</button></div>
+    <div class="table-wrap">
+        <table class="table">
+            <thead><tr><th>提现方式</th><th>姓名</th><th>账号</th><th>银行 / 网络</th><th>开户行</th><th>收款码</th><th>绑定时间</th><th>操作</th></tr></thead>
+            <tbody>
+            {empty name="pay_accounts"}
+            <tr><td colspan="8" class="empty">未绑定提现账户</td></tr>
+            {else /}
+            {volist name="pay_accounts" id="p"}
+            <tr>
+                <td><span class="tag tag-blue">{$p.type_name}</span></td>
+                <td>{$p.real_name ?: '-'}</td>
+                <td>{$p.account ?: '-'}</td>
+                <td>{$p.bank_name ?: '-'}</td>
+                <td>{$p.bank_branch ?: '-'}</td>
+                <td>{if $p.qr_code}<img src="{$p.qr_code}" style="height:36px;border-radius:4px;cursor:pointer;" onclick="window.open('{$p.qr_code}')" title="点击查看大图">{else /}-{/if}</td>
+                <td>{$p.create_time|date='Y-m-d H:i:s'}</td>
+                <td style="white-space:nowrap;"><a class="btn btn-sm" href="javascript:;" onclick="openPayEdit({$p.type})">编辑</a> <a class="btn btn-sm btn-danger" href="javascript:;" onclick="delPay({$p.type})">删除</a></td>
+            </tr>
+            {/volist}
+            {/empty}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- 提现账户编辑弹窗 -->
+<div class="mask" id="payEditMask">
+    <div class="dialog">
+        <div class="dialog-title" id="payEditTitle">绑定提现账户</div>
+        <div class="dialog-body">
+            <div class="form-group">
+                <label>提现方式</label>
+                <select class="form-control" id="pe_type" onchange="onPayType()">
+                    <option value="1">支付宝</option>
+                    <option value="2">微信</option>
+                    <option value="3">银行卡</option>
+                    <option value="4">虚拟货币（USDT-TRC20）</option>
+                </select>
+            </div>
+            <div class="form-group" id="pe_row_name"><label>姓名</label><input class="form-control" type="text" id="pe_real_name" placeholder="持卡人姓名"></div>
+            <div class="form-group" id="pe_row_account"><label id="pe_lbl_account">银行卡号</label><input class="form-control" type="text" id="pe_account" placeholder="银行卡号"></div>
+            <div class="form-group" id="pe_row_bank"><label>银行名称</label><input class="form-control" type="text" id="pe_bank_name" placeholder="如 中国工商银行"></div>
+            <div class="form-group" id="pe_row_branch"><label>开户行</label><input class="form-control" type="text" id="pe_bank_branch" placeholder="如 北京朝阳支行"></div>
+            <div class="form-group" id="pe_row_network"><label>网络（链）</label><div style="font-size:13px;color:#7c3aed;font-weight:600;padding:6px 0;">USDT-TRC20（固定）</div></div>
+            <div class="form-group" id="pe_row_qr">
+                <label>收款码</label>
+                <div class="upload-box">
+                    <div class="up-item" id="peQrBox" style="display:none;" onclick="uploadPayQr()"></div>
+                    <div class="up-item add" id="peQrAdd" onclick="uploadPayQr()">+</div>
+                </div>
+                <input type="hidden" id="pe_qr_code" value="">
+                <div class="tip">支付宝、微信各自上传对应的收款码图片</div>
+            </div>
+        </div>
+        <div class="dialog-footer">
+            <button class="btn" onclick="document.getElementById('payEditMask').classList.remove('show')">取消</button>
+            <button class="btn btn-primary" onclick="savePay()">保存</button>
+        </div>
+    </div>
+</div>
+
+<script>
+var payData = {$pay_json|raw};
+var payNames = {1:'支付宝', 2:'微信', 3:'银行卡', 4:'虚拟货币（USDT-TRC20）'};
+function openPayEdit(type){
+    var sel = document.getElementById('pe_type');
+    if(type > 0){ sel.value = type; sel.disabled = true; } else { sel.value = 1; sel.disabled = false; }
+    document.getElementById('payEditTitle').textContent = type > 0 ? '编辑 ' + payNames[type] : '新增提现账户';
+    onPayType();
+    document.getElementById('payEditMask').classList.add('show');
+}
+function onPayType(){
+    var t = parseInt(document.getElementById('pe_type').value, 10);
+    var a = payData[t] || {};
+    var show = function(id, on){ document.getElementById(id).style.display = on ? '' : 'none'; };
+    show('pe_row_name', t === 3); show('pe_row_account', t === 3 || t === 4); show('pe_row_bank', t === 3); show('pe_row_branch', t === 3); show('pe_row_network', t === 4); show('pe_row_qr', t === 1 || t === 2);
+    document.getElementById('pe_lbl_account').textContent = t === 4 ? '钱包地址' : '银行卡号';
+    document.getElementById('pe_account').placeholder = t === 4 ? '以 T 开头的 USDT-TRC20 地址' : '银行卡号';
+    document.getElementById('pe_real_name').value = a.real_name || '';
+    document.getElementById('pe_account').value = a.account || '';
+    document.getElementById('pe_bank_name').value = t === 3 ? (a.bank_name || '') : '';
+    document.getElementById('pe_bank_branch').value = a.bank_branch || '';
+    setPayQr(a.qr_code || '');
+}
+function setPayQr(url){
+    document.getElementById('pe_qr_code').value = url;
+    var box = document.getElementById('peQrBox'), add = document.getElementById('peQrAdd');
+    if(url){ box.innerHTML = '<img src="' + url + '"><span class="del" onclick="event.stopPropagation();setPayQr(\'\')">×</span>'; box.style.display = ''; add.style.display = 'none'; }
+    else { box.innerHTML = ''; box.style.display = 'none'; add.style.display = ''; }
+}
+function uploadPayQr(){
+    var input = document.createElement('input'); input.type = 'file'; input.accept = 'image/*';
+    input.onchange = function(e){ var file = e.target.files[0]; if(!file) return; var fd = new FormData(); fd.append('file', file);
+        fetch('/agent/upload/image', {method:'POST', headers:{'X-Requested-With':'XMLHttpRequest'}, body:fd})
+            .then(function(r){ return r.json(); }).then(function(res){ if(res.code == 1) setPayQr(res.url); else alert(res.msg || '上传失败'); })
+            .catch(function(){ alert('网络错误，请重试'); }); };
+    input.click();
+}
+function savePay(){
+    ajaxPost('/agent/member/savePayAccount', {
+        user_id: {$member.id}, type: document.getElementById('pe_type').value,
+        real_name: document.getElementById('pe_real_name').value.trim(),
+        account: document.getElementById('pe_account').value.trim(),
+        bank_name: document.getElementById('pe_bank_name').value.trim(),
+        bank_branch: document.getElementById('pe_bank_branch').value.trim(),
+        qr_code: document.getElementById('pe_qr_code').value
+    }, function(res){ alert(res.msg); if(res.code == 1) location.reload(); });
+}
+function delPay(type){
+    confirmDialog('确定删除该会员的' + payNames[type] + '绑定？删除后会员需重新绑定才能用该方式提现。', function(){
+        ajaxPost('/agent/member/deletePayAccount', {user_id: {$member.id}, type: type}, function(res){ alert(res.msg); if(res.code == 1) location.reload(); });
+    });
+}
+</script>
 
 <!-- 经营数据 -->
 <div class="stat-grid">
