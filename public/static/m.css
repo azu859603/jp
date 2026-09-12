@@ -1400,3 +1400,10 @@ b,strong,.num,.price,.wl-total,.g-price{font-variant-numeric:tabular-nums;}
 .rc-svc:active{opacity:.7;}
 /* 业务部门：姓名之间拉开间距 */
 .about-page .apd-names{word-spacing:.6em;}
+
+/* 页面左侧边缘阴影带：由深到浅，覆盖整个高度，营造纸面浮起的层次感 */
+.app::before{content:'';position:fixed;left:0;top:0;bottom:0;width:56px;pointer-events:none;z-index:150;background:linear-gradient(to right,rgba(0,0,0,.10),rgba(0,0,0,.04) 40%,rgba(0,0,0,0));}
+@media (min-width: 600px){
+  /* PC 居中列：阴影带贴在列的左边缘 */
+  .app::before{left:50%;margin-left:calc(var(--col) / -2);}
+}
