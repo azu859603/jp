@@ -59,6 +59,15 @@ class Base extends BaseController
                 ['title' => '出价记录', 'url' => '/agent/bid/index'],
             ],
         ],
+        'finance' => [
+            'title' => '财务管理',
+            'icon'  => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="3"/><path d="M6 12h.01M18 12h.01"/></svg>',
+            'items' => [
+                ['title' => '充值审核', 'url' => '/agent/recharge/index'],
+                ['title' => '提现审核', 'url' => '/agent/withdraw/index'],
+                ['title' => '余额流水', 'url' => '/agent/balance/index'],
+            ],
+        ],
         'report' => [
             'title' => '数据报表',
             'icon'  => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="4" y1="20" x2="20" y2="20"/><rect x="6" y="11" width="3" height="7" rx="1"/><rect x="11" y="6" width="3" height="12" rx="1"/><rect x="16" y="14" width="3" height="4" rx="1"/></svg>',

@@ -118,9 +118,9 @@ function selectPay(p) {
         var colon = getLang() === 'en-us' ? ': ' : '：';
         var lb = getLang() === 'en-us' ? ' (' : '（';
         var rb = getLang() === 'en-us' ? ')' : '）';
-        var txt = t('已绑定') + typeName[p] + colon + (a.real_name ? a.real_name + lb + maskAccount(p, a) + rb : maskAccount(p, a));
-        if (p === 'bank') { txt += '<br>' + t('银行：') + a.bank_name; }
-        if (p === 'usdt' && a.bank_name) { txt += '<br>' + t('网络：') + a.bank_name; }
+        var txt = t('已绑定') + typeName[p] + colon + ((p === 'alipay' || p === 'wechat') ? t('收款码已上传') : (a.real_name ? a.real_name + lb + maskAccount(p, a) + rb : maskAccount(p, a)));
+        if (p === 'bank') { txt += '<br>' + t('银行：') + a.bank_name + (a.bank_branch ? ' · ' + t('开户行：') + a.bank_branch : ''); }
+        if (p === 'usdt') { txt += '<br>' + t('网络：') + 'USDT-TRC20'; }
         bindInfo.innerHTML = txt;
         bindInfo.style.display = '';
         unbindBox.style.display = 'none';

@@ -794,19 +794,26 @@ class User extends Base
             $realName = trim($this->request->post('real_name', ''));
             $account = trim($this->request->post('account', ''));
             $bankName = trim($this->request->post('bank_name', ''));
+            $bankBranch = trim($this->request->post('bank_branch', ''));
             $qrCode = trim($this->request->post('qr_code', ''));
 
             if (!in_array($type, [1, 2, 3, 4])) {
                 return json(['code' => 0, 'msg' => lang('请选择提现方式')]);
             }
             if ($type == 4) {
-                // 虚拟货币：钱包地址必填，网络（链）选填，无需姓名和收款码
+                // 虚拟货币：固定为 USDT-TRC20，只需钱包地址，无需姓名和收款码
                 if ($account === '') {
                     return json(['code' => 0, 'msg' => lang('请填写钱包地址')]);
                 }
+                // 宽松校验：以 T 开头的字母数字串（标准 TRON 地址为 34 位，这里只拦明显错误的输入）
+                if (!preg_match('/^T[A-Za-z0-9]{25,40}$/', $account)) {
+                    return json(['code' => 0, 'msg' => lang('USDT-TRC20 地址格式不正确（应以 T 开头的字母数字）')]);
+                }
                 $realName = '';
                 $qrCode = '';
-            } else {
+                $bankName = 'TRC20';
+                $bankBranch = '';
+            } elseif ($type === 3) {
                 if ($realName === '') {
                     return json(['code' => 0, 'msg' => lang('请填写姓名')]);
                 }
@@ -817,13 +824,20 @@ class User extends Base
                     if ($bankName === '') {
                         return json(['code' => 0, 'msg' => lang('请填写银行名称')]);
                     }
-                    $qrCode = '';
-                } else {
-                    if ($qrCode === '' || !preg_match('~^/uploads/[\w\-./]+\.(jpg|jpeg|png|gif|webp)$~i', $qrCode)) {
-                        return json(['code' => 0, 'msg' => lang('请上传收款码图片')]);
+                    if ($bankBranch === '') {
+                        return json(['code' => 0, 'msg' => lang('请填写开户行')]);
                     }
-                    $bankName = '';
+                    $qrCode = '';
                 }
+            } else {
+                // 支付宝 / 微信：只需各自的收款码，姓名与账号不再填写
+                if ($qrCode === '' || !preg_match('~^/uploads/[\w\-./]+\.(jpg|jpeg|png|gif|webp)$~i', $qrCode)) {
+                    return json(['code' => 0, 'msg' => lang('请上传收款码图片')]);
+                }
+                $realName = '';
+                $account = '';
+                $bankName = '';
+                $bankBranch = '';
             }
 
             $now = time();
@@ -831,6 +845,7 @@ class User extends Base
                 'real_name'   => $realName,
                 'account'     => $account,
                 'bank_name'   => $bankName,
+                'bank_branch' => mb_substr($bankBranch, 0, 100),
                 'qr_code'     => $qrCode,
                 'update_time' => $now,
             ];
@@ -927,6 +942,7 @@ class User extends Base
                     'account'      => $pa['account'],
                     'account_name' => $pa['real_name'],
                     'bank_name'    => $pa['bank_name'],
+                    'bank_branch'  => $pa['bank_branch'] ?? '',
                     'qr_code'      => $pa['qr_code'],
                     'status'       => 0,
                     'create_time'  => $now,
