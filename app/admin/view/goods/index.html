@@ -33,7 +33,14 @@
     <input type="date" class="form-control" id="create_end" title="发布时间结束">
     <button class="btn btn-primary" onclick="loadList(1)">查询</button>
     <button class="btn" onclick="resetSearch()">重置</button>
+    <select class="form-control" id="page_size" onchange="changePageSize()" title="每页数量">
+        <option value="15">15 条/页</option>
+        <option value="30">30 条/页</option>
+        <option value="50">50 条/页</option>
+        <option value="100">100 条/页</option>
+    </select>
     <span class="spacer"></span>
+    <button class="btn" onclick="openRelistFailed()">批量上架流拍</button>
     <button class="btn btn-green" onclick="openAddGoods()">＋ 发布商品</button>
 </div>
 
@@ -59,6 +66,38 @@
         </table>
     </div>
     <div class="pagination" id="pagination"></div>
+</div>
+
+<!-- 批量上架流拍弹层 -->
+<div class="mask" id="relistMask">
+    <div class="dialog" style="width:520px;">
+        <div class="dialog-title">批量上架流拍商品</div>
+        <div class="dialog-body">
+            <div class="form-group">
+                <label>选择卖家 <span class="tip" style="display:inline">（输入店铺名 / 昵称 / 手机号 / 会员 ID 搜索）</span></label>
+                <div style="position:relative">
+                    <input type="text" class="form-control" id="rlSellerKw" placeholder="店铺名 / 昵称 / 手机号 / 会员 ID" autocomplete="off">
+                    <input type="hidden" id="rlSellerId" value="">
+                </div>
+                <div id="rlSellerList" style="display:none;background:#fff;border:1px solid #e2e8f0;border-radius:8px;box-shadow:0 4px 14px rgba(0,0,0,.08);max-height:220px;overflow-y:auto;margin-top:4px;"></div>
+                <div id="rlSellerSel" class="tip" style="min-height:16px;color:#16a34a;"></div>
+            </div>
+            <div class="form-group">
+                <label>统一结束时间</label>
+                <input type="datetime-local" class="form-control" id="rlEnd">
+            </div>
+            <div class="form-group">
+                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:normal;font-size:13px;">
+                    <input type="checkbox" id="rlStagger" checked style="width:16px;height:16px;"> 错开截拍时间（每件在所选时间后随机延后 0～6 小时）
+                </label>
+                <div class="tip">确认后该卖家所有流拍商品立即重新开拍，旧出价记录清空、出价次数归零</div>
+            </div>
+        </div>
+        <div class="dialog-footer">
+            <button class="btn" onclick="document.getElementById('relistMask').classList.remove('show')">取消</button>
+            <button class="btn btn-primary" id="rlBtn" onclick="doRelistFailed()">确认上架</button>
+        </div>
+    </div>
 </div>
 
 <!-- 发布商品弹层 -->
@@ -195,9 +234,17 @@ var statusMap = {
     3: ['流拍','tag-gray'], 4: ['已下架','tag-purple'], 5: ['审核拒绝','tag-red']
 };
 
+var PAGE_SIZE = (function(){ try { var v = parseInt(localStorage.getItem('goods_page_size') || '15', 10); return [15,30,50,100].indexOf(v) >= 0 ? v : 15; } catch(e){ return 15; } })();
+document.getElementById('page_size').value = PAGE_SIZE;
+function changePageSize(){
+    PAGE_SIZE = parseInt(document.getElementById('page_size').value, 10) || 15;
+    try { localStorage.setItem('goods_page_size', PAGE_SIZE); } catch(e){}
+    loadList(1);
+}
+
 function loadList(page){
     currentPage = page;
-    fetch('/admin1314/goods/index?page=' + page + '&limit=15'
+    fetch('/admin1314/goods/index?page=' + page + '&limit=' + PAGE_SIZE
         + '&keyword=' + encodeURIComponent(document.getElementById('keyword').value)
         + '&seller_kw=' + encodeURIComponent(document.getElementById('seller_kw').value)
         + '&category_id=' + document.getElementById('category_id').value
@@ -254,7 +301,7 @@ function loadList(page){
 }
 
 function renderPagination(total, page){
-    var pages = Math.ceil(total / 15) || 1;
+    var pages = Math.ceil(total / PAGE_SIZE) || 1;
     var html = '<span class="info">共 ' + total + ' 条，第 ' + page + '/' + pages + ' 页</span> ';
     html += '<a class="' + (page <= 1 ? 'disabled' : '') + '" href="javascript:;" onclick="loadList(1)">首页</a>';
     html += '<a class="' + (page <= 1 ? 'disabled' : '') + '" href="javascript:;" onclick="loadList(' + (page - 1) + ')">上一页</a>';
@@ -275,6 +322,58 @@ function resetSearch(){
     document.getElementById('create_start').value = '';
     document.getElementById('create_end').value = '';
     loadList(1);
+}
+
+/* ===== 批量上架流拍 ===== */
+var rlItems = [], rlTimer = null, rlPicked = null;
+function escRl(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+function openRelistFailed(){
+    rlPicked = null; rlItems = [];
+    document.getElementById('rlSellerKw').value = ''; document.getElementById('rlSellerId').value = ''; document.getElementById('rlSellerSel').innerHTML = '';
+    document.getElementById('rlSellerList').style.display = 'none';
+    var d = new Date(Date.now() + 86400000), p = function(n){ return n < 10 ? '0' + n : n; };
+    document.getElementById('rlEnd').value = d.getFullYear() + '-' + p(d.getMonth()+1) + '-' + p(d.getDate()) + 'T' + p(d.getHours()) + ':' + p(d.getMinutes());
+    document.getElementById('rlStagger').checked = true;
+    document.getElementById('relistMask').classList.add('show');
+    setTimeout(function(){ document.getElementById('rlSellerKw').focus(); }, 50);
+}
+function rlSearch(){
+    var q = document.getElementById('rlSellerKw').value.trim();
+    fetch('/admin1314/goods/searchSeller?kw=' + encodeURIComponent(q), {headers:{'X-Requested-With':'XMLHttpRequest'}})
+        .then(function(r){ return r.json(); })
+        .then(function(res){
+            if (document.getElementById('rlSellerKw').value.trim() !== q) return;
+            rlItems = res.data || [];
+            var box = document.getElementById('rlSellerList');
+            if (!rlItems.length) { box.innerHTML = '<div class="tip" style="padding:12px;text-align:center;">' + (q ? '没有匹配的卖家' : '输入关键词搜索卖家') + '</div>'; box.style.display = ''; return; }
+            box.innerHTML = rlItems.map(function(u, i){ return '<div class="rl-item" data-i="' + i + '" style="padding:8px 12px;cursor:pointer;border-bottom:1px solid #f1f5f9;display:flex;justify-content:space-between;align-items:center;font-size:13px;"><span>' + escRl(u.shop_name || u.nickname || '-') + ' <span class="tip" style="display:inline">' + escRl(u.mobile) + ' · ID ' + u.id + '</span></span>' + (u.fail_count > 0 ? '<span class="tag tag-orange">流拍 ' + u.fail_count + ' 件</span>' : '<span class="tag tag-gray">无流拍</span>') + '</div>'; }).join('');
+            box.style.display = '';
+        });
+}
+document.getElementById('rlSellerKw').addEventListener('input', function(){ rlPicked = null; document.getElementById('rlSellerId').value = ''; document.getElementById('rlSellerSel').innerHTML = ''; clearTimeout(rlTimer); rlTimer = setTimeout(rlSearch, 250); });
+document.getElementById('rlSellerKw').addEventListener('focus', function(){ if (!rlPicked) { clearTimeout(rlTimer); rlTimer = setTimeout(rlSearch, 100); } });
+document.getElementById('rlSellerList').addEventListener('mousedown', function(e){
+    var it = e.target.closest('.rl-item'); if (!it) return; e.preventDefault();
+    var u = rlItems[parseInt(it.getAttribute('data-i'), 10)]; if (!u) return;
+    rlPicked = u; document.getElementById('rlSellerId').value = u.id;
+    document.getElementById('rlSellerKw').value = (u.shop_name || u.nickname || '') + '（' + u.mobile + '）';
+    document.getElementById('rlSellerSel').innerHTML = u.fail_count > 0 ? '已选卖家 ID ' + u.id + '，共 <b>' + u.fail_count + '</b> 件流拍商品待上架' : '<span style="color:#dc2626">该卖家当前没有流拍商品</span>';
+    document.getElementById('rlSellerList').style.display = 'none';
+});
+document.addEventListener('click', function(e){ if (!e.target.closest('#rlSellerKw') && !e.target.closest('#rlSellerList')) document.getElementById('rlSellerList').style.display = 'none'; });
+function doRelistFailed(){
+    var sid = document.getElementById('rlSellerId').value, et = document.getElementById('rlEnd').value;
+    if (!sid) { alert('请先搜索并选择卖家'); return; }
+    if (!rlPicked || rlPicked.fail_count <= 0) { alert('该卖家没有流拍商品'); return; }
+    if (!et) { alert('请选择结束时间'); return; }
+    if (new Date(et).getTime() <= Date.now() + 60000) { alert('结束时间需晚于当前时间'); return; }
+    confirmDialog('确定把该卖家的 ' + rlPicked.fail_count + ' 件流拍商品全部重新上架？', function(){
+        var btn = document.getElementById('rlBtn'); btn.disabled = true;
+        ajaxPost('/admin1314/goods/relistFailed', {seller_id: sid, end_time: et, stagger: document.getElementById('rlStagger').checked ? 1 : 0}, function(res){
+            btn.disabled = false; alert(res.msg);
+            if (res.code == 1) { document.getElementById('relistMask').classList.remove('show'); loadList(1); }
+        });
+    });
 }
 
 /* ===== 发布商品 ===== */

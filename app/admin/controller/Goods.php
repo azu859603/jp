@@ -13,7 +13,7 @@ class Goods extends Base
     {
         if ($this->request->isAjax()) {
             $page  = (int)$this->request->param('page', 1);
-            $limit = (int)$this->request->param('limit', 15);
+            $limit = max(1, min(100, (int)$this->request->param('limit', 15)));
             $keyword = trim($this->request->param('keyword', ''));
             $sellerKw = trim($this->request->param('seller_kw', ''));
             $status = $this->request->param('status', '');
@@ -162,7 +162,7 @@ class Goods extends Base
     {
         if ($this->request->isAjax()) {
             $page  = (int)$this->request->param('page', 1);
-            $limit = (int)$this->request->param('limit', 15);
+            $limit = max(1, min(100, (int)$this->request->param('limit', 15)));
             $status = $this->request->param('status', 0);
 
             $query = Db::name('goods')->alias('g')
@@ -419,5 +419,85 @@ class Goods extends Base
             5 => ['审核拒绝', 'tag-red'],
         ];
         return $map[$status] ?? ['未知', 'tag-gray'];
+    }    /**
+     * 批量上架流拍：搜索卖家（店铺名 / 昵称 / 手机号 / 会员 ID），并返回各自的流拍数量
+     */
+    public function searchSeller()
+    {
+        $kw = trim((string)$this->request->param('kw', ''));
+        $query = Db::name('user')->where('is_seller', 1)->where('seller_check', 1);
+        if ($kw !== '') {
+            $query->where(function ($q) use ($kw) {
+                $q->where('shop_name', 'like', "%{$kw}%")->whereOr('nickname', 'like', "%{$kw}%")->whereOr('mobile', 'like', "%{$kw}%");
+                if (ctype_digit($kw)) {
+                    $q->whereOr('id', (int)$kw);
+                }
+            });
+        }
+        $list = $query->field('id,mobile,nickname,shop_name')->order('id', 'desc')->limit(20)->select()->toArray();
+        $ids = array_column($list, 'id');
+        $fails = [];
+        if ($ids) {
+            $rows = Db::name('goods')->whereIn('seller_id', $ids)->where('status', 3)->field('seller_id, COUNT(*) AS c')->group('seller_id')->select()->toArray();
+            foreach ($rows as $row) {
+                $fails[(int)$row['seller_id']] = (int)$row['c'];
+            }
+        }
+        foreach ($list as &$u) {
+            $u['fail_count'] = $fails[(int)$u['id']] ?? 0;
+        }
+        unset($u);
+        return json(['code' => 1, 'data' => $list]);
+    }
+
+    /**
+     * 批量上架：把某个卖家全部流拍(3)商品重新开拍
+     * end_time 为统一结束时间；stagger=1 时每件随机延后 0～6 小时
+     */
+    public function relistFailed()
+    {
+        if (!$this->request->isPost()) {
+            return json(['code' => 0, 'msg' => '请求方式错误']);
+        }
+        $sellerId = (int)$this->request->post('seller_id', 0);
+        $endTime  = trim((string)$this->request->post('end_time', ''));
+        $stagger  = (int)$this->request->post('stagger', 1) === 1;
+        $seller = Db::name('user')->where('id', $sellerId)->find();
+        if (!$seller || (int)$seller['is_seller'] !== 1 || (int)$seller['seller_check'] !== 1) {
+            return json(['code' => 0, 'msg' => '该会员不是已审核的卖家']);
+        }
+        if ($endTime === '') {
+            return json(['code' => 0, 'msg' => '请选择结束时间']);
+        }
+        $et = strtotime(str_replace('T', ' ', $endTime));
+        if (!$et || $et <= time() + 60) {
+            return json(['code' => 0, 'msg' => '结束时间需晚于当前时间']);
+        }
+        $ids = Db::name('goods')->where('seller_id', $sellerId)->where('status', 3)->column('id');
+        if (empty($ids)) {
+            return json(['code' => 0, 'msg' => '该卖家没有流拍的商品']);
+        }
+        $now = time();
+        Db::startTrans();
+        try {
+            Db::name('bid_record')->whereIn('goods_id', $ids)->delete();
+            foreach ($ids as $gid) {
+                Db::name('goods')->where('id', $gid)->update([
+                    'status'      => 1,
+                    'start_time'  => $now,
+                    'end_time'    => $stagger ? $et + mt_rand(0, 6 * 3600) : $et,
+                    'bid_count'   => 0,
+                    'winner_id'   => 0,
+                    'final_price' => 0,
+                    'update_time' => $now,
+                ]);
+            }
+            Db::commit();
+        } catch (\Throwable $e) {
+            Db::rollback();
+            return json(['code' => 0, 'msg' => '操作失败：' . $e->getMessage()]);
+        }
+        admin_log('批量重新上架流拍商品：卖家 ' . ($seller['mobile'] ?: $sellerId) . '，' . count($ids) . ' 件');
+        return json(['code' => 1, 'msg' => '已重新上架 ' . count($ids) . ' 件商品', 'count' => count($ids)]);
     }
 }
