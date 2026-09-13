@@ -59,7 +59,7 @@
             <tr>
                 <th style="width:36px;"></th>
                 <th>ID</th><th>封面</th><th>商品标题</th><th>分类</th><th>卖家</th>
-                <th>起拍价</th><th>当前/成交价</th><th>保证金</th><th>状态</th><th>出价次数</th><th>结束时间</th><th>操作</th>
+                <th>起拍价</th><th>当前/成交价</th><th>保证金</th><th>状态</th><th>出价次数</th><th>浏览量</th><th>结束时间</th><th>操作</th>
             </tr>
             </thead>
             <tbody id="tbody"></tbody>
@@ -188,6 +188,25 @@
 </style>
 
 <!-- 修改拍卖时间弹层 -->
+<!-- 修改浏览量弹层 -->
+<div class="mask" id="viewsMask">
+    <div class="dialog" style="width:360px;">
+        <div class="dialog-title">修改浏览量</div>
+        <div class="dialog-body">
+            <input type="hidden" id="viewsId" value="0">
+            <div class="form-group">
+                <label>浏览量</label>
+                <input type="number" class="form-control" id="viewsInput" min="0" max="99999999" step="1">
+                <div class="tip">前台商品详情页显示的浏览次数，会员浏览时仍会在此基础上累加</div>
+            </div>
+        </div>
+        <div class="dialog-footer">
+            <button class="btn" onclick="document.getElementById('viewsMask').classList.remove('show')">取消</button>
+            <button class="btn btn-primary" onclick="doSetViews()">保存</button>
+        </div>
+    </div>
+</div>
+
 <div class="mask" id="timeMask">
     <div class="dialog">
         <div class="dialog-title">修改拍卖时间</div>
@@ -255,7 +274,7 @@ function loadList(page){
         .then(function(res){
             var html = '';
             if(!res.data || !res.data.length){
-                html = '<tr><td colspan="13" class="empty">暂无数据</td></tr>';
+                html = '<tr><td colspan="14" class="empty">暂无数据</td></tr>';
             } else {
                 res.data.forEach(function(g){
                     var st = statusMap[g.status] || ['未知','tag-gray'];
@@ -272,6 +291,7 @@ function loadList(page){
                         + '<td>￥' + g.deposit + '</td>'
                         + '<td><span class="tag ' + st[1] + '">' + st[0] + '</span></td>'
                         + '<td>' + g.bid_count + '</td>'
+                        + '<td style="white-space:nowrap;"><span id="vc_' + g.id + '">' + (g.view_count || 0) + '</span> <a href="javascript:;" onclick="openViews(' + g.id + ',' + (g.view_count || 0) + ')" title="修改浏览量" style="color:#2563eb;font-size:12px;">改</a></td>'
                         + '<td>' + (g.end_time ? fmtTime(g.end_time) : '-') + '</td>'
                         + '<td style="white-space:nowrap;">'
                         + '<a class="btn btn-sm" href="/admin1314/goods/detail?id=' + g.id + '">详情</a> '
@@ -583,6 +603,21 @@ function openTime(id, startTs, endTs){
     document.getElementById('timeMask').classList.add('show');
 }
 
+function openViews(id, cur){
+    document.getElementById('viewsId').value = id;
+    document.getElementById('viewsInput').value = cur;
+    document.getElementById('viewsMask').classList.add('show');
+    setTimeout(function(){ var i = document.getElementById('viewsInput'); i.focus(); i.select(); }, 50);
+}
+function doSetViews(){
+    var id = document.getElementById('viewsId').value, v = document.getElementById('viewsInput').value.trim();
+    if(v === '' || !/^\d+$/.test(v)){ alert('请输入 0 以上的整数'); return; }
+    ajaxPost('/admin1314/goods/setViews', {id: id, view_count: v}, function(res){
+        alert(res.msg);
+        if(res.code == 1){ document.getElementById('viewsMask').classList.remove('show'); var el = document.getElementById('vc_' + id); if(el) el.textContent = v; }
+    });
+}
+document.getElementById('viewsInput').addEventListener('keydown', function(e){ if(e.key === 'Enter') doSetViews(); });
 function doSetTime(){
     var id = document.getElementById('tGoodsId').value;
     var st = document.getElementById('tStart').value;

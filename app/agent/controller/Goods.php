@@ -526,4 +526,22 @@ class Goods extends Base
         }
         return json(['code' => 1, 'msg' => '已重新上架 ' . count($ids) . ' 件商品', 'count' => count($ids)]);
     }
+    /**
+     * 修改商品浏览量（0 ~ 99999999）
+     */
+    public function setViews()
+    {
+        if (!$this->request->isPost()) {
+            return json(['code' => 0, 'msg' => '请求方式错误']);
+        }
+        $id    = (int)$this->request->post('id');
+        $raw   = trim((string)$this->request->post('view_count', ''));
+        $views = ctype_digit($raw) ? (int)$raw : -1;
+        if ($views < 0 || $views > 99999999) {
+            return json(['code' => 0, 'msg' => '浏览量需为 0 ~ 99999999 的整数']);
+        }
+        $goods = $this->assertMyGoods($id);
+        Db::name('goods')->where('id', $id)->update(['view_count' => $views, 'update_time' => time()]);
+        return json(['code' => 1, 'msg' => '浏览量已更新为 ' . $views]);
+    }
 }
