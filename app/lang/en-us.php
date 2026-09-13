@@ -402,7 +402,7 @@ return [
     '审核中' => 'Reviewing',
     '审核中，暂不可申请' => 'Reviewing, not submittable',
     '审核中，暂不可提交' => 'Reviewing, not submittable',
-    '审核中：资料已提交，请耐心等待审核（1-3 个工作日）' => 'Under review: submitted, please wait (1-3 working days)',
+    '审核中：资料已提交，请耐心等待审核（1-3 个工作日）' => 'Under review: submitted, approval within 24 hours',
     '时' => 'h',
     '实名认证' => 'Verification',
     '是' => 'Yes',
