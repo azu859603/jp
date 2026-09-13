@@ -189,6 +189,7 @@
 
 <!-- 修改拍卖时间弹层 -->
 <!-- 修改浏览量弹层 -->
+<style>.vc-edit{color:#2563eb;text-decoration:none;border-bottom:1px dashed #93c5fd;cursor:pointer;}.vc-edit:hover{color:#1d4ed8;border-bottom-color:#1d4ed8;}</style>
 <div class="mask" id="viewsMask">
     <div class="dialog" style="width:360px;">
         <div class="dialog-title">修改浏览量</div>
@@ -291,7 +292,7 @@ function loadList(page){
                         + '<td>￥' + g.deposit + '</td>'
                         + '<td><span class="tag ' + st[1] + '">' + st[0] + '</span></td>'
                         + '<td>' + g.bid_count + '</td>'
-                        + '<td style="white-space:nowrap;"><span id="vc_' + g.id + '">' + (g.view_count || 0) + '</span> <a href="javascript:;" onclick="openViews(' + g.id + ',' + (g.view_count || 0) + ')" title="修改浏览量" style="color:#2563eb;font-size:12px;">改</a></td>'
+                        + '<td><a href="javascript:;" class="vc-edit" id="vc_' + g.id + '" data-id="' + g.id + '" onclick="openViews(' + g.id + ', this.textContent)" title="点击修改浏览量">' + (g.view_count || 0) + '</a></td>'
                         + '<td>' + (g.end_time ? fmtTime(g.end_time) : '-') + '</td>'
                         + '<td style="white-space:nowrap;">'
                         + '<a class="btn btn-sm" href="/admin1314/goods/detail?id=' + g.id + '">详情</a> '
