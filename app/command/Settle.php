@@ -58,13 +58,27 @@ class Settle extends Command
 
         if ($total === 0) {
             $output->writeln('[' . date('Y-m-d H:i:s') . "] 无到期商品（{$cost}ms）");
-            return 0;
+        } else {
+            $line = '[' . date('Y-m-d H:i:s') . "] 结算 {$total} 件：成交 {$deal}，流拍 {$fail}"
+                  . ($err > 0 ? "，未处理 {$err}" : '') . "（{$cost}ms） ids=" . implode(',', array_keys($results));
+            $output->writeln($line);
+            @file_put_contents($logFile, $line . PHP_EOL, FILE_APPEND);
         }
 
-        $line = '[' . date('Y-m-d H:i:s') . "] 结算 {$total} 件：成交 {$deal}，流拍 {$fail}"
-              . ($err > 0 ? "，未处理 {$err}" : '') . "（{$cost}ms） ids=" . implode(',', array_keys($results));
-        $output->writeln($line);
-        @file_put_contents($logFile, $line . PHP_EOL, FILE_APPEND);
+        // 指定卖家的流拍商品自动重新上架（后台设置拍卖时长为 0 时不处理）
+        try {
+            $relist = auto_relist_failed_goods();
+            if (!empty($relist['ids'])) {
+                $rl = '[' . date('Y-m-d H:i:s') . "] 自动上架卖家 {$relist['seller_id']} 的流拍商品 " . count($relist['ids']) . " 件，截拍 " . date('Y-m-d H:i', $relist['end_time']) . ' ids=' . implode(',', $relist['ids']);
+                $output->writeln($rl);
+                @file_put_contents($logFile, $rl . PHP_EOL, FILE_APPEND);
+            }
+        } catch (\Throwable $e) {
+            $rl = '[' . date('Y-m-d H:i:s') . '] ERROR 自动上架 ' . $e->getMessage();
+            $output->writeln('<error>' . $rl . '</error>');
+            @file_put_contents($logFile, $rl . PHP_EOL, FILE_APPEND);
+        }
+
         return 0;
     }
 }

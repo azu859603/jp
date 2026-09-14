@@ -17,6 +17,8 @@ return [
         'user:init'     => \app\command\UserInit::class,
         // 采集远端商品并下载图片到本地（手动执行）：php think goods:collect [--start=11] [--end=N] [--limit=N] [--update]
         'goods:collect' => \app\command\GoodsCollect::class,
+        // 指定卖家流拍商品自动上架：php think goods:auto-relist（每分钟；settle 结算后也会自动调用）
+        'goods:auto-relist' => \app\command\GoodsAutoRelist::class,
         // 清理表结构缓存（数据库加字段后执行）
         'schema:clear'  => \app\command\SchemaClear::class,
     ],

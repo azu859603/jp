@@ -15,7 +15,7 @@ class Setting extends Base
             $fields = [
                 'site_name', 'site_logo', 'site_url', 'commission_rate', 'admin_google_auth',
                 'seller_check', 'goods_check', 'invite_required', 'withdraw_fee', 'service_phone',
-                'service_qq', 'service_link', 'auction_delay', 'user_protocol', 'privacy_policy', 'publish_protocol',
+                'service_qq', 'service_link', 'auction_delay', 'auto_relist_seller_id', 'auto_relist_hours', 'user_protocol', 'privacy_policy', 'publish_protocol',
                 'user_protocol_tw', 'user_protocol_en', 'privacy_policy_tw', 'privacy_policy_en', 'publish_protocol_tw', 'publish_protocol_en',
                 'withdraw_min', 'withdraw_max',
                 'order_pay_timeout_hours', 'order_timeout_deposit', 'order_auto_confirm_days', 'order_ship_remind_days',
@@ -29,8 +29,11 @@ class Setting extends Base
                     continue;
                 }
                 $value = trim($this->request->post($field, ''));
-                if (in_array($field, ['commission_rate', 'withdraw_fee', 'withdraw_min', 'withdraw_max'])) {
+                if (in_array($field, ['commission_rate', 'withdraw_fee', 'withdraw_min', 'withdraw_max', 'auto_relist_hours'])) {
                     $value = (string)max(0, (float)$value);
+                }
+                if ($field === 'auto_relist_seller_id') {
+                    $value = (string)max(0, (int)$value);
                 }
                 $data[$field] = $value;
             }
@@ -68,7 +71,7 @@ class Setting extends Base
             'site_name' => '', 'site_logo' => '', 'site_url' => '', 'admin_google_auth' => '0',
             'commission_rate' => '0', 'seller_check' => '1', 'goods_check' => '1', 'invite_required' => '1',
             'withdraw_fee' => '0', 'service_phone' => '',
-            'service_qq' => '', 'service_link' => '', 'auction_delay' => '0', 'user_protocol' => '', 'privacy_policy' => '', 'publish_protocol' => '',
+            'service_qq' => '', 'service_link' => '', 'auction_delay' => '0', 'auto_relist_seller_id' => '1', 'auto_relist_hours' => '0', 'user_protocol' => '', 'privacy_policy' => '', 'publish_protocol' => '',
             'user_protocol_tw' => '', 'user_protocol_en' => '', 'privacy_policy_tw' => '', 'privacy_policy_en' => '', 'publish_protocol_tw' => '', 'publish_protocol_en' => '',
             'withdraw_min' => '0', 'withdraw_max' => '0',
             'order_pay_timeout_hours' => '0', 'order_timeout_deposit' => 'forfeit_platform', 'order_auto_confirm_days' => '0', 'order_ship_remind_days' => '0',

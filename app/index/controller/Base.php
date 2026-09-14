@@ -24,6 +24,7 @@ class Base extends BaseController
             if (!Cache::has('settle_fallback_lock')) {
                 Cache::set('settle_fallback_lock', 1, 300);
                 settle_expired_goods();
+                auto_relist_failed_goods();
             }
         } catch (\Throwable $e) {
         }

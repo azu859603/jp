@@ -326,3 +326,58 @@ function release_goods_bids($goodsId, $reason = '商品下架')
     }
     return $refunded;
 }
+
+/* ==================== 指定卖家流拍商品自动上架 ==================== */
+
+/**
+ * 把指定卖家的流拍商品自动重新上架
+ *
+ * 后台设置 auto_relist_seller_id（卖家 ID，默认 1）、auto_relist_hours（重新上架后的拍卖时长，小时；0 为关闭）。
+ * 每件商品：清空旧出价记录、出价数 / 得标人 / 成交价归零，开拍时间为当前时间，截拍时间 = 当前时间 + 拍卖时长。
+ * 由 php think goods:auto-relist 与 php think settle 调用，单次最多处理 $limit 件，避免积压过多时单次执行过久。
+ *
+ * @return array ['enabled' => bool, 'seller_id' => int, 'hours' => float, 'end_time' => int, 'ids' => int[]]
+ */
+function auto_relist_failed_goods($limit = 500)
+{
+    $sellerId = (int)get_setting('auto_relist_seller_id', 1);
+    $hours    = round((float)get_setting('auto_relist_hours', 0), 2);
+    $now      = time();
+    $result   = ['enabled' => $hours > 0 && $sellerId > 0, 'seller_id' => $sellerId, 'hours' => $hours, 'end_time' => $now + (int)round($hours * 3600), 'ids' => []];
+    if (!$result['enabled']) {
+        return $result;
+    }
+    $ids = Db::name('goods')->where('seller_id', $sellerId)->where('status', 3)->order('end_time', 'asc')->limit((int)$limit)->column('id');
+    if (empty($ids)) {
+        return $result;
+    }
+    foreach ($ids as $gid) {
+        Db::startTrans();
+        try {
+            // 二次确认状态，避免与后台手动上架 / 删除并发
+            $goods = Db::name('goods')->where('id', $gid)->lock(true)->find();
+            if (!$goods || (int)$goods['status'] !== 3) {
+                Db::rollback();
+                continue;
+            }
+            Db::name('bid_record')->where('goods_id', $gid)->delete();
+            Db::name('goods')->where('id', $gid)->update([
+                'status'      => 1,
+                'start_time'  => $now,
+                'end_time'    => $result['end_time'],
+                'bid_count'   => 0,
+                'winner_id'   => 0,
+                'final_price' => 0,
+                'update_time' => $now,
+            ]);
+            Db::commit();
+            $result['ids'][] = (int)$gid;
+        } catch (\Throwable $e) {
+            Db::rollback();
+        }
+    }
+    if (!empty($result['ids'])) {
+        admin_log('自动上架流拍商品：卖家 ' . $sellerId . '，' . count($result['ids']) . ' 件，拍卖时长 ' . $hours . ' 小时', 0);
+    }
+    return $result;
+}
