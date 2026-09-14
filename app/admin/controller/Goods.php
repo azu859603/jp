@@ -522,4 +522,100 @@ class Goods extends Base
         admin_log('修改商品浏览量：' . $goods['title'] . ' ' . (int)$goods['view_count'] . ' → ' . $views);
         return json(['code' => 1, 'msg' => '浏览量已更新为 ' . $views]);
     }
+    /**
+     * 编辑商品：GET 返回商品数据，POST 保存
+     * - 已成交的商品不能编辑
+     * - 拍卖中且已有出价的商品，起拍价 / 加价幅度 / 保证金锁定不可改
+     * - 待审核 / 拍卖中的商品截拍时间必须晚于当前时间
+     */
+    public function edit()
+    {
+        $id = (int)$this->request->param('id');
+        $goods = Db::name('goods')->find($id);
+        if (!$goods) {
+            return json(['code' => 0, 'msg' => '商品不存在']);
+        }
+        if (!$this->request->isPost()) {
+            $seller = Db::name('user')->where('id', $goods['seller_id'])->field('id,nickname,mobile')->find();
+            $goods['images_arr']     = $goods['images'] ? (json_decode($goods['images'], true) ?: []) : [];
+            $goods['end_time_local'] = $goods['end_time'] ? date('Y-m-d\TH:i', $goods['end_time']) : '';
+            $goods['price_locked']   = ($goods['status'] == 1 && $goods['bid_count'] > 0) ? 1 : 0;
+            $goods['seller_text']    = $seller ? ($seller['nickname'] . '（' . $seller['mobile'] . '）') : ('ID:' . $goods['seller_id']);
+            return json(['code' => 1, 'data' => $goods]);
+        }
+        if ($goods['status'] == 2) {
+            return json(['code' => 0, 'msg' => '已成交的商品不能编辑']);
+        }
+        $title        = trim($this->request->post('title', ''));
+        $categoryId   = (int)$this->request->post('category_id', 0);
+        $content      = trim($this->request->post('content', ''));
+        $startPrice   = round((float)$this->request->post('start_price', 0), 2);
+        $raisePrice   = round((float)$this->request->post('raise_price', 0), 2);
+        $reservePrice = round((float)$this->request->post('reserve_price', 0), 2);
+        $deposit      = round((float)$this->request->post('deposit', 0), 2);
+        $endTime      = trim($this->request->post('end_time', ''));
+        $delaySeconds = max(0, (int)$this->request->post('delay_seconds', 0));
+        $cover        = trim($this->request->post('cover', ''));
+        $images       = $this->request->post('images', []);
+        if (is_string($images)) {
+            $images = $images === '' ? [] : explode(',', $images);
+        }
+        $locked = $goods['status'] == 1 && $goods['bid_count'] > 0;
+        if ($locked) {
+            // 已有出价：价格相关字段以库中为准，忽略提交值
+            $startPrice = (float)$goods['start_price'];
+            $raisePrice = (float)$goods['raise_price'];
+            $deposit    = (float)$goods['deposit'];
+        }
+        if ($title === '') {
+            return json(['code' => 0, 'msg' => '请输入商品标题']);
+        }
+        if ($categoryId <= 0) {
+            return json(['code' => 0, 'msg' => '请选择分类']);
+        }
+        if ($startPrice <= 0) {
+            return json(['code' => 0, 'msg' => '起拍价必须大于0']);
+        }
+        if ($raisePrice <= 0) {
+            return json(['code' => 0, 'msg' => '加价幅度必须大于0']);
+        }
+        if ($reservePrice > 0 && $reservePrice < $startPrice) {
+            return json(['code' => 0, 'msg' => '保留价不能低于起拍价']);
+        }
+        if ($endTime === '') {
+            return json(['code' => 0, 'msg' => '请选择截拍时间']);
+        }
+        $et = strtotime(str_replace('T', ' ', $endTime));
+        if (!$et) {
+            return json(['code' => 0, 'msg' => '截拍时间格式错误']);
+        }
+        if (in_array((int)$goods['status'], [0, 1], true) && $et != $goods['end_time'] && $et - time() < 60) {
+            return json(['code' => 0, 'msg' => '截拍时间必须晚于当前时间1分钟以上']);
+        }
+        $images = is_array($images) ? array_values(array_filter($images)) : [];
+        if (empty($images)) {
+            return json(['code' => 0, 'msg' => '请至少上传一张商品图片']);
+        }
+        if (empty($cover) || !in_array($cover, $images, true)) {
+            $cover = $images[0];
+        }
+        Db::name('goods')->where('id', $id)->update([
+            'category_id'     => $categoryId,
+            'title'           => $title,
+            'cover'           => $cover,
+            'images'          => json_encode($images, JSON_UNESCAPED_UNICODE),
+            'content'         => $content,
+            'start_price'     => $startPrice,
+            'raise_price'     => $raisePrice,
+            'reserve_price'   => $reservePrice,
+            'deposit'         => $deposit,
+            'reference_price' => round((float)$this->request->post('reference_price', 0), 2),
+            'is_featured'     => (int)$this->request->post('is_featured', 0) ? 1 : 0,
+            'end_time'        => $et,
+            'delay_seconds'   => $delaySeconds,
+            'update_time'     => time(),
+        ]);
+        admin_log('编辑商品：' . $title . '（ID:' . $id . '）');
+        return json(['code' => 1, 'msg' => '保存成功' . ($locked ? '（已有出价，起拍价 / 加价幅度 / 保证金未变更）' : '')]);
+    }
 }

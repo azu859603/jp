@@ -104,11 +104,13 @@
 <!-- 发布商品弹层 -->
 <div class="mask" id="addMask">
     <div class="dialog" style="width:760px;">
-        <div class="dialog-title">代发布产品（发到团队内卖家店铺）</div>
+        <div class="dialog-title" id="addTitle">代发布产品（发到团队内卖家店铺）</div>
+        <input type="hidden" id="gId" value="0">
         <div class="dialog-body">
             <div class="g-row">
                 <div class="g-col" style="flex:1;">
                     <label>卖家店铺 <span class="req">*</span></label>
+                    <div id="sellerRO" class="form-control" style="display:none;background:#f8fafc;color:#64748b;"></div>
                     <input type="text" class="form-control" id="sellerSearch" placeholder="输入昵称/手机号筛选" oninput="filterSeller()" style="margin-bottom:6px;">
                     <select class="form-control" id="sellerSel" style="max-height:130px;">
                         {volist name="sellers" id="s"}
@@ -133,6 +135,7 @@
                     <input type="text" class="form-control" id="gTitle" placeholder="请输入商品标题" maxlength="60">
                 </div>
             </div>
+            <div class="tip" id="lockTip" style="display:none;margin:-6px 0 10px;color:#b45309;">该产品已有买家出价，起拍价 / 加价幅度 / 保证金不可修改</div>
             <div class="g-row">
                 <div class="g-col"><label>起拍价（元） <span class="req">*</span></label><input type="number" step="0.01" min="0" class="form-control" id="gStart" placeholder="0.00"></div>
                 <div class="g-col"><label>加价幅度（元） <span class="req">*</span></label><input type="number" step="0.01" min="0" class="form-control" id="gRaise" placeholder="0.00"></div>
@@ -169,7 +172,7 @@
         </div>
         <div class="dialog-footer">
             <button class="btn" onclick="document.getElementById('addMask').classList.remove('show')">取消</button>
-            <button class="btn btn-primary" onclick="doAddGoods()">确认发布</button>
+            <button class="btn btn-primary" id="addBtn" onclick="doAddGoods()">确认发布</button>
         </div>
     </div>
 </div>
@@ -297,6 +300,7 @@ function loadList(page){
                         + '<td>' + (g.end_time ? fmtTime(g.end_time) : '-') + '</td>'
                         + '<td style="white-space:nowrap;">'
                         + '<a class="btn btn-sm" href="/agent/goods/detail?id=' + g.id + '">详情</a> '
+                        + (g.status != 2 ? '<a class="btn btn-sm" href="javascript:;" onclick="openEditGoods(' + g.id + ')">编辑</a> ' : '')
                         + ((g.status == 0 || g.status == 1)
                             ? '<a class="btn btn-sm" href="javascript:;" onclick="openTime(' + g.id + ',' + g.start_time + ',' + g.end_time + ')">改时间</a> '
                             : '')
@@ -401,8 +405,49 @@ function doRelistFailed(){
 /* ===== 发布商品 ===== */
 var goodsImgs = [];
 
+function setDialogMode(edit){
+    document.getElementById('gId').value = edit ? edit.id : 0;
+    document.getElementById('addTitle').textContent = edit ? ('编辑产品（ID:' + edit.id + '）') : '代发布产品（发到团队内卖家店铺）';
+    document.getElementById('addBtn').textContent = edit ? '保存修改' : '确认发布';
+    var ro = document.getElementById('sellerRO');
+    ro.style.display = edit ? '' : 'none';
+    ro.textContent = edit ? edit.seller_text : '';
+    document.getElementById('sellerSearch').style.display = edit ? 'none' : '';
+    document.getElementById('sellerSel').style.display = edit ? 'none' : '';
+    var locked = !!(edit && edit.price_locked == 1);
+    document.getElementById('lockTip').style.display = locked ? '' : 'none';
+    ['gStart','gRaise','gDeposit'].forEach(function(k){ document.getElementById(k).disabled = locked; });
+}
+
+function openEditGoods(id){
+    fetch('/agent/goods/edit?id=' + id, {headers:{'X-Requested-With':'XMLHttpRequest'}})
+        .then(function(r){ return r.json(); })
+        .then(function(res){
+            if(res.code != 1){ alert(res.msg || '加载失败'); return; }
+            var g = res.data;
+            goodsImgs = (g.images_arr || []).slice();
+            if(g.cover && goodsImgs.indexOf(g.cover) > 0){ goodsImgs.splice(goodsImgs.indexOf(g.cover), 1); goodsImgs.unshift(g.cover); }
+            document.getElementById('gCategory').value = g.category_id;
+            document.getElementById('gTitle').value = g.title || '';
+            document.getElementById('gStart').value = g.start_price;
+            document.getElementById('gRaise').value = g.raise_price;
+            document.getElementById('gReserve').value = parseFloat(g.reserve_price) > 0 ? g.reserve_price : '';
+            document.getElementById('gDeposit').value = parseFloat(g.deposit) > 0 ? g.deposit : '';
+            document.getElementById('gRef').value = parseFloat(g.reference_price) > 0 ? g.reference_price : '';
+            document.getElementById('gEndTime').value = g.end_time_local || '';
+            document.getElementById('gDelay').value = parseInt(g.delay_seconds) > 0 ? g.delay_seconds : '';
+            document.getElementById('gFeatured').checked = g.is_featured == 1;
+            document.getElementById('gContent').value = g.content || '';
+            setDialogMode(g);
+            renderGoodsImgs();
+            document.getElementById('addMask').classList.add('show');
+        })
+        .catch(function(){ alert('网络错误，请重试'); });
+}
+
 function openAddGoods(){
     goodsImgs = [];
+    setDialogMode(null);
     document.getElementById('sellerSearch').value = '';
     document.getElementById('sellerSel').selectedIndex = 0;
     document.getElementById('gCategory').value = '';
@@ -480,14 +525,16 @@ function doAddGoods(){
     var startPrice = document.getElementById('gStart').value;
     var raisePrice = document.getElementById('gRaise').value;
     var endTime = document.getElementById('gEndTime').value;
-    if(!sellerId){ alert('请选择卖家店铺'); return; }
+    var editId = parseInt(document.getElementById('gId').value) || 0;
+    if(!editId && !sellerId){ alert('请选择卖家店铺'); return; }
     if(!title){ alert('请输入商品标题'); return; }
     if(!categoryId){ alert('请选择分类'); return; }
     if(!startPrice || parseFloat(startPrice) <= 0){ alert('起拍价必须大于0'); return; }
     if(!raisePrice || parseFloat(raisePrice) <= 0){ alert('加价幅度必须大于0'); return; }
     if(!endTime){ alert('请选择截拍时间'); return; }
     if(goodsImgs.length === 0){ alert('请至少上传一张商品图片'); return; }
-    ajaxPost('/agent/goods/add', {
+    ajaxPost(editId ? '/agent/goods/edit' : '/agent/goods/add', {
+        id: editId,
         seller_id: sellerId,
         title: title,
         category_id: categoryId,
@@ -506,7 +553,7 @@ function doAddGoods(){
         alert(res.msg);
         if(res.code == 1){
             document.getElementById('addMask').classList.remove('show');
-            loadList(1);
+            loadList(editId ? currentPage : 1);
         }
     });
 }
