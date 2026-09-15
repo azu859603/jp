@@ -9,11 +9,12 @@
     <select class="form-control" id="type">
         <option value="">全部类型</option>
         <option value="recharge">充值</option>
-        <option value="deposit">保证金</option>
-        <option value="buy">支付货款</option>
-        <option value="income">卖出收入</option>
-        <option value="refund">退回</option>
         <option value="withdraw">提现</option>
+        <option value="deposit">保证金冻结</option>
+        <option value="refund">退回</option>
+        <option value="forfeit">保证金没收</option>
+        <option value="pay">支付</option>
+        <option value="income">卖出收入</option>
         <option value="reward">奖励</option>
     </select>
     <button class="btn btn-primary" onclick="loadList(1)">查询</button>
@@ -25,7 +26,7 @@
         <table class="table">
             <thead>
             <tr>
-                <th>ID</th><th>会员</th><th>类型</th><th>变动金额</th><th>变动后余额</th><th>备注</th><th>时间</th>
+                <th>ID</th><th>会员</th><th>手机号</th><th>类型</th><th>变动金额</th><th>变动后余额</th><th>备注</th><th>时间</th>
             </tr>
             </thead>
             <tbody id="tbody"></tbody>
@@ -35,9 +36,10 @@
 </div>
 
 <script>
+// 与 balance_log.type 的实际取值一一对应：充值 / 提现 / 保证金冻结 / 退回 / 保证金没收 / 支付 / 卖出收入 / 奖励
 var typeMap = {
-    recharge: ['充值','tag-green'], deposit: ['保证金','tag-blue'], buy: ['支付货款','tag-orange'],
-    income: ['卖出收入','tag-green'], refund: ['退回','tag-gray'], withdraw: ['提现','tag-red'], reward: ['奖励','tag-purple']
+    recharge: ['充值','tag-green'], withdraw: ['提现','tag-red'], deposit: ['保证金冻结','tag-blue'], refund: ['退回','tag-gray'],
+    forfeit: ['保证金没收','tag-red'], pay: ['支付','tag-orange'], income: ['卖出收入','tag-green'], reward: ['奖励','tag-purple']
 };
 
 function loadList(page){
@@ -48,7 +50,7 @@ function loadList(page){
         .then(function(res){
             var html = '';
             if(!res.data || !res.data.length){
-                html = '<tr><td colspan="7" class="empty">暂无数据</td></tr>';
+                html = '<tr><td colspan="8" class="empty">暂无数据</td></tr>';
             } else {
                 res.data.forEach(function(l){
                     var t = typeMap[l.type] || [l.type, 'tag-gray'];
@@ -58,6 +60,7 @@ function loadList(page){
                     html += '<tr>'
                         + '<td>' + l.id + '</td>'
                         + '<td><a href="/admin1314/member/detail?id=' + l.user_id + '">' + (l.nickname || l.mobile || l.user_id) + '</a></td>'
+                        + '<td>' + (l.mobile || '-') + '</td>'
                         + '<td><span class="tag ' + t[1] + '">' + t[0] + '</span></td>'
                         + '<td>' + amountHtml + '</td>'
                         + '<td>￥' + l.balance + '</td>'

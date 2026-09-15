@@ -282,6 +282,16 @@ function ajaxPost(url, data, cb, errMsg){
     }, 30000);
 })();
 </script>
+<script>
+// 筛选栏文本框按回车直接查询：页面定义了 loadList() 且输入框没有自己的回车处理时生效
+document.addEventListener('keydown', function(e){
+    if ((e.key !== 'Enter' && e.keyCode !== 13) || e.isComposing) return;
+    var el = e.target;
+    if (!el || el.tagName !== 'INPUT' || el.hasAttribute('onkeydown') || !el.closest('.search-bar')) return;
+    if (['text', 'search', 'number', 'tel'].indexOf(el.type) < 0) return;
+    if (typeof loadList === 'function') { e.preventDefault(); loadList(1); }
+});
+</script>
 {block name="script"}{/block}
 </body>
 </html>

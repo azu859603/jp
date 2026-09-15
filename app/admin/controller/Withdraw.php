@@ -23,6 +23,15 @@ class Withdraw extends Base
             if ($status !== '') {
                 $query->where('w.status', (int)$status);
             }
+            $keyword = trim((string)$this->request->param('keyword', ''));
+            if ($keyword !== '') {
+                $query->where(function ($q) use ($keyword) {
+                    $q->where('u.mobile', 'like', "%{$keyword}%")->whereOr('u.nickname', 'like', "%{$keyword}%");
+                    if (ctype_digit($keyword)) {
+                        $q->whereOr('w.user_id', (int)$keyword);
+                    }
+                });
+            }
 
             $total = $query->count();
             $list = $query->order('w.id', 'desc')->page($page, $limit)->select()->toArray();

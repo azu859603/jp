@@ -23,6 +23,15 @@ class Recharge extends Base
             if ($status !== '') {
                 $query->where('r.status', (int)$status);
             }
+            $keyword = trim((string)$this->request->param('keyword', ''));
+            if ($keyword !== '') {
+                $query->where(function ($q) use ($keyword) {
+                    $q->where('u.mobile', 'like', "%{$keyword}%")->whereOr('u.nickname', 'like', "%{$keyword}%");
+                    if (ctype_digit($keyword)) {
+                        $q->whereOr('r.user_id', (int)$keyword);
+                    }
+                });
+            }
 
             $total = $query->count();
             $list = $query->order('r.id', 'desc')->page($page, $limit)->select()->toArray();
