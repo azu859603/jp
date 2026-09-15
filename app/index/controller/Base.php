@@ -17,17 +17,7 @@ class Base extends BaseController
     {
         parent::initialize();
 
-        // 结算到期商品：正式由定时任务 `php think settle` 负责（app/command/Settle.php，每分钟）。
-        // 这里只保留一个每 5 分钟最多触发一次的兜底，防止定时任务未部署或挂掉时拍卖永远不结算；
-        // 正常情况下定时任务已先一步结算完毕，兜底扫描命中 0 条，开销可忽略。
-        try {
-            if (!Cache::has('settle_fallback_lock')) {
-                Cache::set('settle_fallback_lock', 1, 300);
-                settle_expired_goods();
-                auto_relist_failed_goods();
-            }
-        } catch (\Throwable $e) {
-        }
+        // 拍卖结算、流拍自动上架、自动出价均由服务器定时任务 `php think settle`（每分钟）负责，前台不再兜底触发
 
         // 语言检测统一由 app\middleware\LangDetect 处理，此处不再重复判断
 

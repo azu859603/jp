@@ -207,7 +207,7 @@
             <div class="st-card">
                 <div class="sc-head"><div><h3>订单自动处理</h3><p>由定时任务执行，填 0 表示关闭对应功能</p></div></div>
                 <div class="sc-body">
-                    <div class="note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg><div>以下功能依赖服务器定时任务：<code>php think order:timeout</code>（每 5 分钟）、<code>php think order:confirm</code>（每小时）、<code>php think order:remind</code>（每天）。定时任务未运行时，前台访问会兜底触发一次，但不保证及时</div></div>
+                    <div class="note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg><div>以下功能依赖服务器定时任务：<code>php think order:timeout</code>（每 5 分钟）、<code>php think order:confirm</code>（每小时）、<code>php think order:remind</code>（每天）。定时任务未运行时这些功能不会执行</div></div>
                     <div class="form-row">
                         <div class="form-group">
                             <label>待付款超时</label>
