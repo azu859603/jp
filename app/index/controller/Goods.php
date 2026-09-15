@@ -111,13 +111,16 @@ class Goods extends Base
             $isFollowed = (int)Db::name('seller_follow')->where('user_id', $uid)->where('seller_id', $goods['seller_id'])->count();
         }
 
+        // 第一手可直接出起拍价；有出价后每手不低于当前价 + 加价幅度
+        $hasBidNow = Db::name('bid_record')->where('goods_id', $id)->where('status', 0)->count() > 0;
+
         View::assign([
             'goods'         => $goods,
             'images'        => $images,
             'bids'          => $bids,
             'top_bid'       => $topBid,
             'current_price' => $currentPrice,
-            'min_bid'       => round($currentPrice + (float)$goods['raise_price'], 2),
+            'min_bid'       => $hasBidNow ? round($currentPrice + (float)$goods['raise_price'], 2) : round((float)$goods['start_price'], 2),
             'my_bid'        => $myBid,
             'paid_deposit'  => $paidDeposit,
             'order'         => $order,
@@ -219,6 +222,11 @@ class Goods extends Base
         if ($goods['seller_id'] == $this->user['id']) {
             return json(['code' => 0, 'msg' => lang('不能给自己的商品出价')]);
         }
+        // 已经领先的买家不能给自己加价
+        $topRow = Db::name('bid_record')->where('goods_id', $goodsId)->where('status', 0)->order('price', 'desc')->order('id', 'asc')->find();
+        if ($topRow && (int)$topRow['user_id'] === (int)$this->user['id']) {
+            return json(['code' => 0, 'msg' => lang('您已是当前最高出价者，无需再次出价')]);
+        }
 
         // 当前最高价
         $topPrice = (float)Db::name('bid_record')
@@ -232,7 +240,8 @@ class Goods extends Base
         if ($raise <= 0) {
             $raise = 1;
         }
-        $minPrice = round($basePrice + $raise, 2);
+        // 第一手可直接出起拍价；有出价后每手不低于当前价 + 加价幅度
+        $minPrice = $topPrice > 0 ? round($basePrice + $raise, 2) : round($basePrice, 2);
 
         if ($price < $minPrice) {
             return json(['code' => 0, 'msg' => lang('出价不能低于 ') . number_format($minPrice, 2) . lang(' 元')]);

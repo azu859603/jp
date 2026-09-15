@@ -224,7 +224,11 @@
     </div>
     <div class="b-actions">
         <!-- <a class="judge-btn" href="javascript:void(0)" onclick="toast('鉴定功能开发中')">去鉴定</a> -->
+        {if !empty($user) && !empty($top_bid) && $top_bid.user_id == $user.id}
+        <a class="go-bid leading" href="javascript:void(0)" onclick="toast(t('您已是当前最高出价者，无需再次出价'))">{:lang('您当前领先')}</a>
+        {else}
         <a class="go-bid" href="javascript:openBid();">{:lang('去出价')}</a>
+        {/if}
     </div>
 </div>
 

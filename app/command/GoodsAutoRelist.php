@@ -18,7 +18,7 @@ use think\console\Output;
  *   auto_relist_seller_id  自动上架的卖家会员 ID（默认 1）
  *   auto_relist_hours      重新上架后的拍卖时长（小时），0 为不自动上架
  *
- * 上架逻辑在 app/common.php 的 auto_relist_failed_goods()。
+ * 截拍时间 = 上架时间 + 拍卖时长 + 每件随机 0~6 小时；上架逻辑在 app/common.php 的 auto_relist_failed_goods()。
  * 心跳 runtime/auto_relist.heartbeat；有商品被上架或出错时写 runtime/log/auto_relist.log。
  */
 class GoodsAutoRelist extends Command
@@ -56,7 +56,7 @@ class GoodsAutoRelist extends Command
             return 0;
         }
         $line = $stamp . "卖家 {$result['seller_id']} 自动上架 " . count($result['ids']) . " 件，拍卖时长 {$result['hours']} 小时，截拍 "
-              . date('Y-m-d H:i', $result['end_time']) . ' ids=' . implode(',', $result['ids']);
+              . date('Y-m-d H:i', $result['end_time']) . ' 起 0~6 小时内随机 ids=' . implode(',', $result['ids']);
         $output->writeln($line);
         @file_put_contents($logFile, $line . PHP_EOL, FILE_APPEND);
         return 0;

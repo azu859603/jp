@@ -37,10 +37,10 @@ try {
     echo "== 代理端范围 ==\n";
     [, , $j] = req($gsid, 'POST', '/agent/auto_bid/add', ['goods_id' => $g3, 'interval_min' => 5, 'max_price' => 150, 'stop_hours' => 1]); ok('代理不能为团队外拍品添加', ($j['code'] ?? 1) == 0 && strpos($j['msg'], '团队') !== false, json_encode($j, JSON_UNESCAPED_UNICODE));
     [, , $j] = req($gsid, 'POST', '/agent/auto_bid/add', ['goods_id' => $g2, 'interval_min' => 5, 'max_price' => 130, 'stop_hours' => 0.5]); $t2 = (int)($j['id'] ?? 0); ok('代理为团队拍品 B 添加任务（截拍前 0.5 小时停）', ($j['code'] ?? 0) == 1 && $t2 > 0 && task($t2)['creator_type'] == 'agent', json_encode($j, JSON_UNESCAPED_UNICODE));
-    [, , $j] = req($asid, 'POST', '/admin1314/auto_bid/add', ['goods_id' => $g3, 'interval_min' => 5, 'max_price' => 120, 'stop_hours' => 0]); $t3 = (int)($j['id'] ?? 0); ok('主后台为外部拍品 C 添加任务（上限 120，只够两手）', ($j['code'] ?? 0) == 1 && $t3 > 0, json_encode($j, JSON_UNESCAPED_UNICODE));
+    [, , $j] = req($asid, 'POST', '/admin1314/auto_bid/add', ['goods_id' => $g3, 'interval_min' => 5, 'max_price' => 110, 'stop_hours' => 0]); $t3 = (int)($j['id'] ?? 0); ok('主后台为外部拍品 C 添加任务（上限 110，只够两手）', ($j['code'] ?? 0) == 1 && $t3 > 0, json_encode($j, JSON_UNESCAPED_UNICODE));
     [, , $j] = req($gsid, 'GET', '/agent/auto_bid/index?page=1&limit=50&keyword=&status='); $agentIds = array_map(function ($x) { return (int)$x['id']; }, $j['data'] ?? []); sort($agentIds);
     ok('代理列表只看到团队拍品的任务', $agentIds == [$t1, $t2], json_encode($agentIds));
-    [, , $j] = req($gsid, 'POST', '/agent/auto_bid/edit', ['id' => $t3, 'interval_min' => 5, 'max_price' => 999, 'stop_hours' => 0]); ok('代理不能编辑团队外任务', ($j['code'] ?? 1) == 0 && task($t3)['max_price'] == 120, json_encode($j, JSON_UNESCAPED_UNICODE));
+    [, , $j] = req($gsid, 'POST', '/agent/auto_bid/edit', ['id' => $t3, 'interval_min' => 5, 'max_price' => 999, 'stop_hours' => 0]); ok('代理不能编辑团队外任务', ($j['code'] ?? 1) == 0 && task($t3)['max_price'] == 110, json_encode($j, JSON_UNESCAPED_UNICODE));
     [, , $j] = req($asid, 'GET', '/admin1314/auto_bid/index?page=1&limit=50&keyword=QA自动出价A&status=1'); $row = $j['data'][0] ?? null; ok('主后台列表按标题搜索，带当前价 110 与卖家', $row && $row['id'] == $t1 && (float)$row['current_price'] == 110 && strpos($row['seller_text'], 'QA团队卖家') !== false, json_encode($j, JSON_UNESCAPED_UNICODE));
     echo "== 脚本执行 ==\n";
     $o = run('bid:auto'); ok('未到出价时间：脚本检查但不出价', strpos($o, '本次无需出价') !== false && bids($g1) == 1, $o);
@@ -49,14 +49,14 @@ try {
     ok('到时间后三个任务各出一手', strpos($o, "拍品#$g1") !== false && strpos($o, "拍品#$g2") !== false && strpos($o, "拍品#$g3") !== false && bids($g1) == 2 && bids($g2) == 1 && bids($g3) == 1, $o);
     ok('  A：真人 110 被虚拟会员顶到 120，保证金 0', $tb1 && (float)$tb1['price'] == 120 && in_array((int)$tb1['user_id'], [$v1, $v2]) && (float)$tb1['deposit'] == 0, json_encode($tb1));
     ok('  真人买家收到出局通知', (int)$pdo->query("select count(*) from sys_message where user_id=$real and title='竞拍出局通知' and content like '%QA自动出价A%'")->fetchColumn() == 1);
-    ok('  B、C 从起拍价出到 110', $tb2 && (float)$tb2['price'] == 110 && $tb3 && (float)$tb3['price'] == 110, json_encode([$tb2, $tb3]));
+    ok('  B、C 无出价：第一手直接出起拍价 100', $tb2 && (float)$tb2['price'] == 100 && $tb3 && (float)$tb3['price'] == 100, json_encode([$tb2, $tb3]));
     ok('  拍品出价次数同步', (int)$pdo->query("select bid_count from goods where id=$g1")->fetchColumn() == 2 && (int)$pdo->query("select bid_count from goods where id=$g2")->fetchColumn() == 1);
     $x1 = task($t1); ok('  任务 A 记录次数 1、最近出价与下次出价（间隔 5 分钟 ±30%）', $x1['bid_count'] == 1 && $x1['last_time'] >= $T && $x1['next_time'] - $x1['last_time'] >= 210 && $x1['next_time'] - $x1['last_time'] <= 390 && $x1['status'] == 1, json_encode($x1));
     ok('  虚拟会员余额未被冻结', (float)$pdo->query("select balance from user where id=$v1")->fetchColumn() == 1000 && (float)$pdo->query("select freeze_balance from user where id=$v1")->fetchColumn() == 0);
     ok('  日志与心跳文件', file_exists("$root/runtime/auto_bid.heartbeat") && strpos((string)file_get_contents("$root/runtime/log/auto_bid.log"), "拍品#$g1") !== false);
     // C：上限 120，再出一手到 120 后应结束
     $pdo->exec("update auto_bid set next_time=$T-1 where id=$t3"); $o = run('bid:auto'); $x3 = task($t3);
-    ok('C 出到 120 达到上限：任务自动结束', (float)top($g3)['price'] == 120 && $x3['status'] == 2 && strpos($x3['stop_reason'], '最高出价金额') !== false && strpos($o, '已达上限') !== false, json_encode($x3) . $o);
+    ok('C 出到 110 达到上限：任务自动结束', (float)top($g3)['price'] == 110 && $x3['status'] == 2 && strpos($x3['stop_reason'], '最高出价金额') !== false && strpos($o, '已达上限') !== false, json_encode($x3) . $o);
     $pdo->exec("update auto_bid set next_time=$T-1 where id=$t3"); $o = run('bid:auto'); ok('  已结束的任务不再出价', bids($g3) == 2);
     // 同一虚拟会员不会顶自己：只剩一个候选时换人
     $tbA = top($g1); $other = (int)$tbA['user_id'] == $v1 ? $v2 : $v1;
@@ -78,7 +78,7 @@ try {
     [, , $j] = req($gsid, 'POST', '/agent/auto_bid/delete', ['id' => $t2]); ok('代理删除团队任务 B，出价记录保留', ($j['code'] ?? 0) == 1 && !task($t2) && bids($g2) == 1, json_encode($j, JSON_UNESCAPED_UNICODE));
     [, , $j] = req($asid, 'POST', '/admin1314/auto_bid/delete', ['id' => $t1]); ok('主后台删除任务 A', ($j['code'] ?? 0) == 1 && !task($t1), json_encode($j, JSON_UNESCAPED_UNICODE));
     // settle 联动：结算后顺带执行自动出价
-    $pdo->exec("update auto_bid set next_time=$T-1 where id=$t3"); $o = run('settle'); ok('settle 结算后顺带执行自动出价（C 出到 130）', strpos($o, '自动出价') !== false && (float)top($g3)['price'] == 130, $o);
+    $pdo->exec("update auto_bid set next_time=$T-1 where id=$t3"); $o = run('settle'); ok('settle 结算后顺带执行自动出价（C 出到 120）', strpos($o, '自动出价') !== false && (float)top($g3)['price'] == 120, $o);
     // 拍品下架后任务自动结束
     $pdo->exec("update goods set status=4 where id=$g3"); $pdo->exec("update auto_bid set next_time=$T-1 where id=$t3"); run('bid:auto'); $x3 = task($t3); ok('拍品下架后任务自动结束', $x3['status'] == 2 && strpos($x3['stop_reason'], '结束或') !== false, json_encode($x3));
 } finally {

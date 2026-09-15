@@ -69,7 +69,7 @@ class Settle extends Command
         try {
             $relist = auto_relist_failed_goods();
             if (!empty($relist['ids'])) {
-                $rl = '[' . date('Y-m-d H:i:s') . "] 自动上架卖家 {$relist['seller_id']} 的流拍商品 " . count($relist['ids']) . " 件，截拍 " . date('Y-m-d H:i', $relist['end_time']) . ' ids=' . implode(',', $relist['ids']);
+                $rl = '[' . date('Y-m-d H:i:s') . "] 自动上架卖家 {$relist['seller_id']} 的流拍商品 " . count($relist['ids']) . " 件，截拍 " . date('Y-m-d H:i', $relist['end_time']) . ' 起 0~6 小时内随机 ids=' . implode(',', $relist['ids']);
                 $output->writeln($rl);
                 @file_put_contents($logFile, $rl . PHP_EOL, FILE_APPEND);
             }

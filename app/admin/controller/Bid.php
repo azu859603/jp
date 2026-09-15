@@ -93,12 +93,17 @@ class Bid extends Base
                 ->order('price', 'desc')
                 ->order('id', 'asc')
                 ->find();
+            if ($topBid && (int)$topBid['user_id'] === $userId) {
+                Db::rollback();
+                return json(['code' => 0, 'msg' => '该买家已是当前最高出价者，无需再次出价']);
+            }
             $topPrice = $topBid ? (float)$topBid['price'] : (float)$goods['start_price'];
             $raise = (float)$goods['raise_price'] > 0 ? (float)$goods['raise_price'] : 1;
-            $minPrice = round($topPrice + $raise, 2);
+            // 第一手可直接出起拍价；有出价后每手不低于当前价 + 加价幅度
+            $minPrice = $topBid ? round($topPrice + $raise, 2) : round($topPrice, 2);
             if ($price < $minPrice) {
                 Db::rollback();
-                return json(['code' => 0, 'msg' => '出价不能低于当前最高价加价幅度，最低 ' . number_format($minPrice, 2) . ' 元']);
+                return json(['code' => 0, 'msg' => '出价不能低于最低出价 ' . number_format($minPrice, 2) . ' 元']);
             }
             $steps = ($price - $topPrice) / $raise;
             if (abs($steps - round($steps)) > 0.0001) {
@@ -170,6 +175,7 @@ class Bid extends Base
         }
         foreach ($list as &$g) {
             $g['top_price'] = max($tops[(int)$g['id']] ?? 0, (float)$g['start_price']);
+            $g['has_bid']     = isset($tops[(int)$g['id']]) ? 1 : 0;
             $g['raise_price'] = (float)$g['raise_price'] > 0 ? (float)$g['raise_price'] : 1;
             $g['end_text'] = date('m-d H:i', (int)$g['end_time']);
         }

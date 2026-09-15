@@ -333,6 +333,8 @@ return [
     '去绑定' => 'Bind',
     '修改绑定' => 'Edit binding',
     '去出价' => 'Bid',
+    '您已是当前最高出价者，无需再次出价' => 'You are already the highest bidder',
+    '您当前领先' => 'You are leading',
     '去发布拍品' => 'Publish Item',
     '去付款' => 'Pay',
     '去逛逛' => 'Browse',

@@ -23,7 +23,8 @@ try {
     setv('auto_relist_hours', '2.5');
     $o = run('goods:auto-relist'); ok('时长 2.5 小时：命令上架 2 件', strpos($o, '自动上架 2 件') !== false && strpos($o, "ids=$g1,$g2") !== false, $o);
     $x1 = g($g1); $x2 = g($g2); $now = time();
-    ok('  两件都变为拍卖中，截拍 = 上架时间 + 2.5 小时', $x1['status'] == 1 && $x2['status'] == 1 && abs($x1['end_time'] - ($x1['start_time'] + 9000)) <= 1 && $x1['start_time'] >= $T && $x1['start_time'] <= $now + 5 && $x1['end_time'] == $x2['end_time'], json_encode([$x1['status'], $x1['start_time'] - $T, $x1['end_time'] - $x1['start_time']]));
+    $d1 = $x1['end_time'] - $x1['start_time']; $d2 = $x2['end_time'] - $x2['start_time'];
+    ok('  两件都变为拍卖中，截拍 = 上架时间 + 2.5 小时 + 各自随机 0~6 小时', $x1['status'] == 1 && $x2['status'] == 1 && $d1 >= 9000 && $d1 <= 9000 + 21600 && $d2 >= 9000 && $d2 <= 9000 + 21600 && $x1['start_time'] >= $T && $x1['start_time'] <= $now + 5, json_encode([$x1['status'], $x1['start_time'] - $T, $x1['end_time'] - $x1['start_time']]));
     ok('  旧出价记录清空，出价数 / 得标人 / 成交价归零', (int)$pdo->query("select count(*) from bid_record where goods_id=$g1")->fetchColumn() == 0 && $x1['bid_count'] == 0 && $x1['winner_id'] == 0 && $x1['final_price'] == 0);
     ok('  拍卖中的商品未受影响', g($g3)['end_time'] == $T + 7200 && g($g3)['status'] == 1);
     ok('  其他卖家的流拍商品未上架', g($g4)['status'] == 3);
@@ -32,7 +33,7 @@ try {
     $o = run('goods:auto-relist'); ok('再次执行：没有流拍商品', strpos($o, '没有流拍商品') !== false, $o);
     // settle 联动：到期未出价 → 流拍 → 立即自动上架
     $o = run('settle'); $x5 = g($g5);
-    ok('settle 结算后立即自动上架到期流拍的商品', strpos($o, '自动上架卖家') !== false && strpos($o, "ids=$g5") !== false && $x5['status'] == 1 && $x5['end_time'] - $x5['start_time'] == 9000, $o . ' | ' . json_encode([$x5['status'], $x5['end_time'] - $x5['start_time']]));
+    ok('settle 结算后立即自动上架到期流拍的商品', strpos($o, '自动上架卖家') !== false && strpos($o, "ids=$g5") !== false && $x5['status'] == 1 && $x5['end_time'] - $x5['start_time'] >= 9000 && $x5['end_time'] - $x5['start_time'] <= 9000 + 21600, $o . ' | ' . json_encode([$x5['status'], $x5['end_time'] - $x5['start_time']]));
     ok('  settle 日志文件记录了自动上架', strpos((string)file_get_contents("$root/runtime/log/settle.log"), "ids=$g5") !== false);
     // 后台设置页
     [$c, $b] = req($asid, 'GET', '/admin1314/setting/index', null, false); ok('设置页含两个新字段并回显当前值', $c == 200 && strpos($b, 'name="auto_relist_seller_id" value="' . $qa . '"') !== false && strpos($b, 'name="auto_relist_hours" value="2.5"') !== false, "HTTP $c");

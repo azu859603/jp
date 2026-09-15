@@ -193,6 +193,7 @@ class AutoBid extends Base
         $now = time();
         foreach ($list as &$t) {
             $t['current_price'] = max($tops[(int)$t['goods_id']] ?? 0, (float)$t['start_price']);
+            $t['has_bid']       = isset($tops[(int)$t['goods_id']]) ? 1 : 0;
             $t['seller_text']   = !empty($t['shop_name']) ? $t['shop_name'] : ($t['seller_name'] ?: ('ID:' . $t['seller_id']));
             $t['remain_hours']  = $t['end_time'] ? round(max(0, (int)$t['end_time'] - $now) / 3600, 1) : 0;
         }

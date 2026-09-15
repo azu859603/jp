@@ -181,8 +181,8 @@ function showGoodsTip(g){
     if(!g){ tip.innerHTML = ''; price.value = ''; return; }
     var top = parseFloat(g.top_price) || 0, raise = parseFloat(g.raise_price) || 1;
     if(raise <= 0) raise = 1;
-    var min = top + raise;
-    tip.innerHTML = '当前最高价 ¥' + top.toFixed(2) + '，加价幅度 ¥' + raise.toFixed(2) + '，最低可出 ¥' + min.toFixed(2) + '，截拍 ' + esc(g.end_text);
+    var min = g.has_bid == 1 ? top + raise : top;
+    tip.innerHTML = (g.has_bid == 1 ? '当前最高价 ¥' + top.toFixed(2) : '暂无出价，起拍价 ¥' + top.toFixed(2)) + '，加价幅度 ¥' + raise.toFixed(2) + '，最低可出 ¥' + min.toFixed(2) + '，截拍 ' + esc(g.end_text);
     price.value = min.toFixed(2);
 }
 function initPickers(){

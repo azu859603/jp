@@ -131,7 +131,7 @@ function loadList(page){
                     var ops = '<a class="btn btn-sm" href="javascript:;" onclick="openTask(' + t.id + ')">编辑</a> '
                         + (t.status == 1 ? '<a class="btn btn-sm" href="javascript:;" onclick="setStatus(' + t.id + ',0)">停用</a> ' : '<a class="btn btn-sm btn-green" href="javascript:;" onclick="setStatus(' + t.id + ',1)">启用</a> ')
                         + '<a class="btn btn-sm btn-danger" href="javascript:;" onclick="delTask(' + t.id + ')">删除</a>';
-                    html += '<tr data-row=\'' + JSON.stringify({id:t.id, goods_id:t.goods_id, title:t.title, interval_min:t.interval_min, max_price:t.max_price, stop_hours:t.stop_hours, current_price:t.current_price, raise_price:t.raise_price, end_time:t.end_time}).replace(/'/g, '&#39;') + '\'>'
+                    html += '<tr data-row=\'' + JSON.stringify({id:t.id, goods_id:t.goods_id, title:t.title, interval_min:t.interval_min, max_price:t.max_price, stop_hours:t.stop_hours, current_price:t.current_price, has_bid:t.has_bid, raise_price:t.raise_price, end_time:t.end_time}).replace(/'/g, '&#39;') + '\'>'
                         + '<td>' + t.id + '</td>'
                         + '<td><div class="ab-goods"><img src="' + esc(t.cover || '') + '" onerror="this.style.visibility=\'hidden\'"><div style="min-width:0"><div class="t" title="' + esc(t.title) + '"><a href="' + PRE + 'goods/detail?id=' + t.goods_id + '" target="_blank">' + esc(t.title || ('拍品#' + t.goods_id)) + '</a></div><div class="s">ID ' + t.goods_id + ' · 加价 ¥' + num(t.raise_price) + ' · 共 ' + (t.goods_bid_count || 0) + ' 次出价' + gs + '</div></div></div></td>'
                         + '<td>' + esc(t.seller_text) + '</td>'
@@ -212,7 +212,8 @@ function showTip(g){
     var tip = document.getElementById('goodsTip');
     if(!g){ tip.innerHTML = ''; return; }
     var top = parseFloat(g.top_price != null ? g.top_price : g.current_price) || 0, raise = parseFloat(g.raise_price) || 1;
-    tip.innerHTML = '当前价 ¥' + top.toFixed(2) + '，加价幅度 ¥' + raise.toFixed(2) + '，下一手至少 ¥' + (top + raise).toFixed(2) + '，截拍 ' + esc(g.end_text || fmtTime(g.end_time));
+    var next = g.has_bid == 1 ? top + raise : top;
+    tip.innerHTML = (g.has_bid == 1 ? '当前价 ¥' + top.toFixed(2) : '暂无出价，起拍价 ¥' + top.toFixed(2)) + '，加价幅度 ¥' + raise.toFixed(2) + '，下一手至少 ¥' + next.toFixed(2) + '，截拍 ' + esc(g.end_text || fmtTime(g.end_time));
     var fm = document.getElementById('fMax');
     if(!fm.value) fm.value = (top + raise * 10).toFixed(2);
 }

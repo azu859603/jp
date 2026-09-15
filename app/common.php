@@ -333,10 +333,11 @@ function release_goods_bids($goodsId, $reason = '商品下架')
  * 把指定卖家的流拍商品自动重新上架
  *
  * 后台设置 auto_relist_seller_id（卖家 ID，默认 1）、auto_relist_hours（重新上架后的拍卖时长，小时；0 为关闭）。
- * 每件商品：清空旧出价记录、出价数 / 得标人 / 成交价归零，开拍时间为当前时间，截拍时间 = 当前时间 + 拍卖时长。
+ * 每件商品：清空旧出价记录、出价数 / 得标人 / 成交价归零，开拍时间为当前时间，
+ * 截拍时间 = 当前时间 + 拍卖时长 + 随机 0~6 小时（每件各自随机，避免同时截拍）。
  * 由 php think goods:auto-relist 与 php think settle 调用，单次最多处理 $limit 件，避免积压过多时单次执行过久。
  *
- * @return array ['enabled' => bool, 'seller_id' => int, 'hours' => float, 'end_time' => int, 'ids' => int[]]
+ * @return array ['enabled' => bool, 'seller_id' => int, 'hours' => float, 'end_time' => int（截拍窗口起点）, 'ids' => int[]]
  */
 function auto_relist_failed_goods($limit = 500)
 {
@@ -364,7 +365,7 @@ function auto_relist_failed_goods($limit = 500)
             Db::name('goods')->where('id', $gid)->update([
                 'status'      => 1,
                 'start_time'  => $now,
-                'end_time'    => $result['end_time'],
+                'end_time'    => $result['end_time'] + mt_rand(0, 6 * 3600),
                 'bid_count'   => 0,
                 'winner_id'   => 0,
                 'final_price' => 0,
@@ -416,8 +417,11 @@ function auto_bid_validate(array $goods, $intervalMin, $maxPrice, $stopHours)
     }
     $current = auto_bid_current_price($goods);
     $raise   = (float)$goods['raise_price'] > 0 ? (float)$goods['raise_price'] : 1;
-    if ($maxPrice < $current + $raise) {
-        return '最高出价金额至少要能出一次价：当前价 ' . number_format($current, 2) . ' + 加价幅度 ' . number_format($raise, 2) . ' = ' . number_format($current + $raise, 2);
+    $hasBid  = Db::name('bid_record')->where('goods_id', $goods['id'])->where('status', 0)->count() > 0;
+    // 第一手可直接出起拍价；有出价后每手不低于当前价 + 加价幅度
+    $next    = $hasBid ? round($current + $raise, 2) : round($current, 2);
+    if ($maxPrice < $next) {
+        return '最高出价金额至少要能出一次价：' . ($hasBid ? '当前价 ' . number_format($current, 2) . ' + 加价幅度 ' . number_format($raise, 2) . ' = ' : '暂无出价，第一手为起拍价 ') . number_format($next, 2);
     }
     return '';
 }
@@ -472,17 +476,18 @@ function auto_bid_run($limit = 200)
             $finish('已进入截拍前 ' . rtrim(rtrim(number_format((float)$task['stop_hours'], 2, '.', ''), '0'), '.') . ' 小时的停止时段');
             continue;
         }
-        $current = auto_bid_current_price($goods);
+        $topBid  = Db::name('bid_record')->where('goods_id', $goods['id'])->where('status', 0)->order('price', 'desc')->order('id', 'asc')->find();
+        $current = max($topBid ? (float)$topBid['price'] : 0, (float)$goods['start_price']);
         $raise   = (float)$goods['raise_price'] > 0 ? (float)$goods['raise_price'] : 1;
-        $price   = round($current + $raise, 2);
-        if ($current >= (float)$task['max_price'] || $price > (float)$task['max_price']) {
+        // 第一手可直接出起拍价；有出价后每手不低于当前价 + 加价幅度
+        $price   = $topBid ? round($current + $raise, 2) : round($current, 2);
+        if ($price > (float)$task['max_price']) {
             $finish('当前价 ' . number_format($current, 2) . ' 已达到最高出价金额 ' . number_format((float)$task['max_price'], 2));
             continue;
         }
         if ((int)$task['next_time'] > $now) {
             continue;
         }
-        $topBid = Db::name('bid_record')->where('goods_id', $goods['id'])->where('status', 0)->order('price', 'desc')->order('id', 'asc')->find();
         $candidates = array_values(array_filter($virtualIds, function ($id) use ($goods, $topBid) {
             return (int)$id !== (int)$goods['seller_id'] && (!$topBid || (int)$id !== (int)$topBid['user_id']);
         }));
@@ -503,7 +508,7 @@ function auto_bid_run($limit = 200)
             // 锁内重算，避免与真人出价并发
             $top2    = Db::name('bid_record')->where('goods_id', $g['id'])->where('status', 0)->order('price', 'desc')->order('id', 'asc')->find();
             $cur2    = max($top2 ? (float)$top2['price'] : 0, (float)$g['start_price']);
-            $price   = round($cur2 + $raise, 2);
+            $price   = $top2 ? round($cur2 + $raise, 2) : round($cur2, 2);
             if ($price > (float)$task['max_price']) {
                 Db::rollback();
                 $finish('当前价 ' . number_format($cur2, 2) . ' 已达到最高出价金额 ' . number_format((float)$task['max_price'], 2));

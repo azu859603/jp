@@ -1417,3 +1417,5 @@ b,strong,.num,.price,.wl-total,.g-price{font-variant-numeric:tabular-nums;}
 .sz-links a+a{border-left:1px solid #F5F5F5;}
 .sz-links a svg{width:22px;height:22px;color:#E4393C;}
 .sz-links .sz-badge{position:absolute;top:8px;left:calc(50% + 8px);min-width:16px;height:16px;line-height:16px;padding:0 4px;border-radius:8px;background:#E4393C;color:#fff;font-size:10px;font-style:normal;text-align:center;}
+/* 出价按钮：本人已是最高价时置灰 */
+.detail-bottom .go-bid.leading{background:#cbd5e1;box-shadow:none;cursor:default;}
