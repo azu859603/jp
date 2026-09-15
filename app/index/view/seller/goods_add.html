@@ -29,12 +29,16 @@
         <div class="fr"><input type="number" id="deposit" placeholder="{:lang('买家出价保证金（选填）')}"></div>
     </div>
     <div class="form-row">
+        <span class="fl">{:lang('保留价')}</span>
+        <div class="fr"><input type="number" id="reserve_price" placeholder="{:lang('低于此价流拍，不填则无（选填）')}"></div>
+    </div>
+    <div class="form-row">
         <span class="fl">{:lang('截拍时间')}</span>
         <div class="fr"><input type="datetime-local" id="end_time"></div>
     </div>
     <div class="form-row">
         <span class="fl">{:lang('快捷选择')}</span>
-        <div class="fr" style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;">
+        <div class="fr end-quick-wrap">
             <a class="end-quick" href="javascript:;" onclick="quickEnd(1)">{:lang('1天')}</a>
             <a class="end-quick" href="javascript:;" onclick="quickEnd(3)">{:lang('3天')}</a>
             <a class="end-quick" href="javascript:;" onclick="quickEnd(10)">{:lang('10天')}</a>
@@ -76,7 +80,9 @@
 </div>
 
 <style>
-.end-quick{display:inline-block;padding:4px 14px;border:1px solid #F5C6C7;border-radius:14px;font-size:12px;color:#E4393C;background:#FFF5F5;text-decoration:none;transition:all .15s ease;}
+/* 四个快捷按钮等分一行，窄屏也不换行 */
+.end-quick-wrap{display:flex;gap:6px;flex-wrap:nowrap;justify-content:flex-end;}
+.end-quick{flex:1 1 0;min-width:0;text-align:center;white-space:nowrap;padding:5px 0;border:1px solid #F5C6C7;border-radius:14px;font-size:12px;line-height:16px;color:#E4393C;background:#FFF5F5;text-decoration:none;transition:all .15s ease;}
 .end-quick:active{border-color:#E4393C;background:#E4393C;color:#fff;transform:scale(.92);}
 </style>
 <div class="form-submit">
@@ -170,6 +176,7 @@ function doPublish() {
         start_price: startPrice,
         raise_price: raisePrice,
         deposit: document.getElementById('deposit').value.trim(),
+        reserve_price: document.getElementById('reserve_price').value.trim(),
         end_time: endTime,
         content: document.getElementById('content').value.trim(),
         is_featured: document.querySelector('input[name=is_featured]:checked').value,

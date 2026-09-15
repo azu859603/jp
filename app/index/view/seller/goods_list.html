@@ -38,6 +38,7 @@
         <div class="ginfo">
             <div class="gtitle">{$g.title}</div>
             <div class="gprice">¥{$g.start_price|number_format=2}</div>
+            {if $g.reserve_price > 0}<div class="gmeta" style="color:#E4393C;">{:lang('保留价')} ¥{$g.reserve_price|number_format=2}</div>{/if}
             <div class="gmeta">{$g.view_count}{:lang('次浏览 · ')}{$g.bid_count}{:lang('次出价')}</div>
         </div>
     {if $g.status==1 && ($status=='' || $status==1)}

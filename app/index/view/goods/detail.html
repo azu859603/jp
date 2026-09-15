@@ -113,6 +113,9 @@
     <div class="param-row"><span>{:lang('起拍价')}</span><b>¥{$goods.start_price|number_format=2}</b></div>
     <div class="param-row"><span>{:lang('保证金')}</span><b>{if $goods.deposit>0}¥{$goods.deposit|number_format=2}{else}{:lang('无需保证金')}{/if}</b></div>
     <div class="param-row"><span>{:lang('加价幅度')}</span><b>¥{$goods.raise_price|number_format=2}</b></div>
+    {if !empty($user) && $user.id == $goods.seller_id && $goods.reserve_price > 0}
+    <div class="param-row"><span>{:lang('保留价')}</span><b>¥{$goods.reserve_price|number_format=2} <em style="font-style:normal;font-weight:400;font-size:11px;color:#999;">{:lang('仅您可见')}</em></b></div>
+    {/if}
     {if isset($goods.reference_price) && $goods.reference_price > 0}
     <div class="param-row"><span>{:lang('参考价')}</span><b>¥{$goods.reference_price|number_format=2}</b></div>
     {/if}
