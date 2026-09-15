@@ -11,8 +11,13 @@
     </div>
     <select class="form-control" id="is_seller">
         <option value="">全部类型</option>
-        <option value="0">普通会员</option>
+        <option value="0">买家</option>
         <option value="1">卖家</option>
+    </select>
+    <select class="form-control" id="is_virtual">
+        <option value="">真实 / 虚拟</option>
+        <option value="0">真实会员</option>
+        <option value="1">虚拟会员</option>
     </select>
     <select class="form-control" id="is_agent">
         <option value="">代理身份</option>
@@ -242,6 +247,7 @@ function loadList(page){
         + '&is_seller=' + document.getElementById('is_seller').value
         + '&status=' + document.getElementById('status').value
         + '&is_agent=' + document.getElementById('is_agent').value
+        + '&is_virtual=' + document.getElementById('is_virtual').value
         + '&reg_start=' + document.getElementById('reg_start').value
         + '&reg_end=' + document.getElementById('reg_end').value, {headers:{'X-Requested-With':'XMLHttpRequest'}})
         .then(function(r){ return r.json(); })
@@ -251,8 +257,8 @@ function loadList(page){
                 html = '<tr><td colspan="12" class="empty">暂无数据</td></tr>';
             } else {
                 res.data.forEach(function(u){
-                    var typeHtml = u.is_seller == 1 ? '<span class="tag tag-orange">卖家</span>' : '<span class="tag tag-gray">普通会员</span>';
-                    if(u.is_virtual == 1) typeHtml = '<span class="tag tag-purple">虚拟会员</span>';
+                    var typeHtml = u.is_seller == 1 ? '<span class="tag tag-orange">卖家</span>' : '<span class="tag tag-blue">买家</span>';
+                    if(u.is_virtual == 1) typeHtml += '<div style="font-size:12px;color:#8b5cf6;margin-top:3px;">（虚拟会员）</div>';
                     var statusHtml = u.status == 1 ? '<span class="tag tag-green">正常</span>' : '<span class="tag tag-red">禁用</span>';
                     html += '<tr>'
                         + '<td>' + u.id + '</td>'
@@ -309,6 +315,7 @@ function resetSearch(){
     document.getElementById('is_seller').value = '';
     document.getElementById('status').value = '';
     document.getElementById('is_agent').value = '';
+    document.getElementById('is_virtual').value = '';
     document.getElementById('reg_start').value = '';
     document.getElementById('reg_end').value = '';
     loadList(1);

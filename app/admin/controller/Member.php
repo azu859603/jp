@@ -35,6 +35,10 @@ class Member extends Base
             if ($isAgent !== '') {
                 $query->where('is_agent', (int)$isAgent);
             }
+            $isVirtual = $this->request->param('is_virtual', '');
+            if ($isVirtual !== '') {
+                $query->where('is_virtual', (int)$isVirtual);
+            }
             if ($status !== '') {
                 $query->where('status', (int)$status);
             }
