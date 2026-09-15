@@ -466,8 +466,8 @@ class Member extends Base
         $id = (int)$this->request->post('id');
         $amount = round((float)$this->request->post('amount', 0), 2);
         $remark = trim($this->request->post('remark', ''));
-        // 备注可不填：流水固定以「后台调整」开头，便于前台钱包按前缀翻译
-        $remark = '后台调整' . ($remark !== '' ? '：' . mb_substr($remark, 0, 50) : '');
+        // 备注可不填，填写什么流水就记什么，不再自动加「后台调整」
+        $remark = mb_substr($remark, 0, 50);
 
         if ($amount == 0) {
             return json(['code' => 0, 'msg' => '调整金额不能为0']);
