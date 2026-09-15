@@ -381,3 +381,180 @@ function auto_relist_failed_goods($limit = 500)
     }
     return $result;
 }
+
+/* ==================== 虚拟用户自动出价 ==================== */
+
+/**
+ * 拍品当前价：有效最高出价，没有则为起拍价
+ */
+function auto_bid_current_price(array $goods)
+{
+    $top = Db::name('bid_record')->where('goods_id', $goods['id'])->where('status', 0)->max('price');
+    return max((float)$top, (float)$goods['start_price']);
+}
+
+/**
+ * 校验自动出价参数，返回错误文案；通过返回空串
+ */
+function auto_bid_validate(array $goods, $intervalMin, $maxPrice, $stopHours)
+{
+    $now = time();
+    if ((int)$goods['status'] !== 1) {
+        return '该拍品不在拍卖中';
+    }
+    if ((int)$goods['end_time'] <= $now) {
+        return '该拍品已截拍';
+    }
+    if ($intervalMin < 1 || $intervalMin > 1440) {
+        return '出价间隔需为 1 ~ 1440 分钟';
+    }
+    if ($stopHours < 0 || $stopHours > 720) {
+        return '停止出价的提前小时数需为 0 ~ 720';
+    }
+    if ($stopHours * 3600 >= $goods['end_time'] - $now) {
+        return '距截拍已不足 ' . rtrim(rtrim(number_format($stopHours, 2, '.', ''), '0'), '.') . ' 小时，任务不会执行，请缩短停止提前量';
+    }
+    $current = auto_bid_current_price($goods);
+    $raise   = (float)$goods['raise_price'] > 0 ? (float)$goods['raise_price'] : 1;
+    if ($maxPrice < $current + $raise) {
+        return '最高出价金额至少要能出一次价：当前价 ' . number_format($current, 2) . ' + 加价幅度 ' . number_format($raise, 2) . ' = ' . number_format($current + $raise, 2);
+    }
+    return '';
+}
+
+/**
+ * 下次出价时间：间隔 × 70%~130% 随机，至少 60 秒
+ */
+function auto_bid_next_time($intervalMin, $from = null)
+{
+    $from = $from ?: time();
+    $sec  = (int)round($intervalMin * 60 * mt_rand(70, 130) / 100);
+    return $from + max(60, $sec);
+}
+
+/**
+ * 执行一轮自动出价（由 php think bid:auto 与 php think settle 调用）
+ *
+ * 每个运行中的任务：拍品不在拍卖中 → 结束；进入截拍前停止时段 → 结束；当前价已达上限 → 结束；
+ * 未到下次出价时间 → 跳过；否则随机挑一个虚拟会员（排除卖家与当前最高价者）按一个加价幅度出价，
+ * 出价记录保证金记 0，不冻结余额；给被超过的真实买家发出局通知；触发拍品延时规则。
+ *
+ * @return array ['tasks' => 检查的任务数, 'bids' => [出价记录ID...], 'logs' => [日志行...]]
+ */
+function auto_bid_run($limit = 200)
+{
+    $now    = time();
+    $result = ['tasks' => 0, 'bids' => [], 'logs' => []];
+    $tasks  = Db::name('auto_bid')->where('status', 1)->order('next_time', 'asc')->limit((int)$limit)->select()->toArray();
+    $result['tasks'] = count($tasks);
+    if (!$tasks) {
+        return $result;
+    }
+    $virtualIds = Db::name('user')->where('is_virtual', 1)->where('status', 1)->column('id');
+    foreach ($tasks as $task) {
+        $goods = Db::name('goods')->find($task['goods_id']);
+        $finish = function ($reason) use ($task, $now, &$result) {
+            Db::name('auto_bid')->where('id', $task['id'])->update(['status' => 2, 'stop_reason' => $reason, 'update_time' => $now]);
+            $result['logs'][] = "任务#{$task['id']} 拍品#{$task['goods_id']} 结束：{$reason}";
+        };
+        if (!$goods) {
+            $finish('拍品已删除');
+            continue;
+        }
+        if ((int)$goods['status'] !== 1 || (int)$goods['end_time'] <= $now) {
+            $finish('拍卖已结束或拍品已下架');
+            continue;
+        }
+        if ($now < (int)$goods['start_time']) {
+            continue;
+        }
+        if ((int)$goods['end_time'] - $now <= (float)$task['stop_hours'] * 3600) {
+            $finish('已进入截拍前 ' . rtrim(rtrim(number_format((float)$task['stop_hours'], 2, '.', ''), '0'), '.') . ' 小时的停止时段');
+            continue;
+        }
+        $current = auto_bid_current_price($goods);
+        $raise   = (float)$goods['raise_price'] > 0 ? (float)$goods['raise_price'] : 1;
+        $price   = round($current + $raise, 2);
+        if ($current >= (float)$task['max_price'] || $price > (float)$task['max_price']) {
+            $finish('当前价 ' . number_format($current, 2) . ' 已达到最高出价金额 ' . number_format((float)$task['max_price'], 2));
+            continue;
+        }
+        if ((int)$task['next_time'] > $now) {
+            continue;
+        }
+        $topBid = Db::name('bid_record')->where('goods_id', $goods['id'])->where('status', 0)->order('price', 'desc')->order('id', 'asc')->find();
+        $candidates = array_values(array_filter($virtualIds, function ($id) use ($goods, $topBid) {
+            return (int)$id !== (int)$goods['seller_id'] && (!$topBid || (int)$id !== (int)$topBid['user_id']);
+        }));
+        if (!$candidates) {
+            $result['logs'][] = "任务#{$task['id']} 拍品#{$task['goods_id']} 跳过：没有可用的虚拟会员";
+            Db::name('auto_bid')->where('id', $task['id'])->update(['next_time' => auto_bid_next_time($task['interval_min'], $now), 'update_time' => $now]);
+            continue;
+        }
+        $userId = (int)$candidates[array_rand($candidates)];
+
+        Db::startTrans();
+        try {
+            $g = Db::name('goods')->where('id', $goods['id'])->lock(true)->find();
+            if (!$g || (int)$g['status'] !== 1 || (int)$g['end_time'] <= $now) {
+                Db::rollback();
+                continue;
+            }
+            // 锁内重算，避免与真人出价并发
+            $top2    = Db::name('bid_record')->where('goods_id', $g['id'])->where('status', 0)->order('price', 'desc')->order('id', 'asc')->find();
+            $cur2    = max($top2 ? (float)$top2['price'] : 0, (float)$g['start_price']);
+            $price   = round($cur2 + $raise, 2);
+            if ($price > (float)$task['max_price']) {
+                Db::rollback();
+                $finish('当前价 ' . number_format($cur2, 2) . ' 已达到最高出价金额 ' . number_format((float)$task['max_price'], 2));
+                continue;
+            }
+            if ($top2 && (int)$top2['user_id'] === $userId) {
+                Db::rollback();
+                continue;
+            }
+            $bidId = Db::name('bid_record')->insertGetId([
+                'goods_id'    => $g['id'],
+                'user_id'     => $userId,
+                'price'       => $price,
+                'deposit'     => 0,
+                'status'      => 0,
+                'is_winner'   => 0,
+                'create_time' => $now,
+            ]);
+            $update = ['bid_count' => Db::raw('bid_count + 1'), 'update_time' => $now];
+            $delay  = (int)$g['delay_seconds'] > 0 ? (int)$g['delay_seconds'] : (int)get_setting('auction_delay', 0);
+            if ($delay > 0 && (int)$g['end_time'] - $now <= $delay) {
+                $update['end_time'] = $now + $delay;
+            }
+            Db::name('goods')->where('id', $g['id'])->update($update);
+            // 被超过的真实买家发出局通知（虚拟会员之间不发）
+            if ($top2 && (int)$top2['user_id'] !== $userId && !in_array((int)$top2['user_id'], array_map('intval', $virtualIds), true)) {
+                Db::name('sys_message')->insert([
+                    'user_id'     => $top2['user_id'],
+                    'admin_id'    => 0,
+                    'title'       => '竞拍出局通知',
+                    'content'     => '您出价竞拍的「' . $g['title'] . '」已出局：您的出价 ¥' . number_format((float)$top2['price'], 2) . ' 于 ' . date('Y-m-d H:i:s', $now) . ' 被 ¥' . number_format($price, 2) . ' 超过，当前最高价 ¥' . number_format($price, 2) . '。如需继续竞拍，请再次出价。',
+                    'is_read'     => 0,
+                    'create_time' => $now,
+                ]);
+            }
+            $done = round($price + $raise, 2) > (float)$task['max_price'];
+            Db::name('auto_bid')->where('id', $task['id'])->update([
+                'last_time'   => $now,
+                'next_time'   => auto_bid_next_time($task['interval_min'], $now),
+                'bid_count'   => Db::raw('bid_count + 1'),
+                'status'      => $done ? 2 : 1,
+                'stop_reason' => $done ? '当前价 ' . number_format($price, 2) . ' 已达到最高出价金额 ' . number_format((float)$task['max_price'], 2) : '',
+                'update_time' => $now,
+            ]);
+            Db::commit();
+            $result['bids'][] = (int)$bidId;
+            $result['logs'][] = "任务#{$task['id']} 拍品#{$g['id']}「{$g['title']}」 虚拟会员#{$userId} 出价 " . number_format($price, 2) . ($done ? '，已达上限，任务结束' : '');
+        } catch (\Throwable $e) {
+            Db::rollback();
+            $result['logs'][] = "任务#{$task['id']} 拍品#{$task['goods_id']} 出价失败：" . $e->getMessage();
+        }
+    }
+    return $result;
+}

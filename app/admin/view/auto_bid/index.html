@@ -1,0 +1,283 @@
+{extend name="layout" /}
+
+{block name="title"}自动出价{/block}
+{block name="crumb"}竞拍管理 / <b>自动出价</b>{/block}
+
+{block name="content"}
+<style>
+.picker{position:relative}
+.picker-list{background:#fff;border:1px solid #e2e8f0;border-radius:8px;box-shadow:0 4px 14px rgba(0,0,0,.08);max-height:230px;overflow-y:auto;display:none;margin-top:4px}
+#taskMask .dialog{width:560px}
+.picker-list.show{display:block}
+.picker-item{padding:8px 12px;cursor:pointer;font-size:13px;border-bottom:1px solid #f1f5f9;display:flex;align-items:center;gap:10px}
+.picker-item:last-child{border-bottom:0}
+.picker-item:hover,.picker-item.active{background:#fff3e6}
+.picker-item img{width:36px;height:36px;border-radius:6px;object-fit:cover;background:#f1f5f9;flex:none}
+.picker-item .pi-main{flex:1;min-width:0}
+.picker-item .pi-title{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#1e293b}
+.picker-item .pi-sub{font-size:12px;color:#94a3b8;margin-top:2px}
+.picker-item .pi-id{font-size:12px;color:#ff7a00;font-family:Consolas,monospace;flex:none}
+.picker-empty{padding:14px;text-align:center;color:#94a3b8;font-size:12px}
+.picker-sel{margin-top:6px;font-size:12px;color:#16a34a;min-height:16px}
+.picker-sel b{color:#1e293b}
+.picker-sel a{color:#94a3b8;margin-left:8px}
+.ab-goods{display:flex;align-items:center;gap:8px;max-width:300px}
+.ab-goods img{width:40px;height:40px;border-radius:6px;object-fit:cover;background:#f1f5f9;flex:none}
+.ab-goods .t{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#1e293b}
+.ab-goods .s{font-size:12px;color:#94a3b8;margin-top:2px}
+.ab-note{background:#fffbeb;border:1px solid #fde68a;color:#92400e;border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:14px;line-height:1.7}
+.form-grid{display:flex;gap:12px}
+.form-grid .form-group{flex:1;margin-bottom:12px}
+.form-grid label{display:block;font-size:13px;color:#334155;margin-bottom:6px}
+.form-grid .tip{font-size:12px;color:#94a3b8;margin-top:4px}
+.ab-reason{font-size:12px;color:#94a3b8;margin-top:2px}
+</style>
+
+<div class="ab-note">
+    定时脚本每分钟检查一次任务：到了出价时间就随机挑一个<b>虚拟会员</b>（排除卖家和当前最高价者）按一个加价幅度出价，出价不冻结保证金。
+    当前价达到「最高出价金额」、或距截拍不足「停止提前量」时任务自动结束；真人买家被超过时会收到出局通知。
+    当前启用的虚拟会员：<b>{$virtual_count}</b> 个{if $virtual_count == 0}，<span style="color:#dc2626">请先到会员管理添加虚拟会员，否则任务不会出价</span>{/if}。
+    注意：停止时段内若无真人出价，最后一手仍可能是虚拟会员中标，请合理设置停止提前量。
+</div>
+
+<div class="search-bar">
+    <input type="text" class="form-control" id="keyword" placeholder="拍品 ID / 标题">
+    <select class="form-control" id="status">
+        <option value="">全部状态</option>
+        <option value="1">运行中</option>
+        <option value="0">已停用</option>
+        <option value="2">已结束</option>
+    </select>
+    <button class="btn btn-primary" onclick="loadList(1)">查询</button>
+    <button class="btn" onclick="resetSearch()">重置</button>
+    <button class="btn btn-green" onclick="openTask(null)">＋ 添加任务</button>
+</div>
+
+<div class="card">
+    <div class="table-wrap">
+        <table class="table">
+            <thead>
+            <tr>
+                <th>ID</th><th>拍品</th><th>卖家</th><th>当前价 / 最高出价</th><th>间隔</th><th>停止提前</th><th>已出价</th><th>最近 / 下次出价</th><th>截拍</th><th>状态</th><th>操作</th>
+            </tr>
+            </thead>
+            <tbody id="tbody"></tbody>
+        </table>
+    </div>
+    <div class="pagination" id="pagination"></div>
+</div>
+
+<!-- 添加 / 编辑任务 -->
+<div class="mask" id="taskMask">
+    <div class="dialog">
+        <div class="dialog-title" id="taskTitle">添加自动出价任务</div>
+        <div class="dialog-body">
+            <input type="hidden" id="taskId" value="0">
+            <div class="form-group" style="margin-bottom:12px;" id="goodsGroup">
+                <label>拍品 <span class="tip" style="display:inline">（输入拍品 ID 或标题关键词搜索，只列拍卖中的拍品）</span></label>
+                <div class="picker" id="goodsPicker">
+                    <input type="text" class="form-control" id="goodsKw" placeholder="拍品 ID / 标题关键词" autocomplete="off">
+                    <input type="hidden" id="taskGoods" value="">
+                    <div class="picker-list" id="goodsList"></div>
+                </div>
+                <div class="picker-sel" id="goodsSel"></div>
+            </div>
+            <div class="form-group" style="margin-bottom:12px;display:none;" id="goodsRO">
+                <label>拍品</label>
+                <div class="form-control" style="background:#f8fafc;color:#64748b;" id="goodsROText"></div>
+            </div>
+            <div id="goodsTip" style="font-size:12px;color:#999;margin:-6px 0 12px;"></div>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>出价间隔（分钟）</label>
+                    <input class="form-control" type="number" id="fInterval" min="1" max="1440" step="1" value="30">
+                    <div class="tip">实际每次在此值的 70% ~ 130% 之间随机</div>
+                </div>
+                <div class="form-group">
+                    <label>最高出价金额（元）</label>
+                    <input class="form-control" type="number" id="fMax" min="0.01" step="0.01" placeholder="当前价达到后不再出价">
+                    <div class="tip">虚拟会员出到这个价就停</div>
+                </div>
+                <div class="form-group">
+                    <label>截拍前停止（小时）</label>
+                    <input class="form-control" type="number" id="fStop" min="0" max="720" step="0.5" value="1">
+                    <div class="tip">距截拍不足此时长不再出价</div>
+                </div>
+            </div>
+        </div>
+        <div class="dialog-footer">
+            <button class="btn" onclick="closeTask()">取消</button>
+            <button class="btn btn-primary" onclick="saveTask()">保存</button>
+        </div>
+    </div>
+</div>
+
+<script>
+var PRE = '/admin1314/';
+var currentPage = 1;
+function loadList(page){
+    currentPage = page;
+    fetch(PRE + 'auto_bid/index?page=' + page + '&limit=15&keyword=' + encodeURIComponent(document.getElementById('keyword').value.trim()) + '&status=' + document.getElementById('status').value, {headers:{'X-Requested-With':'XMLHttpRequest'}})
+        .then(function(r){ return r.json(); })
+        .then(function(res){
+            var html = '';
+            if(!res.data || !res.data.length){
+                html = '<tr><td colspan="11" class="empty">暂无数据</td></tr>';
+            } else {
+                res.data.forEach(function(t){
+                    var st = t.status == 1 ? '<span class="tag tag-green">运行中</span>' : (t.status == 2 ? '<span class="tag tag-gray">已结束</span>' : '<span class="tag tag-orange">已停用</span>');
+                    if(t.stop_reason) st += '<div class="ab-reason">' + esc(t.stop_reason) + '</div>';
+                    var gs = t.goods_status == 1 ? '' : '<span class="tag tag-red" style="margin-left:4px">拍品已不在拍卖中</span>';
+                    var ops = '<a class="btn btn-sm" href="javascript:;" onclick="openTask(' + t.id + ')">编辑</a> '
+                        + (t.status == 1 ? '<a class="btn btn-sm" href="javascript:;" onclick="setStatus(' + t.id + ',0)">停用</a> ' : '<a class="btn btn-sm btn-green" href="javascript:;" onclick="setStatus(' + t.id + ',1)">启用</a> ')
+                        + '<a class="btn btn-sm btn-danger" href="javascript:;" onclick="delTask(' + t.id + ')">删除</a>';
+                    html += '<tr data-row=\'' + JSON.stringify({id:t.id, goods_id:t.goods_id, title:t.title, interval_min:t.interval_min, max_price:t.max_price, stop_hours:t.stop_hours, current_price:t.current_price, raise_price:t.raise_price, end_time:t.end_time}).replace(/'/g, '&#39;') + '\'>'
+                        + '<td>' + t.id + '</td>'
+                        + '<td><div class="ab-goods"><img src="' + esc(t.cover || '') + '" onerror="this.style.visibility=\'hidden\'"><div style="min-width:0"><div class="t" title="' + esc(t.title) + '"><a href="' + PRE + 'goods/detail?id=' + t.goods_id + '" target="_blank">' + esc(t.title || ('拍品#' + t.goods_id)) + '</a></div><div class="s">ID ' + t.goods_id + ' · 加价 ¥' + num(t.raise_price) + ' · 共 ' + (t.goods_bid_count || 0) + ' 次出价' + gs + '</div></div></div></td>'
+                        + '<td>' + esc(t.seller_text) + '</td>'
+                        + '<td><span class="price">￥' + num(t.current_price) + '</span> / ￥' + num(t.max_price) + '</td>'
+                        + '<td>' + t.interval_min + ' 分钟</td>'
+                        + '<td>' + num1(t.stop_hours) + ' 小时</td>'
+                        + '<td>' + t.bid_count + ' 次</td>'
+                        + '<td style="white-space:nowrap;font-size:12px;">' + (t.last_time > 0 ? fmtTime(t.last_time) : '-') + '<br>' + (t.status == 1 ? '<span style="color:#16a34a">' + fmtTime(t.next_time) + '</span>' : '-') + '</td>'
+                        + '<td style="white-space:nowrap;font-size:12px;">' + (t.end_time ? fmtTime(t.end_time) : '-') + '<br><span style="color:#94a3b8">剩 ' + t.remain_hours + ' 小时</span></td>'
+                        + '<td>' + st + '</td>'
+                        + '<td style="white-space:nowrap;">' + ops + '</td></tr>';
+                });
+            }
+            document.getElementById('tbody').innerHTML = html;
+            renderPagination(res.count, page);
+        });
+}
+function num(v){ return (parseFloat(v) || 0).toFixed(2); }
+function num1(v){ var n = parseFloat(v) || 0; return String(Math.round(n * 100) / 100); }
+function renderPagination(total, page){
+    var pages = Math.ceil(total / 15) || 1;
+    var html = '<span class="info">共 ' + total + ' 条，第 ' + page + '/' + pages + ' 页</span> ';
+    html += '<a class="' + (page <= 1 ? 'disabled' : '') + '" href="javascript:;" onclick="loadList(1)">首页</a>';
+    html += '<a class="' + (page <= 1 ? 'disabled' : '') + '" href="javascript:;" onclick="loadList(' + (page - 1) + ')">上一页</a>';
+    var start = Math.max(1, page - 2), end = Math.min(pages, page + 2);
+    for(var i = start; i <= end; i++){
+        html += i == page ? '<span class="current">' + i + '</span>' : '<a href="javascript:;" onclick="loadList(' + i + ')">' + i + '</a>';
+    }
+    html += '<a class="' + (page >= pages ? 'disabled' : '') + '" href="javascript:;" onclick="loadList(' + (page + 1) + ')">下一页</a>';
+    html += '<a class="' + (page >= pages ? 'disabled' : '') + '" href="javascript:;" onclick="loadList(' + pages + ')">末页</a>';
+    document.getElementById('pagination').innerHTML = html;
+}
+function resetSearch(){ document.getElementById('keyword').value = ''; document.getElementById('status').value = ''; loadList(1); }
+function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+
+/* 可搜索选择器（与出价记录页一致） */
+function makePicker(opt){
+    var kw = document.getElementById(opt.kw), hid = document.getElementById(opt.hidden),
+        list = document.getElementById(opt.list), sel = document.getElementById(opt.sel);
+    var timer = null, items = [], active = -1;
+    function render(){
+        if(!items.length){ list.innerHTML = '<div class="picker-empty">' + (kw.value.trim() ? '没有匹配的结果' : '输入关键词开始搜索') + '</div>'; list.classList.add('show'); return; }
+        list.innerHTML = items.map(function(it, i){ return '<div class="picker-item' + (i === active ? ' active' : '') + '" data-i="' + i + '">' + opt.row(it) + '</div>'; }).join('');
+        list.classList.add('show');
+    }
+    function search(){
+        var q = kw.value.trim();
+        fetch(opt.url + '?kw=' + encodeURIComponent(q), {headers:{'X-Requested-With':'XMLHttpRequest'}})
+            .then(function(r){ return r.json(); })
+            .then(function(res){ if(kw.value.trim() !== q) return; items = res.data || []; active = -1; render(); })
+            .catch(function(){ items = []; render(); });
+    }
+    function choose(i){
+        var it = items[i]; if(!it) return;
+        hid.value = it.id; kw.value = opt.text(it);
+        sel.innerHTML = '已选：<b>' + esc(opt.text(it)) + '</b><a href="javascript:;" data-clear="1">清除</a>';
+        list.classList.remove('show');
+        if(opt.onPick) opt.onPick(it);
+    }
+    function clear(){ hid.value = ''; kw.value = ''; sel.innerHTML = ''; items = []; list.classList.remove('show'); if(opt.onClear) opt.onClear(); }
+    kw.addEventListener('input', function(){ hid.value = ''; sel.innerHTML = ''; if(opt.onClear) opt.onClear(); clearTimeout(timer); timer = setTimeout(search, 250); });
+    kw.addEventListener('focus', function(){ if(!hid.value){ clearTimeout(timer); timer = setTimeout(search, 100); } });
+    kw.addEventListener('keydown', function(e){
+        if(!list.classList.contains('show')) return;
+        if(e.key === 'ArrowDown'){ active = Math.min(items.length - 1, active + 1); render(); e.preventDefault(); }
+        else if(e.key === 'ArrowUp'){ active = Math.max(0, active - 1); render(); e.preventDefault(); }
+        else if(e.key === 'Enter'){ if(active >= 0) choose(active); else if(items.length === 1) choose(0); e.preventDefault(); e.stopPropagation(); }
+        else if(e.key === 'Escape'){ list.classList.remove('show'); }
+    });
+    list.addEventListener('mousedown', function(e){ var it = e.target.closest('.picker-item'); if(it){ e.preventDefault(); choose(parseInt(it.getAttribute('data-i'))); } });
+    sel.addEventListener('click', function(e){ if(e.target.getAttribute('data-clear')) clear(); });
+    document.addEventListener('click', function(e){ if(!e.target.closest('#' + opt.kw) && !e.target.closest('#' + opt.list)) list.classList.remove('show'); });
+    return {clear: clear};
+}
+
+var goodsPicker = null, picked = null;
+function showTip(g){
+    var tip = document.getElementById('goodsTip');
+    if(!g){ tip.innerHTML = ''; return; }
+    var top = parseFloat(g.top_price != null ? g.top_price : g.current_price) || 0, raise = parseFloat(g.raise_price) || 1;
+    tip.innerHTML = '当前价 ¥' + top.toFixed(2) + '，加价幅度 ¥' + raise.toFixed(2) + '，下一手至少 ¥' + (top + raise).toFixed(2) + '，截拍 ' + esc(g.end_text || fmtTime(g.end_time));
+    var fm = document.getElementById('fMax');
+    if(!fm.value) fm.value = (top + raise * 10).toFixed(2);
+}
+function initPicker(){
+    goodsPicker = makePicker({
+        kw: 'goodsKw', hidden: 'taskGoods', list: 'goodsList', sel: 'goodsSel', url: PRE + 'bid/searchGoods',
+        row: function(g){ return '<img src="' + esc(g.cover || '') + '" onerror="this.style.visibility=\'hidden\'"><div class="pi-main"><div class="pi-title">' + esc(g.title) + '</div><div class="pi-sub">当前价 ¥' + (parseFloat(g.top_price)||0).toFixed(2) + ' · 加价 ¥' + (parseFloat(g.raise_price)||0).toFixed(2) + ' · ' + (g.bid_count||0) + ' 次出价 · 截拍 ' + esc(g.end_text) + '</div></div><span class="pi-id">ID ' + g.id + '</span>'; },
+        text: function(g){ return '[' + g.id + '] ' + g.title; },
+        onPick: function(g){ picked = g; showTip(g); },
+        onClear: function(){ picked = null; showTip(null); }
+    });
+}
+function openTask(id){
+    if(!goodsPicker) initPicker();
+    goodsPicker.clear();
+    document.getElementById('fMax').value = '';
+    document.getElementById('fInterval').value = 30;
+    document.getElementById('fStop').value = 1;
+    document.getElementById('taskId').value = id || 0;
+    var edit = null;
+    if(id){
+        var row = document.querySelector('tr[data-row*=\'"id":' + id + ',\']');
+        if(row){ try { edit = JSON.parse(row.getAttribute('data-row')); } catch(e){} }
+    }
+    document.getElementById('taskTitle').textContent = edit ? ('编辑自动出价任务（拍品 ID ' + edit.goods_id + '）') : '添加自动出价任务';
+    document.getElementById('goodsGroup').style.display = edit ? 'none' : '';
+    document.getElementById('goodsRO').style.display = edit ? '' : 'none';
+    if(edit){
+        document.getElementById('goodsROText').textContent = '[' + edit.goods_id + '] ' + edit.title;
+        document.getElementById('fInterval').value = edit.interval_min;
+        document.getElementById('fMax').value = num(edit.max_price);
+        document.getElementById('fStop').value = num1(edit.stop_hours);
+        showTip(edit);
+    } else {
+        showTip(null);
+    }
+    document.getElementById('taskMask').classList.add('show');
+    setTimeout(function(){ document.getElementById(edit ? 'fInterval' : 'goodsKw').focus(); }, 50);
+}
+function closeTask(){ document.getElementById('taskMask').classList.remove('show'); }
+function saveTask(){
+    var id = parseInt(document.getElementById('taskId').value) || 0;
+    var goodsId = document.getElementById('taskGoods').value;
+    var interval = document.getElementById('fInterval').value, max = document.getElementById('fMax').value, stop = document.getElementById('fStop').value;
+    if(!id && !goodsId){ alert('请先搜索并选择拍品'); return; }
+    if(!interval || parseInt(interval) < 1){ alert('请填写出价间隔（分钟）'); return; }
+    if(!max || parseFloat(max) <= 0){ alert('请填写最高出价金额'); return; }
+    if(stop === '' || parseFloat(stop) < 0){ alert('请填写截拍前停止的小时数，0 表示不提前停止'); return; }
+    ajaxPost(PRE + 'auto_bid/' + (id ? 'edit' : 'add'), {id: id, goods_id: goodsId, interval_min: interval, max_price: max, stop_hours: stop}, function(res){
+        alert(res.msg);
+        if(res.code == 1){ closeTask(); loadList(id ? currentPage : 1); }
+    });
+}
+function setStatus(id, status){
+    ajaxPost(PRE + 'auto_bid/setStatus', {id: id, status: status}, function(res){ alert(res.msg); if(res.code == 1) loadList(currentPage); });
+}
+function delTask(id){
+    if(!confirm('确定删除这个自动出价任务？已产生的出价记录会保留。')) return;
+    ajaxPost(PRE + 'auto_bid/delete', {id: id}, function(res){ alert(res.msg); if(res.code == 1) loadList(currentPage); });
+}
+function fmtTime(ts){
+    var d = new Date(ts * 1000);
+    function p(n){ return n < 10 ? '0' + n : n; }
+    return d.getFullYear() + '-' + p(d.getMonth()+1) + '-' + p(d.getDate()) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
+}
+loadList(1);
+</script>
+{/block}

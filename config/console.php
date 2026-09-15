@@ -19,6 +19,8 @@ return [
         'goods:collect' => \app\command\GoodsCollect::class,
         // 指定卖家流拍商品自动上架：php think goods:auto-relist（每分钟；settle 结算后也会自动调用）
         'goods:auto-relist' => \app\command\GoodsAutoRelist::class,
+        // 虚拟用户自动出价：php think bid:auto（每分钟；settle 结算后也会自动调用）
+        'bid:auto' => \app\command\BidAuto::class,
         // 清理表结构缓存（数据库加字段后执行）
         'schema:clear'  => \app\command\SchemaClear::class,
     ],

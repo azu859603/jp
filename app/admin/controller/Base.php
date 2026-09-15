@@ -53,6 +53,7 @@ class Base extends BaseController
             'icon'  => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14.5 4.5 19.5 9.5 11 18l-5-5 8.5-8.5z"/><path d="M6 13l-3 3a2 2 0 0 0 0 2.8l2.2 2.2a2 2 0 0 0 2.8 0l3-3"/></svg>',
             'items' => [
                 ['title' => '出价记录', 'url' => '/admin1314/bid/index'],
+                ['title' => '自动出价', 'url' => '/admin1314/auto_bid/index'],
             ],
         ],
         'order' => [

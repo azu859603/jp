@@ -57,6 +57,7 @@ class Base extends BaseController
             'icon'  => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 4l6 6-8 8-6-6z"/><path d="M3 21l6-6"/><path d="M15 3l6 6"/></svg>',
             'items' => [
                 ['title' => '出价记录', 'url' => '/agent/bid/index'],
+                ['title' => '自动出价', 'url' => '/agent/auto_bid/index'],
             ],
         ],
         'finance' => [

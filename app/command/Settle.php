@@ -79,6 +79,20 @@ class Settle extends Command
             @file_put_contents($logFile, $rl . PHP_EOL, FILE_APPEND);
         }
 
+        // 虚拟用户自动出价（后台按拍品配置，没有任务时直接返回）
+        try {
+            $ab = auto_bid_run();
+            foreach ($ab['logs'] as $line) {
+                $rl = '[' . date('Y-m-d H:i:s') . '] 自动出价 ' . $line;
+                $output->writeln($rl);
+                @file_put_contents($logFile, $rl . PHP_EOL, FILE_APPEND);
+            }
+        } catch (\Throwable $e) {
+            $rl = '[' . date('Y-m-d H:i:s') . '] ERROR 自动出价 ' . $e->getMessage();
+            $output->writeln('<error>' . $rl . '</error>');
+            @file_put_contents($logFile, $rl . PHP_EOL, FILE_APPEND);
+        }
+
         return 0;
     }
 }
