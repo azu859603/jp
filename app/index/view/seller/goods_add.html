@@ -52,17 +52,6 @@
 </div>
 
 <div class="form-card">
-    <div class="form-tip" style="padding:10px 14px;">{:lang('可选设置')}</div>
-    <div class="form-row">
-        <span class="fl">{:lang('是否精选')}</span>
-        <div class="fr">
-            <label style="display:flex;align-items:center;gap:6px;"><input type="radio" name="is_featured" value="0" checked> {:lang('否')}</label>
-            <label style="display:flex;align-items:center;gap:6px;margin-left:16px;"><input type="radio" name="is_featured" value="1"> {:lang('是')}</label>
-        </div>
-    </div>
-</div>
-
-<div class="form-card">
     <div class="form-tip" style="padding:10px 14px;">{:lang('上传图片')} <span style="color:#E4393C;">{:lang('（至少4张，不同角度拍摄）')}</span></div>
     <div class="upload-grid" id="uploadGrid">
         <div class="upload-add" id="uploadBtn" onclick="uploadImage()">
@@ -179,7 +168,6 @@ function doPublish() {
         reserve_price: document.getElementById('reserve_price').value.trim(),
         end_time: endTime,
         content: document.getElementById('content').value.trim(),
-        is_featured: document.querySelector('input[name=is_featured]:checked').value,
         images: uploadedImages
     }, function(res){
         if (res.code === 1) {

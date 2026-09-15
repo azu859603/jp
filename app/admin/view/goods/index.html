@@ -148,11 +148,7 @@
             <div class="g-row">
                 <div class="g-col"><label>截拍时间 <span class="req">*</span></label><input type="datetime-local" class="form-control" id="gEndTime"></div>
                 <div class="g-col"><label>延迟结束（秒）</label><input type="number" min="0" class="form-control" id="gDelay" placeholder="0 表示不延迟"></div>
-                <div class="g-col" style="display:flex;align-items:flex-end;padding-bottom:4px;">
-                    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:normal;font-size:13px;margin:0;">
-                        <input type="checkbox" id="gFeatured" style="width:16px;height:16px;"> 推荐
-                    </label>
-                </div>
+                <div class="g-col"></div>
             </div>
             <div class="g-row">
                 <div class="g-col" style="flex:1;">
@@ -435,7 +431,6 @@ function openEditGoods(id){
             document.getElementById('gRef').value = parseFloat(g.reference_price) > 0 ? g.reference_price : '';
             document.getElementById('gEndTime').value = g.end_time_local || '';
             document.getElementById('gDelay').value = parseInt(g.delay_seconds) > 0 ? g.delay_seconds : '';
-            document.getElementById('gFeatured').checked = g.is_featured == 1;
             document.getElementById('gContent').value = g.content || '';
             setDialogMode(g);
             renderGoodsImgs();
@@ -458,7 +453,6 @@ function openAddGoods(){
     document.getElementById('gRef').value = '';
     document.getElementById('gEndTime').value = '';
     document.getElementById('gDelay').value = '';
-    document.getElementById('gFeatured').checked = false;
     document.getElementById('gContent').value = '';
     filterSeller();
     renderGoodsImgs();
@@ -545,7 +539,6 @@ function doAddGoods(){
         reference_price: document.getElementById('gRef').value || 0,
         end_time: endTime,
         delay_seconds: document.getElementById('gDelay').value || 0,
-        is_featured: document.getElementById('gFeatured').checked ? 1 : 0,
         cover: goodsImgs[0],
         images: goodsImgs.join(',')
     }, function(res){

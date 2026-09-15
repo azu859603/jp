@@ -166,7 +166,6 @@ class Seller extends Base
                 'start_time'      => $st,
                 'end_time'        => $et,
                 'delay_seconds'   => $delaySeconds,
-                'is_featured'      => (int)$this->request->post('is_featured', 0),
                 'status'          => $goodsStatus,
                 'create_time'     => $now,
                 'update_time'     => $now,
