@@ -17,6 +17,7 @@ class Index extends Base
         $stats = [
             'user_count'      => Db::name('user')->count(),
             'seller_count'    => Db::name('user')->where('is_seller', 1)->count(),
+            'virtual_count'   => Db::name('user')->where('is_virtual', 1)->count(),
             'goods_count'     => Db::name('goods')->count(),
             'auctioning'      => Db::name('goods')->where('status', 1)->where('end_time', '>', $now)->count(),
             'order_count'     => Db::name('order')->count(),

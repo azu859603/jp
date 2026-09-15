@@ -16,6 +16,7 @@ class Index extends Base
 
         $stat = [
             'member_total'  => count($ids),
+            'virtual_count' => 0,
             'member_today'  => 0,
             'member_month'  => 0,
             'seller_count'  => 0,
@@ -37,6 +38,7 @@ class Index extends Base
             $stat['member_today'] = (clone $this->memberQuery())->where('reg_time', '>=', $todayStart)->count();
             $stat['member_month'] = (clone $this->memberQuery())->where('reg_time', '>=', $monthStart)->count();
             $stat['seller_count'] = (clone $this->memberQuery())->where('is_seller', 1)->where('seller_check', 1)->count();
+            $stat['virtual_count'] = (clone $this->memberQuery())->where('is_virtual', 1)->count();
 
             // 下级作为买家的已支付订单
             $buy = Db::name('order')->whereIn('buyer_id', $ids)->where('pay_status', 1);
