@@ -118,7 +118,7 @@
             </div>
             <div class="form-group">
                 <label>备注</label>
-                <input type="text" class="form-control" id="balanceRemark" placeholder="调整原因" value="后台调整">
+                <input type="text" class="form-control" id="balanceRemark" maxlength="50" placeholder="调整原因（可不填）">
             </div>
         </div>
         <div class="dialog-footer">
@@ -350,7 +350,7 @@ function toggleAgent(id, val){
 function openBalance(id){
     currentId = id;
     document.getElementById('balanceAmount').value = '';
-    document.getElementById('balanceRemark').value = '后台调整';
+    document.getElementById('balanceRemark').value = '';
     document.getElementById('balanceMask').classList.add('show');
 }
 
