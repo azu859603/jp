@@ -621,6 +621,7 @@ return [
     '卖家删除，保证金退回（' => 'Seller removed the lot, deposit refunded (',
     '平台删除，保证金退回（' => 'Platform removed the lot, deposit refunded (',
     '平台下架，保证金退回（' => 'Platform took down the lot, deposit refunded (',
+    '出价记录删除，保证金退回（' => 'Bid deleted, deposit refunded (',
     '卖家下架，保证金退回（' => 'Seller took down the lot, deposit refunded (',
     '代理调整' => 'Agent adjustment',
     '代理添加会员赠送余额' => 'Bonus balance from agent',

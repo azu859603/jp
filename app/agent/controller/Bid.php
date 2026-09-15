@@ -222,4 +222,75 @@ class Bid extends Base
 
         return json(['code' => 1, 'msg' => '已添加出价记录']);
     }
+    /**
+     * 删除出价记录
+     * - 已成交 / 得标的出价不能删除
+     * - 竞拍中的出价若冻结了保证金：该买家在同一拍品上还有其它有效出价时，保证金转到最早的那条；否则退回可用余额并写流水
+     * - 删除后出价次数按剩余记录重新计数，前台当前价按剩余最高出价自动回落
+     */
+    public function delete()
+    {
+        if (!$this->request->isPost()) {
+            return json(['code' => 0, 'msg' => '请求方式错误']);
+        }
+        $id  = (int)$this->request->post('id');
+        $bid = Db::name('bid_record')->find($id);
+        if (!$bid) {
+            return json(['code' => 0, 'msg' => '出价记录不存在']);
+        }
+        $goods = Db::name('goods')->find($bid['goods_id']);
+        $ids = $this->memberIds();
+        if (!in_array((int)$bid['user_id'], $ids, true) && (!$goods || !in_array((int)$goods['seller_id'], $ids, true))) {
+            return json(['code' => 0, 'msg' => '该出价不属于您的团队']);
+        }
+        if ((int)$bid['is_winner'] === 1 || (int)$bid['status'] === 1) {
+            return json(['code' => 0, 'msg' => '已成交（得标）的出价不能删除']);
+        }
+        $now = time();
+        $refunded = 0;
+        $moved = false;
+        Db::startTrans();
+        try {
+            $bid = Db::name('bid_record')->where('id', $id)->lock(true)->find();
+            if (!$bid) {
+                throw new \Exception('出价记录不存在');
+            }
+            if ((int)$bid['status'] === 0 && (float)$bid['deposit'] > 0) {
+                $other = Db::name('bid_record')->where('goods_id', $bid['goods_id'])->where('user_id', $bid['user_id'])
+                    ->where('status', 0)->where('id', '<>', $id)->order('id', 'asc')->find();
+                if ($other) {
+                    // 同一买家还有其它有效出价：保证金随之转移，不退回
+                    Db::name('bid_record')->where('id', $other['id'])->update(['deposit' => $bid['deposit']]);
+                    $moved = true;
+                } else {
+                    $user = Db::name('user')->where('id', $bid['user_id'])->lock(true)->find();
+                    if ($user) {
+                        $newBalance = round($user['balance'] + $bid['deposit'], 2);
+                        $newFreeze  = round(max($user['freeze_balance'] - $bid['deposit'], 0), 2);
+                        Db::name('user')->where('id', $user['id'])->update(['balance' => $newBalance, 'freeze_balance' => $newFreeze, 'update_time' => $now]);
+                        Db::name('balance_log')->insert([
+                            'user_id'     => $user['id'],
+                            'type'        => 'refund',
+                            'amount'      => $bid['deposit'],
+                            'balance'     => $newBalance,
+                            'remark'      => '出价记录删除，保证金退回（' . ($goods['title'] ?? '') . '）',
+                            'create_time' => $now,
+                        ]);
+                        $refunded = (float)$bid['deposit'];
+                    }
+                }
+            }
+            Db::name('bid_record')->where('id', $id)->delete();
+            if ($goods) {
+                $cnt = Db::name('bid_record')->where('goods_id', $goods['id'])->count();
+                Db::name('goods')->where('id', $goods['id'])->update(['bid_count' => $cnt, 'update_time' => $now]);
+            }
+            Db::commit();
+        } catch (\Throwable $e) {
+            Db::rollback();
+            return json(['code' => 0, 'msg' => '操作失败：' . $e->getMessage()]);
+        }
+        $msg = '出价记录已删除' . ($refunded > 0 ? '，已退回保证金 ' . number_format($refunded, 2) . ' 元' : ($moved ? '，保证金已转到该买家的其它出价' : ''));
+        return json(['code' => 1, 'msg' => $msg]);
+    }
 }

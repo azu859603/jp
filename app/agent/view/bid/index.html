@@ -38,7 +38,7 @@
         <table class="table">
             <thead>
             <tr>
-                <th>ID</th><th>拍品</th><th>出价人</th><th>出价金额</th><th>状态</th><th>是否得标</th><th>归属</th><th>时间</th>
+                <th>ID</th><th>拍品</th><th>出价人</th><th>出价金额</th><th>状态</th><th>是否得标</th><th>归属</th><th>时间</th><th>操作</th>
             </tr>
             </thead>
             <tbody id="tbody"></tbody>
@@ -85,12 +85,13 @@
 
 <script>
 function loadList(page){
+    window.__bidPage = page;
     fetch('/agent/bid/index?page=' + page + '&limit=15&keyword=' + encodeURIComponent(document.getElementById('keyword').value), {headers:{'X-Requested-With':'XMLHttpRequest'}})
         .then(function(r){ return r.json(); })
         .then(function(res){
             var html = '';
             if(!res.data || !res.data.length){
-                html = '<tr><td colspan="8" class="empty">暂无数据</td></tr>';
+                html = '<tr><td colspan="9" class="empty">暂无数据</td></tr>';
             } else {
                 res.data.forEach(function(b){
                     var stHtml = b.status == 1 ? '<span class="tag tag-green">成交</span>'
@@ -104,7 +105,8 @@ function loadList(page){
                         + '<td>' + stHtml + '</td>'
                         + '<td>' + winHtml + '</td>'
                         + '<td>' + (b.seller_in_team == 1 ? '<span class="tag tag-orange">团队拍品</span> ' : '') + (b.buyer_in_team == 1 ? '<span class="tag tag-blue">团队买家</span>' : '') + '</td>'
-                        + '<td>' + fmtTime(b.create_time) + '</td></tr>';
+                        + '<td>' + fmtTime(b.create_time) + '</td>'
+                        + '<td>' + ((b.is_winner == 1 || b.status == 1) ? '-' : '<a class="btn btn-sm btn-danger" href="javascript:;" onclick="delBid(' + b.id + ',' + (b.status == 0 && b.deposit > 0 ? 1 : 0) + ')">删除</a>') + '</td></tr>';
                 });
             }
             document.getElementById('tbody').innerHTML = html;
@@ -218,6 +220,15 @@ function doBidAdd(){
     ajaxPost('/agent/bid/add', {goods_id: goodsId, user_id: userId, price: price}, function(res){
         alert(res.msg);
         if(res.code == 1){ closeBidAdd(); loadList(1); }
+    });
+}
+
+function delBid(id, hasDeposit){
+    var tip = '确定删除这条出价记录？删除后该商品的出价次数和当前价会相应回落。' + (hasDeposit ? '\n该出价冻结了保证金，删除后将退回买家（买家仍有其它有效出价时则转移到其它出价上）。' : '');
+    if(!confirm(tip)) return;
+    ajaxPost('/agent/bid/delete', {id: id}, function(res){
+        alert(res.msg);
+        if(res.code == 1) loadList(window.__bidPage || 1);
     });
 }
 
