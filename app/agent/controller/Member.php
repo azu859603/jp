@@ -537,4 +537,74 @@ class Member extends Base
         Db::name('pay_account')->where('id', $row['id'])->delete();
         return json(['code' => 1, 'msg' => '已删除']);
     }
+    /**
+     * 批量添加虚拟会员
+     * 账号统一为 12 开头的 11 位数字（真实手机号没有 12 号段，不会冲突），昵称 = 前缀 + 随机 4 位数字
+     */
+    public function batchAddVirtual()
+    {
+        if (!$this->request->isPost()) {
+            return json(['code' => 0, 'msg' => '请求方式错误']);
+        }
+        $count    = (int)$this->request->post('count', 0);
+        $prefix   = trim((string)$this->request->post('prefix', ''));
+        $password = trim((string)$this->request->post('password', ''));
+        $balance  = round((float)$this->request->post('balance', 0), 2);
+        if ($count < 1 || $count > 100) {
+            return json(['code' => 0, 'msg' => '数量需为 1 ~ 100']);
+        }
+        if ($password === '') {
+            $password = '123456';
+        }
+        if (strlen($password) < 6) {
+            return json(['code' => 0, 'msg' => '密码至少 6 位']);
+        }
+        if ($balance < 0) {
+            return json(['code' => 0, 'msg' => '初始余额不能为负数']);
+        }
+        $prefix = $prefix === '' ? '用户' : mb_substr($prefix, 0, 20);
+        $now    = time();
+        $hash   = hash_password($password);
+        $ip     = $this->request->ip();
+        $created = [];
+        Db::startTrans();
+        try {
+            for ($i = 0; $i < $count; $i++) {
+                $mobile   = generate_virtual_mobile();
+                $nickname = $prefix . str_pad((string)mt_rand(0, 9999), 4, '0', STR_PAD_LEFT);
+                $userId = Db::name('user')->insertGetId([
+                    'mobile'       => $mobile,
+                    'password'     => $hash,
+                    'nickname'     => $nickname,
+                    'invite_code'  => generate_invite_code(),
+                    'pid'          => $this->uid,
+                    'balance'      => $balance,
+                    'is_virtual'   => 1,
+                    'is_seller'    => 0,
+                    'seller_check' => 0,
+                    'status'       => 1,
+                    'reg_ip'       => $ip,
+                    'reg_time'     => $now,
+                    'create_time'  => $now,
+                    'update_time'  => $now,
+                ]);
+                if ($balance > 0) {
+                    Db::name('balance_log')->insert([
+                        'user_id'     => $userId,
+                        'type'        => 'recharge',
+                        'amount'      => $balance,
+                        'balance'     => $balance,
+                        'remark'      => '代理添加会员赠送余额',
+                        'create_time' => $now,
+                    ]);
+                }
+                $created[] = ['id' => $userId, 'mobile' => $mobile, 'nickname' => $nickname];
+            }
+            Db::commit();
+        } catch (\Throwable $e) {
+            Db::rollback();
+            return json(['code' => 0, 'msg' => '添加失败：' . $e->getMessage()]);
+        }
+        return json(['code' => 1, 'msg' => '已添加 ' . count($created) . ' 个虚拟会员，已归入您的团队，登录密码 ' . $password, 'data' => $created, 'password' => $password]);
+    }
 }

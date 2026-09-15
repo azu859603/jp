@@ -558,3 +558,18 @@ function auto_bid_run($limit = 200)
     }
     return $result;
 }
+
+/**
+ * 生成虚拟会员账号：12 开头 + 9 位随机数字，共 11 位
+ * 国内真实手机号没有 12 号段，因此不会与真实用户注册的号码冲突
+ */
+function generate_virtual_mobile()
+{
+    for ($i = 0; $i < 50; $i++) {
+        $mobile = '12' . str_pad((string)mt_rand(0, 999999999), 9, '0', STR_PAD_LEFT);
+        if (!Db::name('user')->where('mobile', $mobile)->count()) {
+            return $mobile;
+        }
+    }
+    throw new \RuntimeException('生成虚拟会员账号失败，请重试');
+}

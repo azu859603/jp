@@ -31,6 +31,7 @@
     <button class="btn" onclick="resetSearch()">重置</button>
     <span class="spacer"></span>
     <button class="btn btn-green" onclick="openAdd()">＋ 添加会员</button>
+    <button class="btn" onclick="openBatchVirtual()">批量添加虚拟会员</button>
 </div>
 
 <div class="card">
@@ -48,6 +49,49 @@
     <div class="pagination" id="pagination"></div>
 </div>
 
+<!-- 批量添加虚拟会员弹层 -->
+<div class="mask" id="vbMask">
+    <div class="dialog" style="width:520px;">
+        <div class="dialog-title">批量添加虚拟会员</div>
+        <div class="dialog-body">
+            <div class="tip" style="margin-bottom:12px;">账号自动生成为 <b>12 开头的 11 位数字</b>（真实手机号没有 12 号段，不会与真实用户冲突），昵称为前缀加 4 位随机数字。</div>
+            <div class="form-group">
+                <label>数量 <span class="req">*</span>（每次最多 100 个）</label>
+                <input type="number" min="1" max="100" step="1" class="form-control" id="vbCount" value="10" placeholder="1 ~ 100">
+            </div>
+            <div class="form-group">
+                <label>昵称前缀</label>
+                <input type="text" class="form-control" id="vbPrefix" maxlength="20" placeholder="默认「用户」，生成如 用户3827">
+            </div>
+            <div class="form-group">
+                <label>初始余额（元）</label>
+                <input type="number" step="0.01" min="0" class="form-control" id="vbBalance" value="100000">
+            </div>
+            <div class="form-group" style="margin-bottom:0;">
+                <label>登录密码</label>
+                <input type="text" class="form-control" id="vbPassword" placeholder="默认 123456，所有账号相同">
+            </div>
+        </div>
+        <div class="dialog-footer">
+            <button class="btn" onclick="document.getElementById('vbMask').classList.remove('show')">取消</button>
+            <button class="btn btn-primary" id="vbBtn" onclick="doBatchVirtual()">开始添加</button>
+        </div>
+    </div>
+</div>
+<!-- 批量添加结果 -->
+<div class="mask" id="vbResultMask">
+    <div class="dialog" style="width:520px;">
+        <div class="dialog-title">虚拟会员已添加</div>
+        <div class="dialog-body">
+            <div class="tip" id="vbResultTip" style="margin-bottom:8px;"></div>
+            <textarea class="form-control" id="vbResultText" rows="10" readonly style="font-family:Consolas,monospace;font-size:12px;"></textarea>
+        </div>
+        <div class="dialog-footer">
+            <button class="btn" onclick="copyVbResult()">复制账号</button>
+            <button class="btn btn-primary" onclick="document.getElementById('vbResultMask').classList.remove('show')">关闭</button>
+        </div>
+    </div>
+</div>
 <!-- 添加会员弹层 -->
 <div class="mask" id="addMask">
     <div class="dialog">
@@ -270,6 +314,36 @@ function resetSearch(){
     loadList(1);
 }
 
+
+function openBatchVirtual(){
+    document.getElementById('vbCount').value = '10';
+    document.getElementById('vbPrefix').value = '';
+    document.getElementById('vbBalance').value = '100000';
+    document.getElementById('vbPassword').value = '';
+    document.getElementById('vbMask').classList.add('show');
+    setTimeout(function(){ document.getElementById('vbCount').focus(); }, 50);
+}
+function doBatchVirtual(){
+    var count = parseInt(document.getElementById('vbCount').value) || 0;
+    var password = document.getElementById('vbPassword').value.trim();
+    if(count < 1 || count > 100){ alert('数量需为 1 ~ 100'); return; }
+    if(password && password.length < 6){ alert('密码至少 6 位'); return; }
+    if(!confirm('确定添加 ' + count + ' 个虚拟会员？')) return;
+    var btn = document.getElementById('vbBtn'); btn.disabled = true; btn.textContent = '添加中…';
+    ajaxPost('/admin1314/member/batchAddVirtual', {count: count, prefix: document.getElementById('vbPrefix').value.trim(), balance: document.getElementById('vbBalance').value, password: password}, function(res){
+        btn.disabled = false; btn.textContent = '开始添加';
+        if(res.code != 1){ alert(res.msg); return; }
+        document.getElementById('vbMask').classList.remove('show');
+        document.getElementById('vbResultTip').textContent = res.msg;
+        document.getElementById('vbResultText').value = (res.data || []).map(function(u){ return u.mobile + '  ' + u.nickname + '  ID:' + u.id; }).join('\n');
+        document.getElementById('vbResultMask').classList.add('show');
+        loadList(1);
+    });
+}
+function copyVbResult(){
+    var ta = document.getElementById('vbResultText'); ta.select();
+    try { document.execCommand('copy'); alert('已复制'); } catch(e) { alert('请手动复制'); }
+}
 function openAdd(){
     document.getElementById('addMobile').value = '';
     document.getElementById('addNickname').value = '';
