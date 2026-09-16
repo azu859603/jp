@@ -77,8 +77,9 @@ try {
     [, , $j] = req($gsid, 'POST', '/agent/auto_bid/delete', ['id' => $t3]); ok('代理不能删除团队外任务', ($j['code'] ?? 1) == 0 && task($t3), json_encode($j, JSON_UNESCAPED_UNICODE));
     [, , $j] = req($gsid, 'POST', '/agent/auto_bid/delete', ['id' => $t2]); ok('代理删除团队任务 B，出价记录保留', ($j['code'] ?? 0) == 1 && !task($t2) && bids($g2) == 1, json_encode($j, JSON_UNESCAPED_UNICODE));
     [, , $j] = req($asid, 'POST', '/admin1314/auto_bid/delete', ['id' => $t1]); ok('主后台删除任务 A', ($j['code'] ?? 0) == 1 && !task($t1), json_encode($j, JSON_UNESCAPED_UNICODE));
-    // settle 联动：结算后顺带执行自动出价
-    $pdo->exec("update auto_bid set next_time=$T-1 where id=$t3"); $o = run('settle'); ok('settle 结算后顺带执行自动出价（C 出到 120）', strpos($o, '自动出价') !== false && (float)top($g3)['price'] == 120, $o);
+    // 命令各自独立：settle 只结算、不执行自动出价；bid:auto 才出价
+    $pdo->exec("update auto_bid set next_time=$T-1 where id=$t3"); $o = run('settle'); ok('settle 只结算，不再顺带自动出价（C 仍为 110）', strpos($o, '自动出价') === false && (float)top($g3)['price'] == 110, $o . ' top=' . top($g3)['price']);
+    $o = run('bid:auto'); ok('bid:auto 独立执行自动出价（C 出到 120）', (float)top($g3)['price'] == 120, $o);
     // 拍品下架后任务自动结束
     $pdo->exec("update goods set status=4 where id=$g3"); $pdo->exec("update auto_bid set next_time=$T-1 where id=$t3"); run('bid:auto'); $x3 = task($t3); ok('拍品下架后任务自动结束', $x3['status'] == 2 && strpos($x3['stop_reason'], '结束或') !== false, json_encode($x3));
 } finally {

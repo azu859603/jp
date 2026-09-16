@@ -37,7 +37,7 @@ class User extends Base
     public function captcha()
     {
         $code  = '';
-        $chars = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';   // 去掉易混淆的 0O1I
+        $chars = '0123456789';   // 4 位纯数字验证码
         for ($i = 0; $i < 4; $i++) {
             $code .= $chars[mt_rand(0, strlen($chars) - 1)];
         }
@@ -137,12 +137,36 @@ class User extends Base
             $loginUpdate['password'] = hash_password($password);
         }
         Db::name('user')->where('id', $user['id'])->update($loginUpdate);
-        unset($user['password']);
-        session('user', $user);
+        // 登录成功换一个新的会话 ID（旧 ID 作废），防止会话固定攻击
+        \think\facade\Session::regenerate(true);
+        session('user', safe_session_user($user));
+        attach_guest_service_messages($user['id']);
 
         return json(['code' => 1, 'msg' => lang('登录成功'), 'url' => '/user/center']);
     }
 
+    /**
+     * 主后台「登录会员」：凭一次性令牌以该会员身份登录前台
+     * 令牌由 admin Member::loginAs() 生成，60 秒内有效、用一次即作废
+     */
+    public function loginAs()
+    {
+        $token = trim((string)$this->request->param('token', ''));
+        $key   = 'login_as_' . $token;
+        $data  = preg_match('/^[a-f0-9]{32}$/', $token) ? Cache::get($key) : null;
+        if (!is_array($data) || empty($data['uid'])) {
+            return $this->error(lang('登录链接已失效，请回后台重新点击「登录会员」'), '/user/login');
+        }
+        Cache::delete($key);   // 一次性
+        $user = Db::name('user')->where('id', (int)$data['uid'])->find();
+        if (!$user || (int)$user['status'] !== 1) {
+            return $this->error(lang('该会员不存在或已被禁用'), '/user/login');
+        }
+        \think\facade\Session::regenerate(true);
+        session('user', safe_session_user($user));
+        session('login_as_admin', (int)($data['admin_id'] ?? 0));
+        return redirect('/user/center');
+    }
     /**
      * 注册页
      */
@@ -174,8 +198,20 @@ class User extends Base
         $nickname = trim($this->request->post('nickname', ''));
         $inviteCode = trim($this->request->post('invite_code', ''));
 
-        if (!preg_match('/^1\d{10}$/', $mobile)) {
-            return json(['code' => 0, 'msg' => lang('手机号格式不正确')]);
+        // 图形验证码（一次性）
+        $expect = (string)session('user_captcha');
+        session('user_captcha', null);
+        if ($captcha === '' || $expect === '' || strtolower($captcha) !== strtolower($expect)) {
+            return json(['code' => 0, 'msg' => lang('验证码错误')]);
+        }
+        // 同一 IP 每小时最多注册 30 个账号，防批量刷注册
+        $regKey = 'reg_ip_' . md5($this->request->ip());
+        if ((int)\think\facade\Cache::get($regKey, 0) >= 30) {
+            return json(['code' => 0, 'msg' => lang('注册过于频繁，请稍后再试')]);
+        }
+        // 注册只接受真实手机号段（13~19 开头）；12 开头留给后台生成的虚拟会员，登录不受此限制
+        if (!preg_match('/^1[3-9]\d{9}$/', $mobile)) {
+            return json(['code' => 0, 'msg' => lang('请使用真实手机号注册（13～19 开头的 11 位号码）')]);
         }
         if (strlen($password) < 6) {
             return json(['code' => 0, 'msg' => lang('密码至少6位')]);
@@ -222,9 +258,11 @@ class User extends Base
             'update_time' => $now,
         ]);
 
+        \think\facade\Cache::set($regKey, (int)\think\facade\Cache::get($regKey, 0) + 1, 3600);
         $user = Db::name('user')->find($userId);
-        unset($user['password']);
-        session('user', $user);
+        \think\facade\Session::regenerate(true);
+        session('user', safe_session_user($user));
+        attach_guest_service_messages($userId);
 
         return json(['code' => 1, 'msg' => lang('注册成功'), 'url' => '/user/center']);
     }
@@ -242,7 +280,7 @@ class User extends Base
             $name = 'user_protocol';
             $title = lang('用户协议');
         }
-        $content = (string)Db::name('setting')->where('name', $name)->value('value');
+        $content = (string)get_setting($name);
         // 多语言协议内容（未填则回退简体）
         $langSet = Lang::getLangSet();
         if ($langSet !== 'zh-cn') {
@@ -343,7 +381,7 @@ class User extends Base
         $shareUsers = Db::name('user')->where('pid', $id)->field('id, nickname, mobile, reg_time')->order('id', 'desc')->limit(10)->select()->toArray();
 
         // 后台配置的客服链接
-        $serviceLink = (string)Db::name('setting')->where('name', 'service_link')->value('value');
+        $serviceLink = (string)get_setting('service_link');
 
         View::assign([
             'data'         => $data,
@@ -355,6 +393,7 @@ class User extends Base
             'page_title'   => lang('个人中心'),
             'tab_active'   => 'mine',
             'hide_header'  => true,
+            'seller_auto'  => seller_auto_open() ? 1 : 0,
         ]);
         return View::fetch();
     }
@@ -373,8 +412,16 @@ class User extends Base
             ->order('f.id', 'desc')
             ->select()
             ->toArray();
+        // 当前价：一条 GROUP BY 取出全部拍品的最高有效出价
+        $topMap = [];
+        $gids = array_values(array_unique(array_column($list, 'goods_id')));
+        if ($gids) {
+            foreach (Db::name('bid_record')->field('goods_id, MAX(price) AS top')->whereIn('goods_id', $gids)->where('status', 0)->group('goods_id')->select()->toArray() as $tr) {
+                $topMap[(int)$tr['goods_id']] = (float)$tr['top'];
+            }
+        }
         foreach ($list as &$v) {
-            $top = Db::name('bid_record')->where('goods_id', $v['goods_id'])->where('status', 0)->max('price');
+            $top = $topMap[(int)$v['goods_id']] ?? 0;
             $v['cur_price'] = $top > 0 ? (float)$top : (float)$v['start_price'];
             $v['status_txt'] = $v['goods_status'] == 1 ? lang('竞拍中') : ($v['goods_status'] == 2 ? lang('已成交') : ($v['goods_status'] == 3 ? lang('已流拍') : lang('已下架')));
         }
@@ -402,10 +449,18 @@ class User extends Base
             ->order('f.id', 'desc')
             ->select()
             ->toArray();
+        // 店铺拍品数 / 在拍数：一条 GROUP BY
+        $cntMap = [];
+        $sids = array_values(array_unique(array_column($list, 'seller_id')));
+        if ($sids) {
+            foreach (Db::name('goods')->field('seller_id, COUNT(*) AS total, SUM(status = 1) AS saling')->whereIn('seller_id', $sids)->group('seller_id')->select()->toArray() as $cr) {
+                $cntMap[(int)$cr['seller_id']] = [(int)$cr['total'], (int)$cr['saling']];
+            }
+        }
         foreach ($list as &$v) {
             $v['shop_name'] = !empty($v['shop_name']) ? $v['shop_name'] : $v['nickname'];
-            $v['goods_count'] = Db::name('goods')->where('seller_id', $v['seller_id'])->count();
-            $v['saling_count'] = Db::name('goods')->where('seller_id', $v['seller_id'])->where('status', 1)->count();
+            $v['goods_count'] = $cntMap[(int)$v['seller_id']][0] ?? 0;
+            $v['saling_count'] = $cntMap[(int)$v['seller_id']][1] ?? 0;
         }
         unset($v);
         View::assign([
@@ -432,8 +487,16 @@ class User extends Base
             ->limit(200)
             ->select()
             ->toArray();
+        // 当前价：一条 GROUP BY 取出全部拍品的最高有效出价
+        $topMap = [];
+        $gids = array_values(array_unique(array_column($list, 'goods_id')));
+        if ($gids) {
+            foreach (Db::name('bid_record')->field('goods_id, MAX(price) AS top')->whereIn('goods_id', $gids)->where('status', 0)->group('goods_id')->select()->toArray() as $tr) {
+                $topMap[(int)$tr['goods_id']] = (float)$tr['top'];
+            }
+        }
         foreach ($list as &$v) {
-            $top = Db::name('bid_record')->where('goods_id', $v['goods_id'])->where('status', 0)->max('price');
+            $top = $topMap[(int)$v['goods_id']] ?? 0;
             $v['cur_price'] = $top > 0 ? (float)$top : (float)$v['start_price'];
             $v['status_txt'] = $v['goods_status'] == 1 ? lang('竞拍中') : ($v['goods_status'] == 2 ? lang('已成交') : ($v['goods_status'] == 3 ? lang('已流拍') : lang('已下架')));
         }
@@ -462,13 +525,21 @@ class User extends Base
         // 资产明细：分页，页面滚动到底部时由 AJAX 追加下一页
         $page  = max((int)$this->request->param('page', 1), 1);
         $limit = 10;
-        $logQuery = Db::name('balance_log')->where('user_id', $id);
-        $total = $logQuery->count();
-        $logs  = $logQuery->order('id', 'desc')->page($page, $limit)->select()->toArray();
         $typeNames = [
             'recharge' => lang('充值'), 'deposit' => lang('保证金'), 'pay' => lang('支付'), 'income' => lang('收入'),
             'refund' => lang('退回'), 'withdraw' => lang('提现'), 'reward' => lang('奖励'), 'forfeit' => lang('没收'),
         ];
+        // 按类型筛选（页面上的类型下拉），只接受已知类型
+        $type = trim((string)$this->request->param('type', ''));
+        if (!isset($typeNames[$type])) {
+            $type = '';
+        }
+        $logQuery = Db::name('balance_log')->where('user_id', $id);
+        if ($type !== '') {
+            $logQuery->where('type', $type);
+        }
+        $total = $logQuery->count();
+        $logs  = $logQuery->order('id', 'desc')->page($page, $limit)->select()->toArray();
         foreach ($logs as &$log) {
             $log['remark']    = translate_remark($log['remark']);
             $log['type_name'] = $typeNames[$log['type']] ?? ($log['type'] ?: lang('余额'));
@@ -478,20 +549,31 @@ class User extends Base
 
         if ($this->request->isAjax()) {
             View::assign(['logs' => $logs]);
-            return json(['code' => 1, 'html' => View::fetch('user/wallet_items'), 'has_more' => $hasMore, 'page' => $page]);
+            return json(['code' => 1, 'html' => View::fetch('user/wallet_items'), 'has_more' => $hasMore, 'page' => $page, 'type' => $type]);
         }
 
-        // 总收入 / 总支出：按流水正负汇总
-        $income  = (float)Db::name('balance_log')->where('user_id', $id)->where('amount', '>', 0)->sum('amount');
-        $expense = abs((float)Db::name('balance_log')->where('user_id', $id)->where('amount', '<', 0)->sum('amount'));
+        // 总收入 / 总支出：排除会互相抵消的流水，只统计真正的进账与出账
+        // ① 「退回」类正数（保证金退回、提现拒绝退回、订单取消 / 售后退款）只是把之前扣走的钱还回来，
+        //    既不算收入，也要把它对应的那笔扣款从支出里减掉；
+        // ② 「没收」类负数只减少冻结金额，可用余额在出价冻结时已经扣过，不再重复计入支出。
+        $logBase  = Db::name('balance_log')->where('user_id', $id);
+        $reversal = (float)(clone $logBase)->where('amount', '>', 0)->where('type', 'refund')->sum('amount');
+        $income   = (float)(clone $logBase)->where('amount', '>', 0)->where('type', '<>', 'refund')->sum('amount');
+        $outflow  = abs((float)(clone $logBase)->where('amount', '<', 0)->where('type', '<>', 'forfeit')->sum('amount'));
+        $income   = round($income, 2);
+        $expense  = max(0, round($outflow - $reversal, 2));
 
         View::assign([
             'user'         => $user,
             'total_assets' => number_format($totalAssets, 2),
+            'balance_text' => number_format((float)$user['balance'], 2),
+            'freeze_text'  => number_format((float)$user['freeze_balance'], 2),
             'total_income' => number_format($income, 2),
             'total_expense'=> number_format($expense, 2),
             'logs'         => $logs,
             'has_more'     => $hasMore,
+            'type_names'   => $typeNames,
+            'type'         => $type,
             'page_title'   => lang('我的钱包'),
             'tab_active'   => 'mine',
         ]);
@@ -625,7 +707,7 @@ class User extends Base
         $records = Db::name('recharge')->where('user_id', $this->user['id'])->order('id', 'desc')->limit(20)->select()->toArray();
         // 是否有审核中的申请（未处理前禁止重复提交）
         $hasPending = (bool)Db::name('recharge')->where('user_id', $this->user['id'])->where('status', 0)->count();
-        $serviceLink = Db::name('setting')->where('name', 'service_link')->value('value');
+        $serviceLink = get_setting('service_link');
         View::assign([
             'records'      => $records,
             'has_pending'  => $hasPending,
@@ -762,7 +844,20 @@ class User extends Base
         $page = max((int)$this->request->param('page', 1), 1);
         $limit = 15;
 
+        $typeNames = [
+            'recharge' => lang('充值'), 'deposit' => lang('保证金'), 'pay' => lang('支付'), 'income' => lang('收入'),
+            'refund' => lang('退回'), 'withdraw' => lang('提现'), 'reward' => lang('奖励'), 'forfeit' => lang('没收'),
+        ];
+        // 按类型筛选（页面底部弹出的滚动选择框），只接受已知类型
+        $type = trim((string)$this->request->param('type', ''));
+        if (!isset($typeNames[$type])) {
+            $type = '';
+        }
+
         $query = Db::name('balance_log')->where('user_id', $id);
+        if ($type !== '') {
+            $query->where('type', $type);
+        }
         $total = $query->count();
         $logs = $query->order('id', 'desc')->page($page, $limit)->select()->toArray();
         // 流水备注多语言
@@ -770,12 +865,23 @@ class User extends Base
             $log['remark'] = translate_remark($log['remark']);
         }
         unset($log);
+        $hasMore = $page * $limit < $total;
+
+        // 翻页 / 切换类型：只返回列表片段
+        if ($this->request->isAjax()) {
+            View::assign(['logs' => $logs]);
+            return json(['code' => 1, 'html' => View::fetch('user/balance_log_items'), 'has_more' => $hasMore, 'page' => $page, 'type' => $type]);
+        }
 
         View::assign([
             'logs'       => $logs,
             'total'      => $total,
             'page'       => $page,
             'limit'      => $limit,
+            'has_more'   => $hasMore,
+            'type_names' => $typeNames,
+            'type'       => $type,
+            'type_name'  => $type !== '' ? $typeNames[$type] : lang('全部类型'),
             'page_title' => lang('余额明细'),
             'center_tab' => 'balance',
             'tab_active' => 'mine',
@@ -1003,7 +1109,7 @@ class User extends Base
 
         $query = Db::name('bid_record')->alias('b')
             ->leftJoin('goods g', 'b.goods_id = g.id')
-            ->field('b.*, g.title, g.cover, g.status as goods_status, g.end_time, g.final_price, g.winner_id')
+            ->field('b.*, g.title, g.cover, g.status as goods_status, g.end_time, g.final_price, g.winner_id, g.reserve_price')
             ->where('b.user_id', $id);
         $total = $query->count();
         $list = $query->order('b.id', 'desc')->page($page, $limit)->select()->toArray();
@@ -1011,10 +1117,11 @@ class User extends Base
         // 领先判断：每个商品价格最高（同价先出优先）的那条出价标记领先，其余出局（与详情页一致）
         $goodsIds = array_values(array_unique(array_column($list, 'goods_id')));
         $leadMap  = [];
+        $topPrice = [];
         if ($goodsIds) {
             $tops = Db::name('bid_record')
                 ->whereIn('goods_id', $goodsIds)
-                ->field('goods_id, id')
+                ->field('goods_id, id, price')
                 ->order('price', 'desc')
                 ->order('id', 'asc')
                 ->select()
@@ -1022,11 +1129,15 @@ class User extends Base
             foreach ($tops as $t) {
                 if (!isset($leadMap[$t['goods_id']])) {
                     $leadMap[$t['goods_id']] = $t['id'];
+                    $topPrice[$t['goods_id']] = (float)$t['price'];
                 }
             }
         }
         foreach ($list as &$b) {
             $b['is_lead'] = (!empty($leadMap[$b['goods_id']]) && $leadMap[$b['goods_id']] == $b['id']) ? 1 : 0;
+            // 拍品已流拍：有人出价却流拍，只可能是最高价没达到卖家设置的保留价
+            $b['goods_failed']  = (int)$b['goods_status'] === 3 ? 1 : 0;
+            $b['below_reserve'] = ($b['goods_failed'] && (float)$b['reserve_price'] > 0 && ($topPrice[$b['goods_id']] ?? 0) < (float)$b['reserve_price']) ? 1 : 0;
         }
         unset($b);
 
@@ -1186,8 +1297,7 @@ class User extends Base
 
             // 刷新 session 中的用户信息
             $user = Db::name('user')->find($id);
-            unset($user['password']);
-            session('user', $user);
+            session('user', safe_session_user($user));
 
             return json(['code' => 1, 'msg' => lang('认证资料已提交，请等待平台审核')]);
         }

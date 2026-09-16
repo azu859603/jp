@@ -46,8 +46,9 @@ return [
             'persistent' => false,
             // 默认有效期 0 永久
             'expire'     => 0,
-            // 键前缀：同一台 Redis 上多个站点共用时用于隔离
-            'prefix'     => Env::get('redis.prefix', 'jp:'),
+            // 键前缀：同一台 Redis 上部署多套本项目时靠它隔离缓存，每套部署必须不同（在 .env 的 [REDIS] PREFIX 里设置）
+            // 没设置时按本套代码所在目录生成一个唯一前缀，两套代码目录不同就不会撞键；但正式部署请显式设置成可读的值
+            'prefix'     => (string)Env::get('redis.prefix', '') !== '' ? Env::get('redis.prefix') : 'jp_' . substr(md5(root_path()), 0, 8) . ':',
             'tag_prefix' => 'tag:',
             'serialize'  => [],
         ],

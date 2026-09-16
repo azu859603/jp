@@ -130,20 +130,37 @@ class Report extends Base
             $points = array_slice($points, -60);
         }
 
+        // 一条按天分组的聚合查询代替「每个时间点 3 条查询」；月 / 周 / 日的边界都落在自然日上，按天桶再合并即可
+        $off  = (int)date('Z');
+        $from = $points[0][1];
+        $to   = $points[count($points) - 1][2];
+        $orderB = [];
+        $memberB = [];
+        if ($ids) {
+            $rows = Db::name('order')
+                ->field("FLOOR((pay_time + {$off}) / 86400) AS d, COUNT(*) AS c, SUM(price) AS a")
+                ->whereIn('buyer_id', $ids)->where('pay_status', 1)->where('pay_time', 'between', [$from, $to])
+                ->group('d')->select()->toArray();
+            foreach ($rows as $b) {
+                $orderB[(int)$b['d']] = [(int)$b['c'], (float)$b['a']];
+            }
+        }
+        $rows = (clone $this->memberQuery())
+            ->field("FLOOR((reg_time + {$off}) / 86400) AS d, COUNT(*) AS c")
+            ->where('reg_time', 'between', [$from, $to])
+            ->group('d')->select()->toArray();
+        foreach ($rows as $b) {
+            $memberB[(int)$b['d']] = (int)$b['c'];
+        }
         $rows = [];
         foreach ($points as $p) {
-            list($label, $from, $to) = $p;
-
-            $q = Db::name('order')->whereIn('buyer_id', $ids)
-                ->where('pay_status', 1)
-                ->where('pay_time', 'between', [$from, $to]);
-            $amount = round((float)(clone $q)->sum('price'), 2);
-            $count  = (clone $q)->count();
-
-            $newMember = (clone $this->memberQuery())
-                ->where('reg_time', 'between', [$from, $to])
-                ->count();
-
+            list($label, $pf, $pt) = $p;
+            $count = 0; $amount = 0; $newMember = 0;
+            for ($d = (int)floor(($pf + $off) / 86400); $d <= (int)floor(($pt + $off) / 86400); $d++) {
+                if (isset($orderB[$d])) { $count += $orderB[$d][0]; $amount += $orderB[$d][1]; }
+                if (isset($memberB[$d])) { $newMember += $memberB[$d]; }
+            }
+            $amount = round($amount, 2);
             $rows[] = [
                 'label'      => $label,
                 'count'      => $count,

@@ -11,8 +11,7 @@ use think\console\Output;
  * 指定卖家流拍商品自动重新上架
  *
  * 用法：php think goods:auto-relist
- * 部署：每分钟执行一次；`php think settle` 结算完成后也会自动调用一次，
- *       已部署 settle 定时任务的环境可以不单独配置本命令。
+ * 部署：每分钟执行一次（独立命令，settle 不再串联调用本命令）。
  *
  * 后台「基础设置 › 竞拍规则」配置：
  *   auto_relist_seller_id  自动上架的卖家会员 ID（默认 1）
@@ -30,6 +29,12 @@ class GoodsAutoRelist extends Command
 
     protected function execute(Input $input, Output $output)
     {
+        // 上一轮还没跑完时本轮直接跳过，避免两轮重叠执行
+        $lock = command_lock('auto_relist');
+        if ($lock === null) {
+            $output->writeln('[' . date('Y-m-d H:i:s') . '] 上一轮仍在执行，本轮跳过');
+            return 0;
+        }
         $runtime   = $this->app->getRuntimePath();
         $heartbeat = $runtime . 'auto_relist.heartbeat';
         $logFile   = $runtime . 'log' . DIRECTORY_SEPARATOR . 'auto_relist.log';

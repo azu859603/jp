@@ -27,6 +27,12 @@ class OrderRemind extends Command
 
     protected function execute(Input $input, Output $output)
     {
+        // 上一轮还没跑完时本轮直接跳过，避免两轮重叠执行
+        $lock = command_lock('order_remind');
+        if ($lock === null) {
+            $output->writeln('[' . date('Y-m-d H:i:s') . '] 上一轮仍在执行，本轮跳过');
+            return 0;
+        }
         if (!function_exists('remind_unshipped_order')) {
             require_once $this->app->getBasePath() . 'index' . DIRECTORY_SEPARATOR . 'common.php';
         }

@@ -25,7 +25,11 @@ class Goods extends Base
 
         // 浏览量 +1（拍卖中）
         if ($goods['status'] == 1) {
-            Db::name('goods')->where('id', $id)->inc('view_count')->update();
+            $viewKey = 'goods_view_' . $id . '_' . md5(!empty($this->user) ? 'u' . $this->user['id'] : 'ip' . $this->request->ip());
+            if (!\think\facade\Cache::has($viewKey)) {
+                \think\facade\Cache::set($viewKey, 1, 3600);
+                Db::name('goods')->where('id', $id)->inc('view_count')->update();
+            }
         }
 
         // 商品描述：含 HTML 标签的富文本原样渲染，纯文本保持原有转义输出（兼容旧数据）
@@ -48,7 +52,7 @@ class Goods extends Base
         $topBid = Db::name('bid_record')
             ->alias('b')
             ->leftJoin('user u', 'b.user_id = u.id')
-            ->field('b.*, u.nickname, u.mobile')
+            ->field('b.*, u.nickname')
             ->where('b.goods_id', $id)
             ->where('b.status', 0)
             ->order('b.price', 'desc')
@@ -60,7 +64,7 @@ class Goods extends Base
         $bids = Db::name('bid_record')
             ->alias('b')
             ->leftJoin('user u', 'b.user_id = u.id')
-            ->field('b.*, u.nickname, u.mobile')
+            ->field('b.*, u.nickname')
             ->where('b.goods_id', $id)
             ->order('b.price', 'desc')
             ->order('b.id', 'asc')
@@ -68,7 +72,7 @@ class Goods extends Base
             ->select()
             ->toArray();
         foreach ($bids as &$b) {
-            $b['display_name'] = !empty($b['nickname']) ? translate_nickname($b['nickname']) : (!empty($b['mobile']) ? substr($b['mobile'], 0, 3) . '****' . substr($b['mobile'], -4) : lang('拍友') . $b['user_id']);
+            $b['display_name'] = !empty($b['nickname']) ? translate_nickname($b['nickname']) : lang('拍友') . $b['user_id'];
         }
         unset($b);
 
@@ -205,26 +209,35 @@ class Goods extends Base
             return json(['code' => -3, 'msg' => $msg, 'url' => '/user/auth']);
         }
 
+        // 出价全流程在一个事务内：商品行锁生效，并发出价与重复冻结保证金都会被串行化
+        Db::startTrans();
+        try {
         $goods = Db::name('goods')->where('id', $goodsId)->lock(true)->find();
         if (!$goods) {
+            Db::rollback();
             return json(['code' => 0, 'msg' => lang('商品不存在')]);
         }
         if ($goods['status'] != 1) {
+            Db::rollback();
             return json(['code' => 0, 'msg' => lang('该商品不在拍卖中')]);
         }
         $now = time();
         if ($now < $goods['start_time']) {
+            Db::rollback();
             return json(['code' => 0, 'msg' => lang('拍卖尚未开始')]);
         }
         if ($now >= $goods['end_time']) {
+            Db::rollback();
             return json(['code' => 0, 'msg' => lang('拍卖已结束')]);
         }
         if ($goods['seller_id'] == $this->user['id']) {
+            Db::rollback();
             return json(['code' => 0, 'msg' => lang('不能给自己的商品出价')]);
         }
         // 已经领先的买家不能给自己加价
         $topRow = Db::name('bid_record')->where('goods_id', $goodsId)->where('status', 0)->order('price', 'desc')->order('id', 'asc')->find();
         if ($topRow && (int)$topRow['user_id'] === (int)$this->user['id']) {
+            Db::rollback();
             return json(['code' => 0, 'msg' => lang('您已是当前最高出价者，无需再次出价')]);
         }
 
@@ -244,11 +257,13 @@ class Goods extends Base
         $minPrice = $topPrice > 0 ? round($basePrice + $raise, 2) : round($basePrice, 2);
 
         if ($price < $minPrice) {
+            Db::rollback();
             return json(['code' => 0, 'msg' => lang('出价不能低于 ') . number_format($minPrice, 2) . lang(' 元')]);
         }
         // 阶梯校验：出价必须是 当前价 + 加价幅度的整数倍，禁止乱加价
         $steps = ($price - $basePrice) / $raise;
         if (abs($steps - round($steps)) > 0.0001) {
+            Db::rollback();
             return json(['code' => 0, 'msg' => lang('出价必须按加价幅度 ') . number_format($raise, 2) . lang(' 元递增（如 ') . number_format($minPrice, 2) . lang('、') . number_format($minPrice + $raise, 2) . lang(' 元）')]);
         }
 
@@ -261,8 +276,6 @@ class Goods extends Base
             ->where('deposit', '>', 0)
             ->max('deposit');
 
-        Db::startTrans();
-        try {
             // 出价前当前最高出价者（若被本次出价超过，则向其发出局站内信）
             $topBid = Db::name('bid_record')
                 ->where('goods_id', $goodsId)
@@ -345,7 +358,7 @@ class Goods extends Base
         $list = Db::name('bid_record')
             ->alias('b')
             ->leftJoin('user u', 'b.user_id = u.id')
-            ->field('b.*, u.nickname, u.mobile')
+            ->field('b.id, b.goods_id, b.user_id, b.price, b.status, b.is_winner, b.create_time, u.nickname')
             ->where('b.goods_id', $goodsId)
             ->order('b.price', 'desc')
             ->order('b.id', 'asc')
@@ -353,7 +366,7 @@ class Goods extends Base
             ->select()
             ->toArray();
         foreach ($list as &$b) {
-            $b['display_name'] = !empty($b['nickname']) ? translate_nickname($b['nickname']) : (!empty($b['mobile']) ? substr($b['mobile'], 0, 3) . '****' . substr($b['mobile'], -4) : lang('拍友') . $b['user_id']);
+            $b['display_name'] = !empty($b['nickname']) ? translate_nickname($b['nickname']) : lang('拍友') . $b['user_id'];
         }
         unset($b);
 

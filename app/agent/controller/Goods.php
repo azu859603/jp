@@ -65,11 +65,6 @@ class Goods extends Base
 
             $total = $query->count();
             $list  = $query->order('g.id', 'desc')->page($page, $limit)->select()->toArray();
-            foreach ($list as &$g) {
-                $g['seller_mobile'] = $this->maskMobile($g['seller_mobile']);
-            }
-            unset($g);
-
             return json(['code' => 0, 'msg' => '', 'count' => $total, 'data' => $list]);
         }
 
@@ -81,10 +76,6 @@ class Goods extends Base
             ->order('id', 'desc')
             ->select()
             ->toArray();
-        foreach ($sellers as &$s) {
-            $s['mobile'] = $this->maskMobile($s['mobile']);
-        }
-        unset($s);
 
         View::assign([
             'categories'  => $categories,
@@ -201,11 +192,6 @@ class Goods extends Base
 
             $total = $query->count();
             $list  = $query->order('g.id', 'desc')->page($page, $limit)->select()->toArray();
-            foreach ($list as &$g) {
-                $g['seller_mobile'] = $this->maskMobile($g['seller_mobile']);
-            }
-            unset($g);
-
             return json(['code' => 0, 'msg' => '', 'count' => $total, 'data' => $list]);
         }
 
@@ -229,7 +215,6 @@ class Goods extends Base
             ->where('g.id', $id)
             ->find();
 
-        $goods['seller_mobile']   = $this->maskMobile($goods['seller_mobile']);
         $goods['images_arr']      = $goods['images'] ? json_decode($goods['images'], true) : [];
         $goods['status_text']     = $this->statusText($goods['status']);
         $goods['start_time_text'] = $goods['start_time'] ? date('Y-m-d H:i:s', $goods['start_time']) : '-';
@@ -422,6 +407,10 @@ class Goods extends Base
         if ($et <= time() + 60) {
             return json(['code' => 0, 'msg' => '结束时间必须晚于当前时间1分钟以上']);
         }
+        // 已有买家出价：开拍时间不可改（已经开拍，改了没有意义）；截拍时间可提前或延后，只受上面「晚于当前时间 1 分钟」限制
+        if ((int)$goods['status'] === 1 && (int)$goods['bid_count'] > 0) {
+            $st = (int)$goods['start_time'];
+        }
 
         Db::name('goods')->where('id', $id)->update([
             'start_time'  => $st,
@@ -573,6 +562,7 @@ class Goods extends Base
         $deposit      = round((float)$this->request->post('deposit', 0), 2);
         $endTime      = trim($this->request->post('end_time', ''));
         $delaySeconds = max(0, (int)$this->request->post('delay_seconds', 0));
+        $rawViews     = trim((string)$this->request->post('view_count', ''));
         $cover        = trim($this->request->post('cover', ''));
         $images       = $this->request->post('images', []);
         if (is_string($images)) {
@@ -580,10 +570,11 @@ class Goods extends Base
         }
         $locked = $goods['status'] == 1 && $goods['bid_count'] > 0;
         if ($locked) {
-            // 已有出价：价格相关字段以库中为准，忽略提交值
-            $startPrice = (float)$goods['start_price'];
-            $raisePrice = (float)$goods['raise_price'];
-            $deposit    = (float)$goods['deposit'];
+            // 已有出价：价格相关字段以库中为准，忽略提交值；保留价同样不可再改（否则可人为制造流拍）
+            $startPrice   = (float)$goods['start_price'];
+            $raisePrice   = (float)$goods['raise_price'];
+            $deposit      = (float)$goods['deposit'];
+            $reservePrice = (float)$goods['reserve_price'];
         }
         if ($title === '') {
             return json(['code' => 0, 'msg' => '请输入产品标题']);
@@ -599,6 +590,9 @@ class Goods extends Base
         }
         if ($reservePrice > 0 && $reservePrice < $startPrice) {
             return json(['code' => 0, 'msg' => '保留价不能低于起拍价']);
+        }
+        if ($rawViews !== '' && (!ctype_digit($rawViews) || (int)$rawViews > 99999999)) {
+            return json(['code' => 0, 'msg' => '浏览量需为 0 ~ 99999999 的整数']);
         }
         if ($endTime === '') {
             return json(['code' => 0, 'msg' => '请选择截拍时间']);
@@ -630,8 +624,10 @@ class Goods extends Base
             'reference_price' => round((float)$this->request->post('reference_price', 0), 2),
             'end_time'        => $et,
             'delay_seconds'   => $delaySeconds,
+            // 浏览量：编辑弹窗里填了就一起改，留空则保持不变
+            'view_count'      => $rawViews !== '' ? (int)$rawViews : (int)$goods['view_count'],
             'update_time'     => time(),
         ]);
-        return json(['code' => 1, 'msg' => '保存成功' . ($locked ? '（已有出价，起拍价 / 加价幅度 / 保证金未变更）' : '')]);
+        return json(['code' => 1, 'msg' => '保存成功' . ($locked ? '（已有出价，起拍价 / 加价幅度 / 保证金 / 保留价未变更）' : '')]);
     }
 }

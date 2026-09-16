@@ -45,6 +45,7 @@ class UserInit extends Command
         'message',         // 聊天消息
         'admin_log',       // 后台日志
         'service_message', // 聊天记录
+        'auto_bid',        // 虚拟出价
     ];
 
     /** 明确保护、绝不清空的平台数据表 */

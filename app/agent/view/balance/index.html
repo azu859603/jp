@@ -6,7 +6,7 @@
 {block name="content"}
 <div class="readonly-tip"><span>🔒</span><span><b>数据范围</b>：仅包含您团队会员的资金变动记录（只读）。</span></div>
 <div class="search-bar">
-    <input type="text" class="form-control" id="keyword" placeholder="会员ID/手机号/昵称">
+    <input type="text" class="form-control" id="keyword" placeholder="手机号 / 昵称">
     <select class="form-control" id="type">
         <option value="">全部类型</option>
         <option value="recharge">充值</option>
@@ -60,12 +60,12 @@ function loadList(page){
                         : '<span style="color:#dc2626;font-weight:bold;">' + l.amount + '</span>';
                     html += '<tr>'
                         + '<td>' + l.id + '</td>'
-                        + '<td><a href="/agent/member/detail?id=' + l.user_id + '">' + (l.nickname || l.mobile || l.user_id) + '</a></td>'
-                        + '<td>' + (l.mobile || '-') + '</td>'
+                        + '<td><a href="/agent/member/detail?id=' + l.user_id + '">' + esc(l.nickname || l.mobile || l.user_id) + '</a></td>'
+                        + '<td>' + esc(l.mobile || '-') + '</td>'
                         + '<td><span class="tag ' + t[1] + '">' + t[0] + '</span></td>'
                         + '<td>' + amountHtml + '</td>'
                         + '<td>￥' + l.balance + '</td>'
-                        + '<td>' + l.remark + '</td>'
+                        + '<td>' + esc(l.remark) + '</td>'
                         + '<td>' + fmtTime(l.create_time) + '</td></tr>';
                 });
             }

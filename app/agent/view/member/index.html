@@ -99,6 +99,38 @@
     </div>
 </div>
 
+<!-- 编辑会员弹层：重置密码 / 卖家 / 代理 / 虚拟会员（代理端不能改上级） -->
+<div class="mask" id="editMask">
+    <div class="dialog">
+        <div class="dialog-title" id="editDialogTitle">编辑会员</div>
+        <div class="dialog-body">
+            <div class="form-group">
+                <label>重置密码</label>
+                <input type="text" class="form-control" id="editPwd" placeholder="留空表示不修改；至少 6 位" autocomplete="off">
+            </div>
+            <div class="form-group">
+                <label>卖家</label>
+                <div class="edit-seg"><label><input type="radio" name="editSeller" value="1"> 是</label><label><input type="radio" name="editSeller" value="0"> 否</label></div>
+                <div class="tip">「是」即开通卖家权限（审核状态置为已通过）；「否」取消卖家资格</div>
+            </div>
+            <div class="form-group">
+                <label>代理</label>
+                <div class="edit-seg"><label><input type="radio" name="editAgent" value="1"> 是</label><label><input type="radio" name="editAgent" value="0"> 否</label></div>
+                <div class="tip">代理可用前台账号登录 /agent 代理中心，管理注册时填写其邀请码的一级会员</div>
+            </div>
+            <div class="form-group" style="margin-bottom:0;">
+                <label>虚拟会员</label>
+                <div class="edit-seg"><label><input type="radio" name="editVirtual" value="1"> 是</label><label><input type="radio" name="editVirtual" value="0"> 否</label></div>
+                <div class="tip">虚拟会员可被自动出价脚本选中、出价时免实名且不冻结保证金；其提现申请会在提现审核里标注</div>
+            </div>
+        </div>
+        <div class="dialog-footer">
+            <button class="btn" onclick="document.getElementById('editMask').classList.remove('show')">取消</button>
+            <button class="btn btn-primary" onclick="doEditSave()">保存</button>
+        </div>
+    </div>
+</div>
+<style>.edit-seg{display:flex;gap:18px;font-size:13px;color:#334155;}.edit-seg label{display:flex;align-items:center;gap:5px;cursor:pointer;}.edit-seg input{width:15px;height:15px;}</style>
 <!-- 批量添加虚拟会员弹层 -->
 <div class="mask" id="vbMask">
     <div class="dialog" style="width:520px;">
@@ -201,6 +233,7 @@
 </div>
 
 <script>
+var memberRows = {};
 var PAGE_SIZE = 15;
 var currentPage = 1;
 var listData = [];
@@ -228,6 +261,7 @@ function loadList(page){
                         ? '<span class="tag tag-orange">卖家</span>'
                         : '<span class="tag tag-blue">买家</span>';
                     if(u.is_virtual == 1) typeHtml += '<div style="font-size:12px;color:#8b5cf6;margin-top:3px;">（虚拟会员）</div>';
+                    memberRows[u.id] = u;
                     var statusHtml = u.status == 1
                         ? '<span class="tag tag-green">正常</span>'
                         : '<span class="tag tag-red">禁用</span>';
@@ -244,6 +278,7 @@ function loadList(page){
                         + '<td>' + (u.last_login_time ? fmtTime(u.last_login_time) : '<span class="gray">未登录</span>') + '</td>'
                         + '<td style="white-space:nowrap;"><a class="btn btn-sm" href="/agent/member/detail?id=' + u.id + '">详情</a>'
                         + ' <a class="btn btn-sm" href="javascript:;" onclick="openBalance(' + u.id + ')">余额</a>'
+                        + ' <a class="btn btn-sm btn-primary" href="javascript:;" onclick="openEdit(' + u.id + ')">编辑</a>'
                         + ((u.is_seller == 1 && u.seller_check == 1) ? ' <a class="btn btn-sm btn-primary" href="javascript:;" onclick="openShopEdit(' + u.id + ')">编辑店铺</a>' : '')
                         + '</td>'
                         + '</tr>';
@@ -269,6 +304,33 @@ function renderPagination(total, page){
     document.getElementById('pagination').innerHTML = html;
 }
 
+function setRadio(name, v){ var els = document.getElementsByName(name); for(var i = 0; i < els.length; i++){ els[i].checked = (els[i].value == v); } }
+function getRadio(name){ var els = document.getElementsByName(name); for(var i = 0; i < els.length; i++){ if(els[i].checked) return els[i].value; } return ''; }
+var editId = 0;
+function openEdit(id){
+    var u = memberRows[id];
+    if(!u){ alert('请刷新列表后重试'); return; }
+    editId = id;
+    document.getElementById('editDialogTitle').textContent = '编辑会员 - ' + (u.mobile || ('#' + id));
+    document.getElementById('editPwd').value = '';
+    setRadio('editSeller', u.is_seller == 1 ? 1 : 0);
+    setRadio('editAgent', u.is_agent == 1 ? 1 : 0);
+    setRadio('editVirtual', u.is_virtual == 1 ? 1 : 0);
+    document.getElementById('editMask').classList.add('show');
+}
+
+function doEditSave(){
+    var pwd = document.getElementById('editPwd').value.trim();
+    if(pwd !== '' && pwd.length < 6){ alert('密码至少6位'); return; }
+    var data = {id: editId, password: pwd, is_seller: getRadio('editSeller'), is_agent: getRadio('editAgent'), is_virtual: getRadio('editVirtual')};
+    ajaxPost('/agent/member/editSave', data, function(res){
+        alert(res.msg);
+        if(res.code == 1){
+            document.getElementById('editMask').classList.remove('show');
+            loadList(currentPage);
+        }
+    });
+}
 function openBalance(id){
     var u = null; listData.forEach(function(x){ if(x.id == id) u = x; });
     if(!u) return;

@@ -51,7 +51,7 @@ body{font-family:"Microsoft YaHei",Arial,sans-serif;background:linear-gradient(1
         <div class="form-group">
             <label>验证码</label>
             <div class="captcha-row">
-                <input type="text" class="form-control" id="captcha" maxlength="4" placeholder="请输入验证码" autocomplete="off">
+                <input type="text" class="form-control" id="captcha" maxlength="4" inputmode="numeric" pattern="[0-9]*" placeholder="请输入 4 位数字验证码" autocomplete="off" oninput="this.value=this.value.replace(/\D/g,'')">
                 <img src="/agent/login/captcha" alt="验证码" onclick="this.src='/agent/login/captcha?'+Math.random()" title="点击刷新">
             </div>
         </div>

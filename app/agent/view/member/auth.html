@@ -4,7 +4,7 @@
 {block name="crumb"}会员管理 / <b>实名认证</b>{/block}
 
 {block name="content"}
-<div class="readonly-tip"><span>🔒</span><span><b>数据范围</b>：仅包含您直接邀请的一级会员的申请记录。手机号与身份证号已脱敏，证件照片仅用于审核。</span></div>
+<div class="readonly-tip"><span>🔒</span><span><b>数据范围</b>：仅包含您直接邀请的一级会员的申请记录。列表中的手机号与身份证号已脱敏，编辑时可看到并修改完整号码。</span></div>
 <div class="search-bar">
     <select class="form-control" id="status" onchange="loadList(1)">
         <option value="" selected>全部</option>
@@ -12,6 +12,8 @@
         <option value="2">已通过</option>
         <option value="3">已拒绝</option>
     </select>
+    <span class="spacer"></span>
+    <button class="btn btn-primary" onclick="openAuth(0)">＋ 录入实名认证</button>
 </div>
 
 <div class="card">
@@ -28,6 +30,64 @@
     <div class="pagination" id="pagination"></div>
 </div>
 
+<!-- 录入 / 修改实名认证 -->
+<div class="mask" id="authMask">
+    <div class="dialog" style="width:520px;">
+        <div class="dialog-title" id="authTitle">录入实名认证</div>
+        <div class="dialog-body">
+            <input type="hidden" id="pickUser" value="0">
+            <div class="form-group" id="pickGroup">
+                <label>会员 <span class="req">*</span> <span class="tip" style="display:inline">（只能选择您团队内还没有实名资料的会员）</span></label>
+                <div style="position:relative;">
+                    <input type="text" class="form-control" id="userKw" placeholder="手机号 / 昵称 / 会员 ID" autocomplete="off">
+                    <div id="userList" class="pick-list"></div>
+                </div>
+                <div class="tip" id="userSel" style="color:#16a34a;min-height:16px;"></div>
+            </div>
+            <div class="form-group" id="roGroup" style="display:none;">
+                <label>会员</label>
+                <div class="form-control" style="background:#f8fafc;color:#64748b;" id="roText"></div>
+            </div>
+            <div class="form-group">
+                <label>真实姓名 <span class="req">*</span></label>
+                <input type="text" class="form-control" id="aName" maxlength="30" placeholder="与身份证一致">
+            </div>
+            <div class="form-group">
+                <label>身份证号 <span class="req">*</span></label>
+                <input type="text" class="form-control" id="aCard" maxlength="18" placeholder="18 位，最后一位可为 X">
+            </div>
+            <div class="form-group">
+                <label>身份证照片 <span class="tip" style="display:inline">（可不传，点击方框上传或替换）</span></label>
+                <div style="display:flex;gap:12px;">
+                    <div style="flex:1;">
+                        <div class="tip" style="margin-bottom:4px;">正面</div>
+                        <div class="img-slot" id="aFrontBox" onclick="pickImage(function(u){ setImg('aFront', u); })">＋ 上传</div>
+                        <input type="hidden" id="aFront" value="">
+                    </div>
+                    <div style="flex:1;">
+                        <div class="tip" style="margin-bottom:4px;">反面</div>
+                        <div class="img-slot" id="aBackBox" onclick="pickImage(function(u){ setImg('aBack', u); })">＋ 上传</div>
+                        <input type="hidden" id="aBack" value="">
+                    </div>
+                </div>
+            </div>
+            <div class="form-group" style="margin-bottom:0;">
+                <label>认证状态</label>
+                <select class="form-control" id="aStatus" onchange="onAuthStatus()">
+                    <option value="2">已通过</option>
+                    <option value="1">待审核</option>
+                    <option value="3">已拒绝</option>
+                </select>
+                <input type="text" class="form-control" id="aReason" maxlength="200" placeholder="拒绝原因（会员可在前台看到）" style="display:none;margin-top:8px;">
+            </div>
+        </div>
+        <div class="dialog-footer">
+            <button class="btn" onclick="document.getElementById('authMask').classList.remove('show')">取消</button>
+            <button class="btn btn-primary" onclick="saveAuth()">保存</button>
+        </div>
+    </div>
+</div>
+
 <!-- 证件大图预览 -->
 <div class="mask" id="imgMask" onclick="document.getElementById('imgMask').classList.remove('show');document.getElementById('imgViewer').style.display='none'"></div>
 <div class="img-viewer" id="imgViewer">
@@ -37,6 +97,12 @@
 <style>
 .img-viewer{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:1000;display:none;max-width:90%;}
 .img-viewer img{max-width:100%;max-height:80vh;border-radius:8px;box-shadow:0 8px 30px rgba(0,0,0,.5);}
+.img-slot{height:92px;border:1px dashed #cbd5e1;border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#94a3b8;background:#f8fafc;overflow:hidden;font-size:13px;}
+.img-slot img{max-width:100%;max-height:100%;object-fit:contain;}
+.pick-list{display:none;position:absolute;left:0;right:0;top:100%;z-index:20;background:#fff;border:1px solid #e2e8f0;border-radius:8px;box-shadow:0 4px 14px rgba(0,0,0,.08);max-height:220px;overflow-y:auto;margin-top:4px;}
+.pick-item{padding:8px 12px;cursor:pointer;border-bottom:1px solid #f1f5f9;font-size:13px;}
+.pick-item:last-child{border-bottom:0;}
+.pick-item:hover{background:#fff3e6;}
 </style>
 
 <script>
@@ -55,23 +121,24 @@ function loadList(page){
                     var st = u.auth_status;
                     var stHtml = st == 1 ? '<span class="tag tag-orange">待审核</span>'
                         : (st == 2 ? '<span class="tag tag-green">已通过</span>' : '<span class="tag tag-red">已拒绝</span>');
-                    var card = u.id_card_mask || '-';
-                    var reasonHtml = st == 3 && u.auth_reason ? '<div style="font-size:12px;color:#999;margin-top:2px;">' + u.auth_reason + '</div>' : '';
+                    var card = esc(u.id_card_mask || '-');
+                    var reasonHtml = st == 3 && u.auth_reason ? '<div style="font-size:12px;color:#999;margin-top:2px;">' + esc(u.auth_reason) + '</div>' : '';
                     html += '<tr>'
                         + '<td>' + u.id + '</td>'
-                        + '<td>' + (u.nickname || '-') + '</td>'
-                        + '<td>' + (u.mobile_mask || '-') + '</td>'
-                        + '<td>' + (u.real_name || '-') + '</td>'
+                        + '<td>' + esc(u.nickname || '-') + '</td>'
+                        + '<td>' + esc(u.mobile_mask || '-') + '</td>'
+                        + '<td>' + esc(u.real_name || '-') + '</td>'
                         + '<td>' + card + reasonHtml + '</td>'
                         + '<td>'
-                        + (u.id_card_front ? '<img src="' + u.id_card_front + '" style="width:38px;height:24px;object-fit:cover;border-radius:3px;cursor:pointer;margin-right:4px;" onclick="viewImg(\'' + u.id_card_front + '\')">' : '-')
-                        + (u.id_card_back ? '<img src="' + u.id_card_back + '" style="width:38px;height:24px;object-fit:cover;border-radius:3px;cursor:pointer;" onclick="viewImg(\'' + u.id_card_back + '\')">' : '')
+                        + (u.id_card_front ? '<img src="' + esc(u.id_card_front) + '" style="width:38px;height:24px;object-fit:cover;border-radius:3px;cursor:pointer;margin-right:4px;" onclick="viewImg(\'' + esc(u.id_card_front) + '\')">' : '-')
+                        + (u.id_card_back ? '<img src="' + esc(u.id_card_back) + '" style="width:38px;height:24px;object-fit:cover;border-radius:3px;cursor:pointer;" onclick="viewImg(\'' + esc(u.id_card_back) + '\')">' : '')
                         + '</td>'
                         + '<td>' + (u.create_time ? fmtTime(u.create_time) : '-') + '</td>'
                         + '<td>' + stHtml + '</td>'
                         + '<td style="white-space:nowrap;">'
+                        + '<a class="btn btn-sm" href="javascript:;" onclick="openAuth(' + u.id + ')">编辑</a> '
                         + (st == 1 ? '<a class="btn btn-sm btn-green" href="javascript:;" onclick="audit(' + u.id + ',\'pass\')">通过</a> '
-                            + '<a class="btn btn-sm btn-danger" href="javascript:;" onclick="audit(' + u.id + ',\'reject\')">拒绝</a>' : '-')
+                            + '<a class="btn btn-sm btn-danger" href="javascript:;" onclick="audit(' + u.id + ',\'reject\')">拒绝</a>' : '')
                         + '</td></tr>';
                 });
             }
@@ -88,6 +155,125 @@ function viewImg(src){
     document.getElementById('imgViewerSrc').src = src;
     document.getElementById('imgMask').classList.add('show');
     document.getElementById('imgViewer').style.display = 'block';
+}
+
+/* ===== 上传 / 会员选择 ===== */
+function pickImage(cb){
+    var input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = function(e){
+        var file = e.target.files[0];
+        if(!file) return;
+        var fd = new FormData();
+        fd.append('file', file);
+        fetch('/agent/upload/image', {method:'POST', headers:{'X-Requested-With':'XMLHttpRequest'}, body:fd})
+            .then(function(r){ return r.json(); })
+            .then(function(res){ if(res.code === 1) cb(res.url); else alert(res.msg || '上传失败'); })
+            .catch(function(){ alert('网络错误，请重试'); });
+    };
+    input.click();
+}
+function setImg(id, url){
+    document.getElementById(id).value = url || '';
+    var box = document.getElementById(id + 'Box');
+    box.innerHTML = url ? '<img src="' + esc(url) + '">' : '＋ 上传';
+}
+
+var pickerReady = false;
+function initPicker(){
+    if(pickerReady) return;
+    pickerReady = true;
+    var kw = document.getElementById('userKw'), list = document.getElementById('userList'),
+        hid = document.getElementById('pickUser'), sel = document.getElementById('userSel');
+    var timer = null;
+    function search(){
+        fetch('/agent/member/searchUser?scene=auth&kw=' + encodeURIComponent(kw.value.trim()), {headers:{'X-Requested-With':'XMLHttpRequest'}})
+            .then(function(r){ return r.json(); })
+            .then(function(res){
+                var d = res.data || [];
+                list.innerHTML = d.length ? d.map(function(u){
+                    var text = (u.nickname || '-') + '（' + u.mobile + '）';
+                    return '<div class="pick-item" data-id="' + u.id + '" data-text="' + esc(text) + '">' + esc(u.nickname || '-') + ' <span style="color:#94a3b8;">' + esc(u.mobile) + ' · ID ' + u.id + '</span></div>';
+                }).join('') : '<div style="padding:12px;text-align:center;color:#94a3b8;font-size:12px;">没有匹配的会员（已有实名资料的不在列表中）</div>';
+                list.style.display = 'block';
+            })
+            .catch(function(){ list.style.display = 'none'; });
+    }
+    kw.addEventListener('input', function(){ hid.value = 0; sel.textContent = ''; clearTimeout(timer); timer = setTimeout(search, 250); });
+    kw.addEventListener('focus', function(){ if(!parseInt(hid.value)){ clearTimeout(timer); timer = setTimeout(search, 100); } });
+    list.addEventListener('mousedown', function(e){
+        var it = e.target.closest('.pick-item');
+        if(!it) return;
+        e.preventDefault();
+        hid.value = it.getAttribute('data-id');
+        kw.value = it.getAttribute('data-text');
+        sel.textContent = '已选择：' + it.getAttribute('data-text');
+        list.style.display = 'none';
+    });
+    document.addEventListener('click', function(e){
+        if(!e.target.closest('#userKw') && !e.target.closest('#userList')) list.style.display = 'none';
+    });
+}
+
+function onAuthStatus(){
+    document.getElementById('aReason').style.display = document.getElementById('aStatus').value == '3' ? 'block' : 'none';
+}
+
+function fillAuth(u){
+    document.getElementById('authTitle').textContent = u ? ('修改实名认证（ID:' + u.id + '）') : '录入实名认证';
+    document.getElementById('pickGroup').style.display = u ? 'none' : '';
+    document.getElementById('roGroup').style.display = u ? '' : 'none';
+    document.getElementById('pickUser').value = u ? u.id : 0;
+    document.getElementById('userKw').value = '';
+    document.getElementById('userSel').textContent = '';
+    document.getElementById('roText').textContent = u ? ((u.nickname || '-') + '（' + (u.mobile_mask || '') + '）') : '';
+    document.getElementById('aName').value = u ? (u.real_name || '') : '';
+    document.getElementById('aCard').value = u ? (u.id_card || '') : '';
+    setImg('aFront', u ? u.id_card_front : '');
+    setImg('aBack', u ? u.id_card_back : '');
+    document.getElementById('aStatus').value = u ? String(u.auth_status) : '2';
+    document.getElementById('aReason').value = u ? (u.auth_reason || '') : '';
+    onAuthStatus();
+    document.getElementById('authMask').classList.add('show');
+    setTimeout(function(){ document.getElementById(u ? 'aName' : 'userKw').focus(); }, 50);
+}
+
+function openAuth(id){
+    initPicker();
+    if(!id){ fillAuth(null); return; }
+    // 列表里的身份证是脱敏的，编辑时单独取完整资料
+    fetch('/agent/member/authInfo?id=' + id, {headers:{'X-Requested-With':'XMLHttpRequest'}})
+        .then(function(r){ return r.json(); })
+        .then(function(res){
+            if(res.code != 1){ alert(res.msg || '加载失败'); return; }
+            fillAuth(res.data);
+        })
+        .catch(function(){ alert('网络错误，请重试'); });
+}
+
+function saveAuth(){
+    var uid = parseInt(document.getElementById('pickUser').value) || 0;
+    if(!uid){ alert('请先搜索并选择会员'); return; }
+    var name = document.getElementById('aName').value.trim();
+    var card = document.getElementById('aCard').value.trim().toUpperCase();
+    if(!name){ alert('请输入真实姓名'); return; }
+    if(!/^\d{17}[\dX]$/.test(card)){ alert('身份证号格式不正确'); return; }
+    var st = document.getElementById('aStatus').value;
+    var reason = document.getElementById('aReason').value.trim();
+    if(st == '3' && !reason){ alert('状态为已拒绝时请填写拒绝原因'); return; }
+    ajaxPost('/agent/member/authSave', {
+        id: uid, real_name: name, id_card: card,
+        id_card_front: document.getElementById('aFront').value,
+        id_card_back: document.getElementById('aBack').value,
+        auth_status: st, auth_reason: reason
+    }, function(res){
+        alert(res.msg);
+        if(res.code == 1){
+            document.getElementById('authMask').classList.remove('show');
+            loadList(currentPage);
+        }
+    });
 }
 
 function audit(id, action){

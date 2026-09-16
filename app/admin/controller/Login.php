@@ -63,6 +63,8 @@ class Login extends BaseController
             session('admin_captcha', null);
             return json(['code' => 0, 'msg' => '验证码错误']);
         }
+        // 验证码一次性：校验通过即作废，密码错了也要重新取一张
+        session('admin_captcha', null);
 
         $admin = Db::name('admin_user')->where('username', $username)->find();
         if (!$admin || !verify_password($password, $admin['password'])) {
@@ -74,9 +76,12 @@ class Login extends BaseController
             return json(['code' => 0, 'msg' => '账号已被禁用']);
         }
 
-        // 谷歌验证码（后台开关开启时）：已绑定的管理员必须提供正确的 6 位动态码；
-        // 未绑定的先放行登录，随后由 Base 强制跳转到绑定页完成绑定
+        // 谷歌验证码（后台开关开启时）：所有管理员都必须提供正确的 6 位动态码；
+        // 尚未绑定的账号不能登录（否则拿到密码的人可以自己绑一个验证器），由超级管理员在「管理员管理」生成绑定码
         $gaOn = (int)get_setting('admin_google_auth', 0) === 1;
+        if ($gaOn && empty($admin['google_secret'])) {
+            return json(['code' => 0, 'msg' => '该账号尚未绑定谷歌验证器，请联系超级管理员在「管理员管理」中生成绑定码后再登录']);
+        }
         if ($gaOn && !empty($admin['google_secret'])) {
             if ($gaCode === '') {
                 return json(['code' => 0, 'msg' => '请输入谷歌验证码']);
@@ -98,6 +103,8 @@ class Login extends BaseController
         Cache::delete($lockKey);
 
         // 写入登录信息
+        // 登录成功换一个新的会话 ID（旧 ID 作废），防止会话固定攻击
+        \think\facade\Session::regenerate(true);
         session('admin', $admin);
         session('admin_captcha', null);
         $loginUpdate = [
@@ -111,10 +118,6 @@ class Login extends BaseController
         Db::name('admin_user')->where('id', $admin['id'])->update($loginUpdate);
         admin_log('登录后台', $admin['id']);
 
-        // 开启了谷歌验证但本人还没绑定：登录后直接进绑定页
-        if ($gaOn && empty($admin['google_secret'])) {
-            return json(['code' => 1, 'msg' => '登录成功，请先绑定谷歌验证器', 'url' => '/admin1314/admin_user/google']);
-        }
         return json(['code' => 1, 'msg' => '登录成功', 'url' => '/admin1314/index/index']);
     }
 
@@ -124,7 +127,7 @@ class Login extends BaseController
     public function captcha()
     {
         $code = '';
-        $chars = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
+        $chars = '0123456789';   // 4 位纯数字验证码
         for ($i = 0; $i < 4; $i++) {
             $code .= $chars[mt_rand(0, strlen($chars) - 1)];
         }
@@ -156,9 +159,17 @@ class Login extends BaseController
             imagechar($img, $font, $x, $y, $code[$i], $textColor);
         }
 
-        header('Content-Type: image/png');
+        // 走 TP 响应管线输出，避免直接 header() 被框架响应头覆盖成 text/html
+        ob_start();
         imagepng($img);
+        $content = ob_get_clean();
         imagedestroy($img);
+
+        return response($content, 200, [
+            'Content-Type'  => 'image/png',
+            'Cache-Control' => 'no-store, no-cache, must-revalidate',
+            'Pragma'        => 'no-cache',
+        ]);
     }
 
     /**

@@ -7,7 +7,7 @@
 <div class="svc-wrap">
     <div class="svc-list">
         <div class="svc-list-head">
-            <input type="text" class="form-control" id="svcKeyword" placeholder="搜索会员：手机号 / 昵称 / 店铺" oninput="loadSessions()">
+            <input type="text" class="form-control" id="svcKeyword" placeholder="搜索会员：手机号 / 昵称 / 店铺；输入「游客」看游客会话" oninput="loadSessions()">
             <label class="svc-only"><input type="checkbox" id="svcOnlyUnread" onchange="loadSessions()"> 只看未回复</label>
             <div class="svc-hint">输入关键词可搜到所有会员，未聊过的会员点击即可主动发起会话</div>
         </div>
@@ -71,7 +71,7 @@
 
 {block name="script"}
 <script>
-var curUser = 0, lastId = 0, sessionsCache = [];
+var curKey = '', curUser = 0, lastId = 0, sessionsCache = [];
 
 function esc(s){ return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
@@ -86,9 +86,9 @@ function loadSessions(){
             if (!sessionsCache.length) { box.innerHTML = '<div class="svc-tip">暂无会话</div>'; return; }
             var html = '';
             sessionsCache.forEach(function(s){
-                html += '<div class="svc-item' + (s.user_id == curUser ? ' on' : '') + '" onclick="openSession(' + s.user_id + ')">'
-                    + '<div class="av">' + (s.avatar ? '<img src="' + esc(s.avatar) + '">' : '👤') + '</div>'
-                    + '<div class="info"><div class="nm">' + esc(s.nickname || '-') + (s.is_seller == 1 ? '<span class="tag tag-orange">卖家</span>' : '') + '</div>'
+                html += '<div class="svc-item' + (s.key == curKey ? ' on' : '') + '" onclick="openSession(\'' + esc(s.key) + '\')">'
+                    + '<div class="av">' + (s.avatar ? '<img src="' + esc(s.avatar) + '">' : (s.is_guest == 1 ? '🧑' : '👤')) + '</div>'
+                    + '<div class="info"><div class="nm">' + esc(s.nickname || '-') + (s.is_seller == 1 ? '<span class="tag tag-orange">卖家</span>' : '') + (s.is_guest == 1 ? '<span class="tag tag-gray">游客</span>' : '') + '</div>'
                     + '<div class="lt' + (s.last_from == 2 ? ' me' : '') + (s.is_new ? ' new' : '') + '">' + (s.is_new ? '尚未聊过，点击发起会话' : (s.last_from == 2 ? '我：' : '') + esc(s.last_text)) + '</div></div>'
                     + '<span class="tm">' + esc(s.last_time) + '</span>'
                     + (s.unread > 0 ? '<span class="ub">' + s.unread + '</span>' : '')
@@ -119,19 +119,25 @@ function renderMsg(m){
 }
 function scrollBottom(){ var b = document.getElementById('svcChatBody'); b.scrollTop = b.scrollHeight; }
 
-function openSession(uid){
-    curUser = uid; lastId = 0;
+function openSession(key){
+    curKey = key; curUser = 0; lastId = 0;
     document.getElementById('svcChatBody').innerHTML = '';
     document.getElementById('svcChatFoot').style.display = '';
-    fetch('/admin1314/service/detail?user_id=' + uid, {headers:{'X-Requested-With':'XMLHttpRequest'}})
+    fetch('/admin1314/service/detail?key=' + encodeURIComponent(key), {headers:{'X-Requested-With':'XMLHttpRequest'}})
         .then(function(r){ return r.json(); })
         .then(function(res){
             if (res.code != 1) { alert(res.msg); return; }
             var u = res.user;
-            document.getElementById('svcChatHead').innerHTML = '<b>' + esc(u.nickname || '-') + '</b>'
-                + (u.is_seller == 1 ? '<span class="tag tag-orange">卖家' + (u.shop_name ? '·' + esc(u.shop_name) : '') + '</span>' : '<span class="tag tag-gray">买家</span>')
-                + '<span class="sub">' + esc(u.mobile) + ' ｜ 注册 ' + esc(u.reg_time_text) + '</span>'
-                + '<a class="btn btn-sm" style="margin-left:auto;" href="/admin1314/member/detail?id=' + uid + '" target="_blank">会员详情</a>';
+            curUser = u.id || 0;
+            if (u.is_guest == 1) {
+                document.getElementById('svcChatHead').innerHTML = '<b>' + esc(u.nickname || '-') + '</b><span class="tag tag-gray">游客</span>'
+                    + '<span class="sub">未登录访客，登录或注册后此会话会自动并入其会员账号</span>';
+            } else {
+                document.getElementById('svcChatHead').innerHTML = '<b>' + esc(u.nickname || '-') + '</b>'
+                    + (u.is_seller == 1 ? '<span class="tag tag-orange">卖家' + (u.shop_name ? '·' + esc(u.shop_name) : '') + '</span>' : '<span class="tag tag-gray">买家</span>')
+                    + '<span class="sub">' + esc(u.mobile) + ' ｜ 注册 ' + esc(u.reg_time_text) + '</span>'
+                    + '<a class="btn btn-sm" style="margin-left:auto;" href="/admin1314/member/detail?id=' + u.id + '" target="_blank">会员详情</a>';
+            }
             if (res.data && res.data.length) {
                 res.data.forEach(renderMsg);
             } else {
@@ -144,8 +150,8 @@ function openSession(uid){
 }
 
 function pollCurrent(){
-    if (!curUser) return;
-    fetch('/admin1314/service/detail?user_id=' + curUser + '&last_id=' + lastId, {headers:{'X-Requested-With':'XMLHttpRequest'}})
+    if (!curKey) return;
+    fetch('/admin1314/service/detail?key=' + encodeURIComponent(curKey) + '&last_id=' + lastId, {headers:{'X-Requested-With':'XMLHttpRequest'}})
         .then(function(r){ return r.json(); })
         .then(function(res){
             if (res.code == 1 && res.data && res.data.length) {
@@ -158,7 +164,7 @@ function pollCurrent(){
 }
 
 function doSend(type, content){
-    ajaxPost('/admin1314/service/send', {user_id: curUser, type: type, content: content}, function(res){
+    ajaxPost('/admin1314/service/send', {key: curKey, type: type, content: content}, function(res){
         if (res.code == 1) {
             var tip = document.querySelector('#svcChatBody .svc-tip'); if (tip) tip.remove();
             renderMsg({id: res.id, from_type: 2, type: type, content: content, time_str: res.time_str});
@@ -171,14 +177,14 @@ function doSend(type, content){
     });
 }
 function sendMsg(){
-    if (!curUser) return;
+    if (!curKey) return;
     var v = document.getElementById('svcInput').value.trim();
     if (!v) return;
     doSend(1, v);
 }
 function sendImage(el){
     var f = el.files && el.files[0];
-    if (!f || !curUser) { el.value = ''; return; }
+    if (!f || !curKey) { el.value = ''; return; }
     if (f.size > 5 * 1024 * 1024) { alert('图片不能超过5M'); el.value = ''; return; }
     var fd = new FormData(); fd.append('file', f);
     fetch('/admin1314/upload/image', {method:'POST', body: fd})

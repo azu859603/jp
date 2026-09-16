@@ -30,8 +30,10 @@ try {
     $okAgent = count($rows2) == 2; foreach ($rows2 as $r) { if ($r['pid'] != $agentId || $r['is_virtual'] != 1 || (float)$r['balance'] != 0 || !preg_match('/^用户\d{4}$/', $r['nickname'])) $okAgent = false; }
     ok('代理端批量添加 2 个：归入代理团队、默认前缀「用户」、余额 0 不写流水', ($j['code'] ?? 0) == 1 && $okAgent && (int)$pdo->query("select count(*) from balance_log where user_id in ($ids2)")->fetchColumn() == 0, json_encode([$j, $rows2], JSON_UNESCAPED_UNICODE));
     [, , $j] = req($gsid, 'GET', '/agent/member/index?page=1&limit=50&keyword=' . urlencode($list2[0]['mobile'])); ok('  代理会员列表能搜到新虚拟会员', count($j['data'] ?? []) == 1 && $j['data'][0]['is_virtual'] == 1, json_encode($j, JSON_UNESCAPED_UNICODE));
-    // 前台注册与后台手工添加都只接受 1 开头的 11 位手机号，0 开头账号不可能被真实用户注册
-    ok('12 号段不是真实手机号段：本地无 12 开头的非虚拟会员', (int)$pdo->query("select count(*) from user where mobile like '12%' and is_virtual=0")->fetchColumn() == 0);
+    // 生成的虚拟账号一律 12 开头，且与库里已有账号不重复（前台注册目前并未禁止 12 号段，这里不对全库做假设）
+    $madeIds = implode(',', $made);
+    ok('批量生成的虚拟账号全部 12 开头且与已有账号不重复', (int)$pdo->query("select count(*) from user where id in ($madeIds) and mobile not like '12_________'")->fetchColumn() == 0
+        && (int)$pdo->query("select count(*) from (select mobile from user where id in ($madeIds) group by mobile having count(*) > 1) t")->fetchColumn() == 0);
     ok('虚拟账号在自动出价候选中可见（is_virtual=1 且启用）', (int)$pdo->query("select count(*) from user where id in ($ids) and is_virtual=1 and status=1")->fetchColumn() == 5);
 } finally {
     if ($made) { $ids = implode(',', $made); $pdo->exec("delete from balance_log where user_id in ($ids)"); $pdo->exec("delete from user where id in ($ids)"); }

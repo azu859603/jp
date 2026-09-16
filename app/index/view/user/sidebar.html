@@ -13,11 +13,11 @@
             <a href="/user/recharge" style="color:#fff;font-size:12px;text-decoration:underline;">{:lang('充值')}</a>
         </div>
         <div class="num">¥{$user.balance}</div>
-        <div class="sub">{:lang('冻结保证金：')}¥{$user.freeze_balance} &nbsp; {:lang('积分：')}{$user.points}</div>
+        <div class="sub">{:lang('冻结保证金：')}¥{$user.freeze_balance} &nbsp; {:lang('账号：')}{:mask_mobile($user.mobile)}</div>
     </div>
     <div class="menu">
         <a href="/user/center" {if $center_tab=='center'}class="active"{/if}>{:lang('个人中心')}</a>
-        <a href="/order/list" {if $center_tab=='orders'}class="active"{/if}>{:lang('我的订单')}</a>
+        <a href="/order/list" {if $center_tab=='orders'}class="active"{/if}>{:lang('买家订单')}</a>
         <a href="/user/bids" {if $center_tab=='bids'}class="active"{/if}>{:lang('我的出价')}</a>
         <a href="/user/balance_log" {if $center_tab=='balance'}class="active"{/if}>{:lang('余额明细')}</a>
         <a href="/user/recharge" {if $center_tab=='recharge'}class="active"{/if}>{:lang('余额充值')}</a>

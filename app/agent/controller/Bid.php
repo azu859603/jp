@@ -70,6 +70,10 @@ class Bid extends Base
         $kw  = trim((string)$this->request->param('kw', ''));
         $now = time();
         $query = $this->goodsQuery()->where('status', 1)->where('end_time', '>', $now);
+        // 自动出价场景：平台自营自动出价开启时，会员 ID 1 的拍品由脚本出价，不列出
+        if ($this->request->param('scene') === 'auto_bid' && platform_auto_bid_enabled()) {
+            $query->where('seller_id', '<>', 1);
+        }
         if ($kw !== '') {
             if (ctype_digit($kw)) {
                 $query->where(function ($q) use ($kw) {
@@ -188,13 +192,39 @@ class Bid extends Base
                 return json(['code' => 0, 'msg' => '出价必须按加价幅度 ' . number_format($raise, 2) . ' 元递增']);
             }
 
+            // 真实买家首次出价冻结保证金（与前台一致）；虚拟会员不冻结
+            $freeze = 0.00;
+            if ((int)$buyer['is_virtual'] !== 1 && (float)$goods['deposit'] > 0) {
+                $paid = (float)Db::name('bid_record')->where('goods_id', $goodsId)->where('user_id', $userId)->where('deposit', '>', 0)->max('deposit');
+                if ($paid <= 0) {
+                    $bu      = Db::name('user')->where('id', $userId)->lock(true)->find();
+                    $deposit = (float)$goods['deposit'];
+                    if (!$bu || (float)$bu['balance'] < $deposit) {
+                        Db::rollback();
+                        return json(['code' => 0, 'msg' => '买家可用余额不足以冻结保证金 ' . number_format($deposit, 2) . ' 元']);
+                    }
+                    $nb = round($bu['balance'] - $deposit, 2);
+                    $nf = round($bu['freeze_balance'] + $deposit, 2);
+                    Db::name('user')->where('id', $userId)->update(['balance' => $nb, 'freeze_balance' => $nf, 'update_time' => $now]);
+                    Db::name('balance_log')->insert([
+                        'user_id'     => $userId,
+                        'type'        => 'deposit',
+                        'amount'      => -$deposit,
+                        'balance'     => $nb,
+                        'remark'      => '拍卖保证金（' . $goods['title'] . '）',
+                        'create_time' => $now,
+                    ]);
+                    $freeze = $deposit;
+                }
+            }
+
             Db::name('bid_record')->insert([
                 'goods_id'    => $goodsId,
                 'user_id'     => $userId,
                 'price'       => $price,
                 'status'      => 0,
                 'is_winner'   => 0,
-                'deposit'     => 0,
+                'deposit'     => $freeze,
                 'create_time' => $now,
             ]);
             Db::name('goods')->where('id', $goodsId)->update([

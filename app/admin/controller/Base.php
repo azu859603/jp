@@ -22,10 +22,17 @@ class Base extends BaseController
      */
     protected $menus = [
         'dashboard' => [
-            'title' => '仪表盘',
+            'title' => '数据中心',
             'icon'  => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7.5" height="7.5" rx="1"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="1"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="1"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1"/></svg>',
             'items' => [
                 ['title' => '系统概览', 'url' => '/admin1314/index/index'],
+            ],
+        ],
+        'report' => [
+            'title' => '数据报表',
+            'icon'  => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="4" y1="20" x2="20" y2="20"/><rect x="6" y="11" width="3" height="7" rx="1"/><rect x="11" y="6" width="3" height="12" rx="1"/><rect x="16" y="14" width="3" height="4" rx="1"/></svg>',
+            'items' => [
+                ['title' => '交易报表', 'url' => '/admin1314/report/index'],
             ],
         ],
         'member' => [
@@ -62,13 +69,6 @@ class Base extends BaseController
             'items' => [
                 ['title' => '订单列表', 'url' => '/admin1314/order/index'],
                 ['title' => '售后管理', 'url' => '/admin1314/after_sale/index'],
-            ],
-        ],
-        'report' => [
-            'title' => '数据报表',
-            'icon'  => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="4" y1="20" x2="20" y2="20"/><rect x="6" y="11" width="3" height="7" rx="1"/><rect x="11" y="6" width="3" height="12" rx="1"/><rect x="16" y="14" width="3" height="4" rx="1"/></svg>',
-            'items' => [
-                ['title' => '交易报表', 'url' => '/admin1314/report/index'],
             ],
         ],
         'finance' => [

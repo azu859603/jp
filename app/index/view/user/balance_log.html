@@ -3,22 +3,144 @@
 <div class="wallet-log">
     <div class="w-head">
         <span class="t">{:lang('余额明细')}</span>
+        <button type="button" class="w-filter{if $type != ''} on{/if}" id="blTypeBtn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5h18l-7 8v6l-4-2v-4z"/></svg>
+            <span id="blTypeTxt">{$type_name}</span><i class="arr"></i>
+        </button>
     </div>
-    {foreach $logs as $l}
-    <div class="log-item">
-        <div class="l-ico">💰</div>
-        <div class="l-info">
-            <div class="l-name">{$l.remark}</div>
-            <div class="l-time">{$l.create_time|date='Y-m-d H:i'}</div>
-        </div>
-        <div style="text-align:right;">
-            <div class="l-amount {if $l.amount>0}in{else}out{/if}">{if $l.amount>0}+{/if}{$l.amount|number_format=2}</div>
-            <div class="l-balance">{:lang('余额')} {$l.balance|number_format=2}</div>
-        </div>
+    <div id="blItems">
+        {include file="user/balance_log_items" /}
     </div>
-    {/foreach}
-    {if empty($logs)}
-    <div class="empty" style="padding:30px 0;">{:lang('暂无记录')}</div>
-    {/if}
+    <div class="empty" id="blEmpty" style="padding:30px 0;{if !empty($logs)}display:none;{/if}">{:lang('暂无记录')}</div>
+    <div class="bl-more" id="blMore" data-has-more="{$has_more ? 1 : 0}"{if empty($logs)} style="display:none"{/if}>
+        {if $has_more}<span class="wl-spin"></span>{:lang('加载中...')}{else}{:lang('没有更多了')}{/if}
+    </div>
 </div>
+
+<!-- 底部滚动选择框 -->
+<div class="bl-sheet-mask" id="blSheet">
+    <div class="bl-sheet">
+        <div class="bl-sheet-bar">
+            <span class="bl-cancel" id="blCancel">{:lang('取消')}</span>
+            <span class="bl-sheet-t">{:lang('选择类型')}</span>
+            <span class="bl-ok" id="blOk">{:lang('确定')}</span>
+        </div>
+        <div class="bl-wheel-wrap">
+            <div class="bl-wheel-band"></div>
+            <div class="bl-wheel" id="blWheel">
+                <div class="bl-opt" data-v="">{:lang('全部类型')}</div>
+                {foreach $type_names as $k => $n}<div class="bl-opt" data-v="{$k}">{$n}</div>{/foreach}
+            </div>
+        </div>
+    </div>
+</div>
+{/block}
+{block name="script"}
+<script>
+(function(){
+    var box = document.getElementById('blItems');
+    var more = document.getElementById('blMore');
+    var empty = document.getElementById('blEmpty');
+    var btn = document.getElementById('blTypeBtn');
+    var btnTxt = document.getElementById('blTypeTxt');
+    var sheet = document.getElementById('blSheet');
+    var wheel = document.getElementById('blWheel');
+    var opts = wheel ? [].slice.call(wheel.querySelectorAll('.bl-opt')) : [];
+    if (!box || !more || !btn || !sheet || !wheel) return;
+    var ITEM_H = 44;
+    var type = {:json_encode($type)};
+    var page = 1, loading = false, hasMore = more.getAttribute('data-has-more') === '1', seq = 0;
+    var txtLoading = '<span class="wl-spin"></span>' + {:json_encode(lang('加载中...'))};
+    var txtEnd = {:json_encode(lang('没有更多了'))};
+    var txtFail = {:json_encode(lang('加载失败，上拉重试'))};
+
+    // ---------- 列表加载：reset=true 从第一页替换，否则追加下一页 ----------
+    function load(reset){
+        if (loading) return;
+        if (!reset && !hasMore) return;
+        loading = true;
+        var mySeq = ++seq, target = reset ? 1 : page + 1;
+        more.style.display = '';
+        more.innerHTML = txtLoading;
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', '/user/balance_log?page=' + target + '&type=' + encodeURIComponent(type), true);
+        xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+        xhr.onload = function(){
+            if (mySeq !== seq) return; // 已切换到别的类型，丢弃旧响应
+            loading = false;
+            var res = null;
+            try { res = JSON.parse(xhr.responseText); } catch(e) {}
+            if (!res || res.code != 1) { more.innerHTML = txtFail; return; }
+            page = res.page;
+            if (reset) { box.innerHTML = res.html; } else { box.insertAdjacentHTML('beforeend', res.html); }
+            hasMore = !!res.has_more;
+            var isEmpty = !box.querySelector('.log-item');
+            empty.style.display = isEmpty ? '' : 'none';
+            more.style.display = isEmpty ? 'none' : '';
+            more.innerHTML = hasMore ? txtLoading : txtEnd;
+            if (hasMore) check();
+        };
+        xhr.onerror = function(){ if (mySeq !== seq) return; loading = false; more.innerHTML = txtFail; };
+        xhr.send();
+    }
+    function check(){
+        if (!hasMore || loading) return;
+        var rect = more.getBoundingClientRect();
+        if (rect.top < (window.innerHeight || document.documentElement.clientHeight) + 80) load(false);
+    }
+    window.addEventListener('scroll', check, {passive:true});
+    window.addEventListener('resize', check);
+    check();
+
+    // ---------- 底部滚动选择框 ----------
+    function indexOfType(v){
+        for (var i = 0; i < opts.length; i++) if (opts[i].getAttribute('data-v') === v) return i;
+        return 0;
+    }
+    function curIndex(){
+        var i = Math.round(wheel.scrollTop / ITEM_H);
+        return Math.max(0, Math.min(opts.length - 1, i));
+    }
+    function mark(i){
+        for (var k = 0; k < opts.length; k++) opts[k].classList.toggle('on', k === i);
+    }
+    function openSheet(){
+        sheet.classList.add('show');
+        var i = indexOfType(type);
+        wheel.scrollTop = i * ITEM_H;
+        mark(i);
+        document.body.style.overflow = 'hidden';
+    }
+    function closeSheet(){
+        sheet.classList.remove('show');
+        document.body.style.overflow = '';
+    }
+    var tick = null;
+    wheel.addEventListener('scroll', function(){
+        if (tick) clearTimeout(tick);
+        tick = setTimeout(function(){ mark(curIndex()); }, 60);
+    }, {passive:true});
+    opts.forEach(function(o, i){
+        o.addEventListener('click', function(){
+            if (wheel.scrollTo) wheel.scrollTo({top: i * ITEM_H, behavior: 'smooth'}); else wheel.scrollTop = i * ITEM_H;
+            mark(i);
+        });
+    });
+    btn.addEventListener('click', openSheet);
+    document.getElementById('blCancel').addEventListener('click', closeSheet);
+    sheet.addEventListener('click', function(e){ if (e.target === sheet) closeSheet(); });
+    document.getElementById('blOk').addEventListener('click', function(){
+        var i = curIndex();
+        var v = opts[i].getAttribute('data-v');
+        closeSheet();
+        if (v === type) return;
+        type = v;
+        btnTxt.textContent = opts[i].textContent;
+        btn.classList.toggle('on', v !== '');
+        try { history.replaceState(null, '', '/user/balance_log' + (v ? '?type=' + v : '')); } catch(e) {}
+        loading = false; hasMore = true;
+        load(true);
+    });
+})();
+</script>
 {/block}

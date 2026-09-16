@@ -112,13 +112,28 @@ class Report extends Base
             $points = array_slice($points, -60);
         }
 
+        // 一条按天分组的聚合查询代替「每个时间点 3 条查询」；月 / 周 / 日的边界都落在自然日上，按天桶再合并即可
+        $off  = (int)date('Z');
+        $from = $points[0][1];
+        $to   = $points[count($points) - 1][2];
+        $buckets = [];
+        $rows = Db::name('order')
+            ->field("FLOOR((pay_time + {$off}) / 86400) AS d, COUNT(*) AS c, SUM(price) AS a, SUM(commission) AS m")
+            ->where('pay_status', 1)->where('pay_time', 'between', [$from, $to])
+            ->group('d')->select()->toArray();
+        foreach ($rows as $b) {
+            $buckets[(int)$b['d']] = [(int)$b['c'], (float)$b['a'], (float)$b['m']];
+        }
         $rows = [];
         foreach ($points as $p) {
-            list($label, $from, $to) = $p;
-            $q = Db::name('order')->where('pay_status', 1)->where('pay_time', 'between', [$from, $to]);
-            $amount = round((float)(clone $q)->sum('price'), 2);
-            $commission = round((float)(clone $q)->sum('commission'), 2);
-            $count = (clone $q)->count();
+            list($label, $pf, $pt) = $p;
+            $count = 0; $amount = 0; $commission = 0;
+            for ($d = (int)floor(($pf + $off) / 86400); $d <= (int)floor(($pt + $off) / 86400); $d++) {
+                if (isset($buckets[$d])) {
+                    $count += $buckets[$d][0]; $amount += $buckets[$d][1]; $commission += $buckets[$d][2];
+                }
+            }
+            $amount = round($amount, 2); $commission = round($commission, 2);
             $rows[] = [
                 'label'      => $label,
                 'count'      => $count,

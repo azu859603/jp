@@ -39,7 +39,7 @@ function translate_nickname($nickname)
  */
 function message_rate_ok($userId, $seconds = 3)
 {
-    $key = 'msg_rate_' . (int)$userId;
+    $key = 'msg_rate_' . preg_replace('/\W/', '', (string)$userId);
     if (\think\facade\Cache::has($key)) {
         return false;
     }
@@ -198,22 +198,25 @@ function goods_commission_rate($goods = null)
  */
 function settle_goods($goodsId)
 {
-    $goods = Db::name('goods')->where('id', $goodsId)->lock(true)->find();
-    if (!$goods || $goods['status'] != 1 || $goods['end_time'] > time()) {
-        return false;
-    }
-
-    $bids = Db::name('bid_record')
-        ->where('goods_id', $goodsId)
-        ->where('status', 0)
-        ->order('price', 'desc')
-        ->order('id', 'asc')
-        ->select()
-        ->toArray();
-
     Db::startTrans();
     try {
-        // 无出价 或 最高价低于保留价 → 流拍
+        // 行锁必须在事务内才有效：并发的两轮结算只会有一个拿到 status=1
+        $goods = Db::name('goods')->where('id', $goodsId)->lock(true)->find();
+        if (!$goods || $goods['status'] != 1 || $goods['end_time'] > time()) {
+            Db::rollback();
+            return false;
+        }
+
+        $bids = Db::name('bid_record')
+            ->where('goods_id', $goodsId)
+            ->where('status', 0)
+            ->order('price', 'desc')
+            ->order('id', 'asc')
+            ->lock(true)
+            ->select()
+            ->toArray();
+
+        // 无出价 或 最高价低于保留价 → 流拍（虚拟会员与真实会员一样可以中标）
         $top = $bids[0] ?? null;
         $fail = !$top || ($goods['reserve_price'] > 0 && $top['price'] < $goods['reserve_price']);
 
@@ -224,7 +227,9 @@ function settle_goods($goodsId)
                     refund_deposit($b['user_id'], $b['deposit'], '拍卖流拍，保证金退回（' . $goods['title'] . '）');
                 }
             }
-            Db::name('goods')->where('id', $goodsId)->update(['status' => 3, 'update_time' => time()]);
+            if (Db::name('goods')->where('id', $goodsId)->where('status', 1)->update(['status' => 3, 'update_time' => time()]) !== 1) {
+                throw new \RuntimeException(lang('商品状态已变化'));
+            }
             Db::commit();
             return '流拍';
         }
@@ -271,18 +276,21 @@ function settle_goods($goodsId)
             'update_time'     => time(),
         ]);
 
-        Db::name('goods')->where('id', $goodsId)->update([
+        if (Db::name('goods')->where('id', $goodsId)->where('status', 1)->update([
             'status'      => 2,
             'final_price' => $top['price'],
             'winner_id'   => $top['user_id'],
             'order_id'    => $orderId,
             'update_time' => time(),
-        ]);
+        ]) !== 1) {
+            throw new \RuntimeException(lang('商品状态已变化'));
+        }
 
         Db::commit();
         return '成交';
     } catch (\Throwable $e) {
         Db::rollback();
+        \think\facade\Log::error('settle_goods #' . $goodsId . ' 失败：' . $e->getMessage());
         return false;
     }
 }
@@ -303,17 +311,19 @@ function cancel_unpaid_order($orderId, $reason, $mode = 'forfeit_platform')
     if (!in_array($mode, ['forfeit_platform', 'to_seller', 'refund_buyer'], true)) {
         $mode = 'forfeit_platform';
     }
-    $order = Db::name('order')->where('id', (int)$orderId)->lock(true)->find();
-    if (!$order || (int)$order['pay_status'] !== 0 || (int)$order['order_status'] !== 0) {
-        return false;
-    }
-
     Db::startTrans();
     try {
+        $order = Db::name('order')->where('id', (int)$orderId)->lock(true)->find();
+        if (!$order || (int)$order['pay_status'] !== 0 || (int)$order['order_status'] !== 0) {
+            Db::rollback();
+            return false;
+        }
         $now     = time();
         $deposit = round((float)$order['deposit'], 2);
         $title   = (string)$order['goods_title'];
         $note    = '无保证金';
+        // 买家主动取消与超时取消的流水备注区分开
+        $byBuyer = mb_strpos((string)$reason, '主动') !== false;
 
         if ($deposit > 0) {
             $buyer = Db::name('user')->where('id', $order['buyer_id'])->lock(true)->find();
@@ -336,7 +346,7 @@ function cancel_unpaid_order($orderId, $reason, $mode = 'forfeit_platform')
                     ]);
                     Db::name('balance_log')->insert([
                         'user_id' => $buyer['id'], 'type' => 'forfeit', 'amount' => -$deposit,
-                        'balance' => $buyer['balance'], 'remark' => '订单超时未付款，保证金没收（' . $title . '）', 'create_time' => $now,
+                        'balance' => $buyer['balance'], 'remark' => ($byBuyer ? '买家取消订单，保证金没收（' : '订单超时未付款，保证金没收（') . $title . '）', 'create_time' => $now,
                     ]);
                     $note = '保证金已没收';
                     if ($mode === 'to_seller') {
@@ -348,7 +358,7 @@ function cancel_unpaid_order($orderId, $reason, $mode = 'forfeit_platform')
                             ]);
                             Db::name('balance_log')->insert([
                                 'user_id' => $seller['id'], 'type' => 'income', 'amount' => $deposit,
-                                'balance' => $sellerBalance, 'remark' => '买家超时未付款，保证金赔付（' . $title . '）', 'create_time' => $now,
+                                'balance' => $sellerBalance, 'remark' => ($byBuyer ? '买家取消订单，保证金赔付（' : '买家超时未付款，保证金赔付（') . $title . '）', 'create_time' => $now,
                             ]);
                             $note = '保证金已赔付卖家';
                         }
@@ -357,9 +367,11 @@ function cancel_unpaid_order($orderId, $reason, $mode = 'forfeit_platform')
             }
         }
 
-        Db::name('order')->where('id', $order['id'])->update([
+        if (Db::name('order')->where('id', $order['id'])->where('pay_status', 0)->where('order_status', 0)->update([
             'order_status' => 4, 'remark' => $reason, 'update_time' => $now,
-        ]);
+        ]) !== 1) {
+            throw new \RuntimeException(lang('订单状态已变化'));
+        }
         // 商品回到流拍：卖家可在「我的商品」重新上架（该流程会清理旧出价）
         Db::name('goods')->where('id', $order['goods_id'])->update([
             'status' => 3, 'winner_id' => 0, 'order_id' => 0, 'final_price' => 0, 'update_time' => $now,
@@ -381,6 +393,7 @@ function cancel_unpaid_order($orderId, $reason, $mode = 'forfeit_platform')
         return $note;
     } catch (\Throwable $e) {
         Db::rollback();
+        \think\facade\Log::error('cancel_unpaid_order #' . $orderId . ' 失败：' . $e->getMessage());
         return false;
     }
 }
@@ -395,18 +408,23 @@ function cancel_unpaid_order($orderId, $reason, $mode = 'forfeit_platform')
  */
 function complete_order($orderId, $reason)
 {
-    $order = Db::name('order')->where('id', (int)$orderId)->lock(true)->find();
-    if (!$order || (int)$order['order_status'] !== 2) {
-        return false;
-    }
     Db::startTrans();
     try {
+        $order = Db::name('order')->where('id', (int)$orderId)->lock(true)->find();
+        if (!$order || (int)$order['order_status'] !== 2) {
+            Db::rollback();
+            return false;
+        }
         $now    = time();
         $remark = trim((string)$order['remark']);
         $remark = $remark === '' ? $reason : $remark . '；' . $reason;
-        Db::name('order')->where('id', $order['id'])->update([
+        if (Db::name('order')->where('id', $order['id'])->where('order_status', 2)->update([
             'order_status' => 3, 'finish_time' => $now, 'remark' => $remark, 'update_time' => $now,
-        ]);
+        ]) !== 1) {
+            throw new \RuntimeException(lang('订单状态已变化'));
+        }
+        // 确认收货即视为交易完成：成交款此时才打给卖家
+        pay_seller_income($order);
         Db::name('sys_message')->insert([
             'user_id' => $order['buyer_id'], 'admin_id' => 0, 'title' => '自动确认收货通知',
             'content' => '您的订单 ' . $order['order_no'] . '（' . $order['goods_title'] . '）' . $reason . '，交易已完成。如商品有问题，可在订单中申请售后。',
@@ -520,6 +538,9 @@ function translate_remark($remark)
     }
     // 前缀按长度降序匹配（含标点的完整前缀优先）
     $prefixes = [
+        '买家取消订单，保证金赔付（',
+        '买家取消订单，保证金没收（',
+        '订单取消扣回成交收入',
         '买家超时未付款，保证金赔付（',
         '订单超时未付款，保证金没收（',
         '订单取消，保证金退回（',
@@ -563,7 +584,9 @@ function translate_remark($remark)
 }
 
 /**
- * 站内信展示层翻译（标题翻译 + 竞拍出局通知内容分段翻译）
+ * 站内信展示层翻译：标题整句翻译，内容按固定片段翻译、保留订单号 / 拍品名 / 金额 / 时间等动态内容
+ * 片段表覆盖系统自动发出的全部模板（竞拍出局、拍品下架、成交款到账、订单取消、买家未付款、自动确认收货、发货提醒）；
+ * 后台人工发送的自由文本不在翻译范围内。
  */
 function translate_sys_message(&$msg)
 {
@@ -574,20 +597,84 @@ function translate_sys_message(&$msg)
     if (empty($msg['content'])) {
         return;
     }
-    // 竞拍出局通知内容模板分段替换（键按长度降序，避免误伤动态内容）
-    $segs = [
-        '您出价竞拍的「',
-        '」已出局：您的出价 ',
-        '。如需继续竞拍，请再次出价。',
-        ' 超过，当前最高价 ',
-        ' 于 ',
-        ' 被 ',
-    ];
-    $content = $msg['content'];
-    foreach ($segs as $zh) {
-        if (mb_strpos($content, $zh) !== false) {
-            $content = str_replace($zh, lang($zh), $content);
+    static $map = null;
+    if ($map === null) {
+        $segs = [
+            // 竞拍出局通知
+            '您出价竞拍的「', '」已出局：您的出价 ', ' 于 ', ' 被 ', ' 超过，当前最高价 ', '。如需继续竞拍，请再次出价。',
+            // 拍品下架通知（原因：卖家下架 / 平台下架 / 平台删除 / 卖家删除 / 商品下架）
+            '您参与竞拍的「', '」已卖家下架', '」已平台下架', '」已平台删除', '」已卖家删除', '」已商品下架',
+            '，本次竞拍取消，已缴纳的保证金已退回您的可用余额。',
+            // 成交款到账通知
+            '）买家已确认收货，成交款 ', '（成交价 ', ' − 平台佣金 ', '）已存入您的可用余额。',
+            // 订单取消通知（平台取消）
+            '）已由平台取消，货款 ', ' 已退回您的可用余额。', '）已由平台取消，', '该订单的成交收入 ', ' 已从您的余额扣回，', '成交款尚未入账、无需扣回，', '商品已下架。',
+            // 订单取消通知（买家取消 / 超时取消）
+            '）已取消：买家主动取消。', '）已取消：平台取消订单。', '）已取消：超过', '小时未付款，系统自动取消。',
+            '无保证金。', '保证金已退还买家。', '保证金已没收。', '保证金已赔付卖家。',
+            // 买家未付款通知
+            '商品「', '」的买家未付款，订单 ', ' 已取消，商品已回到可重新上架状态。',
+            // 自动确认收货通知
+            '）发货后超过', '天未确认收货，系统自动确认，交易已完成。如商品有问题，可在订单中申请售后。',
+            // 发货提醒
+            '）买家已于 ', ' 付款，至今 ', ' 天未发货，请尽快处理。', '因未按时发货，您的信誉分已扣 1 分，当前 ', ' 分。',
+            // 公共前缀
+            '您的订单 ', '订单 ',
+        ];
+        $map = [];
+        foreach ($segs as $zh) {
+            $map[$zh] = lang($zh);
         }
     }
+    // strtr 按最长键优先、单次扫描替换，不会把已翻译的英文再次替换
+    $content = strtr($msg['content'], $map);
+    if (\think\facade\Lang::getLangSet() === 'en-us') {
+        // 动态内容外层的全角标点转半角
+        $content = str_replace(['（', '）', '「', '」', '：', '，', '。', '、', '；'], [' (', ') ', '"', '"', ': ', ', ', '. ', ', ', '; '], $content);
+        $content = trim(preg_replace('/ {2,}/', ' ', $content));
+    }
     $msg['content'] = $content;
+}
+
+/**
+ * 写入 session 的会员数据：去掉密码哈希与身份证等敏感字段
+ */
+/**
+ * 游客客服标识：未登录访客的客服会话钥匙，存在 session 里（随 PHPSESSID 保持）
+ * @param bool $create 没有时是否立即分配一个
+ * @return string 32 位十六进制；未分配返回空串
+ */
+function service_guest_key($create = false)
+{
+    $key = (string)session('service_guest_key');
+    if (!preg_match('/^[a-f0-9]{32}$/', $key)) {
+        $key = '';
+    }
+    if ($key === '' && $create) {
+        $key = bin2hex(random_bytes(16));
+        session('service_guest_key', $key);
+    }
+    return $key;
+}
+
+/**
+ * 登录 / 注册成功后：把本 session 里以游客身份发的客服消息并入该会员的会话，
+ * 这样登录后聊天记录不丢，后台也不会出现同一个人的两个会话
+ */
+function attach_guest_service_messages($userId)
+{
+    $key = service_guest_key(false);
+    if ($key === '' || (int)$userId <= 0) {
+        return;
+    }
+    \think\facade\Db::name('service_message')->where('user_id', 0)->where('guest_key', $key)
+        ->update(['user_id' => (int)$userId, 'guest_key' => '']);
+    session('service_guest_key', null);
+}
+function safe_session_user($user)
+{
+    if (is_array($user)) {
+        unset($user['password'], $user['id_card'], $user['id_card_front'], $user['id_card_back']);
+    }
+    return $user;
 }

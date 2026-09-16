@@ -27,7 +27,8 @@ class Order extends Base
                 $query->where(function ($q) use ($keyword) {
                     $q->whereLike('o.order_no', "%{$keyword}%")
                         ->whereOr('o.goods_title', 'like', "%{$keyword}%")
-                        ->whereOr('u.mobile', 'like', "%{$keyword}%");
+                        ->whereOr('u.mobile', 'like', "%{$keyword}%")
+                        ->whereOr('s.mobile', 'like', "%{$keyword}%");
                 });
             }
             if ($orderStatus !== '') {
@@ -102,12 +103,15 @@ class Order extends Base
             return json(['code' => 0, 'msg' => '当前订单状态不能发货']);
         }
 
-        Db::name('order')->where('id', $id)->update([
+        if (Db::name('order')->where('id', $id)->where('order_status', 1)->where('pay_status', 1)->update([
             'order_status' => 2,
-            'ship_company' => $company,
-            'ship_no'      => $shipNo,
+            'ship_company' => mb_substr($company, 0, 50),
+            'ship_no'      => mb_substr($shipNo, 0, 50),
             'ship_time'    => time(),
-        ]);
+            'update_time'  => time(),
+        ]) !== 1) {
+            return json(['code' => 0, 'msg' => '订单状态已变化，请刷新']);
+        }
         admin_log('订单发货：' . $order['order_no']);
         return json(['code' => 1, 'msg' => '发货成功']);
     }
@@ -122,18 +126,32 @@ class Order extends Base
         }
         $id = (int)$this->request->post('id');
 
-        $order = Db::name('order')->find($id);
-        if (!$order) {
-            return json(['code' => 0, 'msg' => '订单不存在']);
+        Db::startTrans();
+        try {
+            $order = Db::name('order')->where('id', $id)->lock(true)->find();
+            if (!$order) {
+                Db::rollback();
+                return json(['code' => 0, 'msg' => '订单不存在']);
+            }
+            if ((int)$order['order_status'] !== 2) {
+                Db::rollback();
+                return json(['code' => 0, 'msg' => '只有待收货订单可以完成']);
+            }
+            $now = time();
+            if (Db::name('order')->where('id', $id)->where('order_status', 2)->update([
+                'order_status' => 3,
+                'finish_time'  => $now,
+                'update_time'  => $now,
+            ]) !== 1) {
+                throw new \RuntimeException('订单状态已变化，请刷新');
+            }
+            // 标记完成等同买家确认收货：成交款此时打给卖家
+            pay_seller_income($order);
+            Db::commit();
+        } catch (\Throwable $e) {
+            Db::rollback();
+            return json(['code' => 0, 'msg' => $e->getMessage()]);
         }
-        if ($order['order_status'] != 2) {
-            return json(['code' => 0, 'msg' => '只有待收货订单可以完成']);
-        }
-
-        Db::name('order')->where('id', $id)->update([
-            'order_status' => 3,
-            'finish_time'  => time(),
-        ]);
         admin_log('订单完成：' . $order['order_no']);
         return json(['code' => 1, 'msg' => '订单已完成']);
     }
@@ -141,50 +159,106 @@ class Order extends Base
     /**
      * 取消订单
      */
+
     public function cancel()
     {
         if (!$this->request->isPost()) {
             return json(['code' => 0, 'msg' => '请求方式错误']);
         }
         $id = (int)$this->request->post('id');
-
+        if (!function_exists('cancel_unpaid_order')) {
+            require_once app()->getBasePath() . 'index' . DIRECTORY_SEPARATOR . 'common.php';
+        }
         $order = Db::name('order')->find($id);
         if (!$order) {
             return json(['code' => 0, 'msg' => '订单不存在']);
         }
-        if ($order['order_status'] == 3 || $order['order_status'] == 4) {
+        if (in_array((int)$order['order_status'], [3, 4], true)) {
             return json(['code' => 0, 'msg' => '订单已结束，不能取消']);
         }
+        if ((int)$order['order_status'] === 5) {
+            return json(['code' => 0, 'msg' => '订单在售后中，请先在售后管理处理']);
+        }
 
+        // 未付款：与超时取消 / 买家主动取消同一套逻辑（按后台设置处理保证金，商品回到流拍）
+        if ((int)$order['pay_status'] === 0) {
+            $mode   = (string)get_setting('order_timeout_deposit', 'forfeit_platform');
+            $result = cancel_unpaid_order($id, '平台取消订单', $mode);
+            if ($result === false) {
+                return json(['code' => 0, 'msg' => '订单状态已变化，请刷新']);
+            }
+            admin_log('取消未付款订单：' . $order['order_no'] . '（' . $result . '）');
+            return json(['code' => 1, 'msg' => '订单已取消（' . $result . '）']);
+        }
+
+        // 已付款（待发货 / 待收货）：全额退回买家，商品下架。
+        // 成交款只在买家确认收货后才打给卖家（income_paid=1），这两个阶段款项通常还在平台，无需扣回；
+        // 只有历史上已入账的订单才扣回卖家收入。
+        $now = time();
         Db::startTrans();
         try {
-            if ($order['pay_status'] == 1) {
-                // 已支付：退款给买家
-                $buyer = Db::name('user')->where('id', $order['buyer_id'])->find();
-                if ($buyer) {
-                    $newBalance = round($buyer['balance'] + $order['price'], 2);
-                    Db::name('user')->where('id', $buyer['id'])->update(['balance' => $newBalance]);
-                    Db::name('balance_log')->insert([
-                        'user_id'     => $buyer['id'],
-                        'type'        => 'refund',
-                        'amount'      => $order['price'],
-                        'balance'     => $newBalance,
-                        'remark'      => '订单取消退款：' . $order['order_no'],
-                        'create_time' => time(),
-                    ]);
+            $order = Db::name('order')->where('id', $id)->lock(true)->find();
+            if (!$order || (int)$order['pay_status'] !== 1 || !in_array((int)$order['order_status'], [1, 2], true)) {
+                Db::rollback();
+                return json(['code' => 0, 'msg' => '订单状态已变化，请刷新']);
+            }
+            $income = (int)$order['income_paid'] === 1 ? round((float)$order['seller_income'], 2) : 0;
+            if ($income > 0) {
+                $seller = Db::name('user')->where('id', $order['seller_id'])->lock(true)->find();
+                if (!$seller) {
+                    Db::rollback();
+                    return json(['code' => 0, 'msg' => '卖家不存在']);
                 }
-                // 退还卖家冻结的成交款（简单模式：无需冻结，直接回滚商品状态）
-                // 商品回到待审核状态由卖家重新上架
-                Db::name('goods')->where('id', $order['goods_id'])->update([
-                    'status'      => 4,
-                    'winner_id'   => 0,
-                    'order_id'    => 0,
-                    'final_price' => 0,
+                if ((float)$seller['balance'] < $income) {
+                    Db::rollback();
+                    return json(['code' => 0, 'msg' => '卖家余额不足以扣回成交收入 ' . number_format($income, 2) . ' 元，无法取消']);
+                }
+                $sellerBalance = round($seller['balance'] - $income, 2);
+                Db::name('user')->where('id', $seller['id'])->update(['balance' => $sellerBalance, 'update_time' => $now]);
+                Db::name('balance_log')->insert([
+                    'user_id'     => $seller['id'],
+                    'type'        => 'refund',
+                    'amount'      => -$income,
+                    'balance'     => $sellerBalance,
+                    'remark'      => '订单取消扣回成交收入：' . $order['order_no'],
+                    'create_time' => $now,
                 ]);
             }
-            Db::name('order')->where('id', $id)->update([
+            $buyer = Db::name('user')->where('id', $order['buyer_id'])->lock(true)->find();
+            if ($buyer) {
+                $newBalance = round($buyer['balance'] + $order['price'], 2);
+                Db::name('user')->where('id', $buyer['id'])->update(['balance' => $newBalance, 'update_time' => $now]);
+                Db::name('balance_log')->insert([
+                    'user_id'     => $buyer['id'],
+                    'type'        => 'refund',
+                    'amount'      => $order['price'],
+                    'balance'     => $newBalance,
+                    'remark'      => '订单取消退款：' . $order['order_no'],
+                    'create_time' => $now,
+                ]);
+            }
+            if (Db::name('order')->where('id', $id)->where('pay_status', 1)->whereIn('order_status', [1, 2])->update([
                 'order_status' => 4,
-                'pay_status'   => $order['pay_status'],
+                'pay_status'   => 2,
+                'remark'       => '平台取消订单，已全额退款',
+                'update_time'  => $now,
+            ]) !== 1) {
+                throw new \RuntimeException('订单状态已变化');
+            }
+            Db::name('goods')->where('id', $order['goods_id'])->update([
+                'status'      => 4,
+                'winner_id'   => 0,
+                'order_id'    => 0,
+                'final_price' => 0,
+                'update_time' => $now,
+            ]);
+            Db::name('sys_message')->insertAll([
+                ['user_id' => $order['buyer_id'], 'admin_id' => (int)($this->admin['id'] ?? 0), 'title' => '订单取消通知',
+                 'content' => '您的订单 ' . $order['order_no'] . '（' . $order['goods_title'] . '）已由平台取消，货款 ¥' . number_format((float)$order['price'], 2) . ' 已退回您的可用余额。',
+                 'is_read' => 0, 'create_time' => $now],
+                ['user_id' => $order['seller_id'], 'admin_id' => (int)($this->admin['id'] ?? 0), 'title' => '订单取消通知',
+                 'content' => '订单 ' . $order['order_no'] . '（' . $order['goods_title'] . '）已由平台取消，' . ($income > 0 ? '该订单的成交收入 ¥' . number_format($income, 2) . ' 已从您的余额扣回，' : '成交款尚未入账、无需扣回，') . '商品已下架。',
+                 'is_read' => 0, 'create_time' => $now],
             ]);
             Db::commit();
         } catch (\Throwable $e) {
@@ -192,7 +266,7 @@ class Order extends Base
             return json(['code' => 0, 'msg' => '操作失败：' . $e->getMessage()]);
         }
 
-        admin_log('取消订单：' . $order['order_no']);
-        return json(['code' => 1, 'msg' => '订单已取消']);
+        admin_log('取消已付款订单：' . $order['order_no'] . '，退买家 ' . number_format((float)$order['price'], 2) . ($income > 0 ? '，扣回卖家 ' . number_format($income, 2) : '，卖家未入账无需扣回'));
+        return json(['code' => 1, 'msg' => '订单已取消，货款已退回买家' . ($income > 0 ? '，卖家收入已扣回' : '')]);
     }
 }

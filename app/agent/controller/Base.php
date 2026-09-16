@@ -35,6 +35,13 @@ class Base extends BaseController
                 ['title' => '数据概览', 'url' => '/agent/index/index'],
             ],
         ],
+        'report' => [
+            'title' => '数据报表',
+            'icon'  => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="4" y1="20" x2="20" y2="20"/><rect x="6" y="11" width="3" height="7" rx="1"/><rect x="11" y="6" width="3" height="12" rx="1"/><rect x="16" y="14" width="3" height="4" rx="1"/></svg>',
+            'items' => [
+                ['title' => '团队业绩', 'url' => '/agent/report/index'],
+            ],
+        ],
         'member' => [
             'title' => '会员管理',
             'icon'  => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><circle cx="17" cy="9" r="2.5"/><path d="M16.5 14.5a5 5 0 0 1 5 5"/></svg>',
@@ -60,6 +67,14 @@ class Base extends BaseController
                 ['title' => '自动出价', 'url' => '/agent/auto_bid/index'],
             ],
         ],
+        'order' => [
+            'title' => '订单管理',
+            'icon'  => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="3" width="16" height="18" rx="2"/><line x1="8" y1="8" x2="16" y2="8"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="16" x2="13" y2="16"/></svg>',
+            'items' => [
+                ['title' => '订单列表', 'url' => '/agent/order/index'],
+                ['title' => '售后管理', 'url' => '/agent/after_sale/index'],
+            ],
+        ],
         'finance' => [
             'title' => '财务管理',
             'icon'  => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="3"/><path d="M6 12h.01M18 12h.01"/></svg>',
@@ -67,13 +82,6 @@ class Base extends BaseController
                 ['title' => '充值审核', 'url' => '/agent/recharge/index'],
                 ['title' => '提现审核', 'url' => '/agent/withdraw/index'],
                 ['title' => '余额流水', 'url' => '/agent/balance/index'],
-            ],
-        ],
-        'report' => [
-            'title' => '数据报表',
-            'icon'  => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="4" y1="20" x2="20" y2="20"/><rect x="6" y="11" width="3" height="7" rx="1"/><rect x="11" y="6" width="3" height="12" rx="1"/><rect x="16" y="14" width="3" height="4" rx="1"/></svg>',
-            'items' => [
-                ['title' => '团队业绩', 'url' => '/agent/report/index'],
             ],
         ],
     ];
@@ -127,7 +135,7 @@ class Base extends BaseController
     {
         static $name = null;
         if ($name === null) {
-            $name = (string)Db::name('setting')->where('name', 'site_name')->value('value');
+            $name = (string)get_setting('site_name');
             if ($name === '') {
                 $name = '竞拍商城';
             }

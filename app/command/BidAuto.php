@@ -11,8 +11,8 @@ use think\console\Output;
  * 虚拟用户自动出价定时任务
  *
  * 用法：php think bid:auto
- * 部署：每分钟执行一次；`php think settle` 结算完成后也会自动调用一次，
- *       已部署 settle 定时任务的环境可以不单独配置本命令。
+ * 部署：每分钟执行一次（独立命令，不与 settle / platform:auto-bid 串联）。
+ *       只处理后台 / 代理后台手动添加的任务；平台自营任务由 php think platform:auto-bid 负责。
  *
  * 任务由后台 / 代理后台「竞拍管理 › 自动出价」按拍品配置：出价间隔、最高出价金额、截拍前停止小时数。
  * 执行逻辑在 app/common.php 的 auto_bid_run()。
@@ -27,13 +27,19 @@ class BidAuto extends Command
 
     protected function execute(Input $input, Output $output)
     {
+        // 上一轮还没跑完时本轮直接跳过，避免两轮重叠执行
+        $lock = command_lock('bid_auto');
+        if ($lock === null) {
+            $output->writeln('[' . date('Y-m-d H:i:s') . '] 上一轮仍在执行，本轮跳过');
+            return 0;
+        }
         $runtime   = $this->app->getRuntimePath();
         $heartbeat = $runtime . 'auto_bid.heartbeat';
         $logFile   = $runtime . 'log' . DIRECTORY_SEPARATOR . 'auto_bid.log';
         $stamp     = '[' . date('Y-m-d H:i:s') . '] ';
 
         try {
-            $result = auto_bid_run();
+            $result = auto_bid_run(200, 'manual');
         } catch (\Throwable $e) {
             $msg = $stamp . 'ERROR ' . $e->getMessage();
             $output->writeln('<error>' . $msg . '</error>');

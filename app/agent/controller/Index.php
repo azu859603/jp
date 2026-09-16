@@ -94,14 +94,23 @@ class Index extends Base
      */
     protected function joinTrend($days = 14)
     {
+        // 一条按天 GROUP BY 代替每天一条 COUNT
+        $off   = (int)date('Z');
+        $first = strtotime('today -' . ($days - 1) . ' days');
+        $last  = strtotime('today') + 86399;
+        $byDay = [];
+        $stat  = (clone $this->memberQuery())
+            ->fieldRaw("FLOOR((reg_time + {$off}) / 86400) AS d, COUNT(*) AS c")
+            ->where('reg_time', 'between', [$first, $last])
+            ->group('d')->select()->toArray();
+        foreach ($stat as $b) {
+            $byDay[(int)$b['d']] = (int)$b['c'];
+        }
         $rows = [];
         $max  = 0;
         for ($i = $days - 1; $i >= 0; $i--) {
-            $from = strtotime('today -' . $i . ' days');
-            $to   = $from + 86399;
-            $count = (clone $this->memberQuery())
-                ->where('reg_time', 'between', [$from, $to])
-                ->count();
+            $from  = strtotime('today -' . $i . ' days');
+            $count = $byDay[(int)floor(($from + $off) / 86400)] ?? 0;
             $max = max($max, $count);
             $rows[] = ['label' => date('m-d', $from), 'count' => $count];
         }

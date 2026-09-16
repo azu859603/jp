@@ -29,7 +29,7 @@ class Base extends BaseController
                 session('user', null);
                 $user = null;
             } else {
-                session('user', $user);
+                session('user', safe_session_user($user));
             }
         }
         $this->user = $user;

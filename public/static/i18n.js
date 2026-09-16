@@ -62,6 +62,7 @@ var LANG = (metaLang ? metaLang.getAttribute('content') : '') || getCookie(COOKI
         // 登录 / 注册
         '请输入手机号和密码': ['請輸入手機號和密碼', 'Enter mobile and password'],
         '请输入正确的手机号': ['請輸入正確的手機號', 'Enter a valid mobile number'],
+        '请使用真实手机号注册（13～19 开头的 11 位号码）': ['請使用真實手機號註冊（13～19 開頭的 11 位號碼）', 'Please register with a real mobile number (11 digits starting with 13–19)'],
         '密码至少6位': ['密碼至少6位', 'Password must be at least 6 characters'],
         '两次密码不一致': ['兩次密碼不一致', 'Passwords do not match'],
         '请同意发布协议': ['請同意發佈協議', 'Please agree to the publishing agreement'],

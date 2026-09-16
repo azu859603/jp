@@ -59,7 +59,7 @@
             <thead>
             <tr>
                 <th style="width:36px;"></th>
-                <th>ID</th><th>封面</th><th>商品标题</th><th>分类</th><th>卖家</th>
+                <th>ID</th><th>封面</th><th>商品标题</th><th>分类</th><th>卖家</th><th>卖家手机号</th>
                 <th>起拍价</th><th>当前/成交价</th><th>保证金</th><th>状态</th><th>出价次数</th><th>浏览量</th><th>结束时间</th><th>操作</th>
             </tr>
             </thead>
@@ -149,7 +149,7 @@
             <div class="g-row">
                 <div class="g-col"><label>截拍时间 <span class="req">*</span></label><input type="datetime-local" class="form-control" id="gEndTime"></div>
                 <div class="g-col"><label>延迟结束（秒）</label><input type="number" min="0" class="form-control" id="gDelay" placeholder="0 表示不延迟"></div>
-                <div class="g-col"></div>
+                <div class="g-col" id="gViewsCol"><label>浏览量</label><input type="number" min="0" max="99999999" step="1" class="form-control" id="gViews" placeholder="前台显示的浏览次数"></div>
             </div>
             <div class="g-row">
                 <div class="g-col" style="flex:1;">
@@ -275,7 +275,7 @@ function loadList(page){
         .then(function(res){
             var html = '';
             if(!res.data || !res.data.length){
-                html = '<tr><td colspan="14" class="empty">暂无数据</td></tr>';
+                html = '<tr><td colspan="15" class="empty">暂无数据</td></tr>';
             } else {
                 res.data.forEach(function(g){
                     var st = statusMap[g.status] || ['未知','tag-gray'];
@@ -284,9 +284,10 @@ function loadList(page){
                         + '<td><input type="checkbox" class="row-check" value="' + g.id + '" onchange="updateSel()"></td>'
                         + '<td>' + g.id + '</td>'
                         + '<td>' + cover + '</td>'
-                        + '<td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + g.title + '">' + g.title + '</td>'
-                        + '<td>' + (g.category_name || '-') + '</td>'
-                        + '<td>' + (g.seller_name || g.seller_mobile || g.seller_id) + '</td>'
+                        + '<td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + esc(g.title) + '">' + esc(g.title) + '</td>'
+                        + '<td>' + esc(g.category_name || '-') + '</td>'
+                        + '<td>' + esc(g.seller_name || ('ID:' + g.seller_id)) + '</td>'
+                        + '<td>' + esc(g.seller_mobile || '-') + '</td>'
                         + '<td class="price">￥' + g.start_price + '</td>'
                         + '<td>' + (g.final_price > 0 ? '<span class="price">￥' + g.final_price + '</span>' : '￥' + g.start_price) + '</td>'
                         + '<td>￥' + g.deposit + '</td>'
@@ -413,6 +414,8 @@ function setDialogMode(edit){
     var locked = !!(edit && edit.price_locked == 1);
     document.getElementById('lockTip').style.display = locked ? '' : 'none';
     ['gStart','gRaise','gDeposit'].forEach(function(k){ document.getElementById(k).disabled = locked; });
+    // 浏览量只在编辑时可改；新发布的商品从 0 开始
+    document.getElementById('gViewsCol').style.display = edit ? '' : 'none';
 }
 
 function openEditGoods(id){
@@ -432,6 +435,7 @@ function openEditGoods(id){
             document.getElementById('gRef').value = parseFloat(g.reference_price) > 0 ? g.reference_price : '';
             document.getElementById('gEndTime').value = g.end_time_local || '';
             document.getElementById('gDelay').value = parseInt(g.delay_seconds) > 0 ? g.delay_seconds : '';
+            document.getElementById('gViews').value = parseInt(g.view_count) || 0;
             document.getElementById('gContent').value = g.content || '';
             setDialogMode(g);
             renderGoodsImgs();
@@ -454,6 +458,7 @@ function openAddGoods(){
     document.getElementById('gRef').value = '';
     document.getElementById('gEndTime').value = '';
     document.getElementById('gDelay').value = '';
+    document.getElementById('gViews').value = '';
     document.getElementById('gContent').value = '';
     filterSeller();
     renderGoodsImgs();
@@ -540,6 +545,7 @@ function doAddGoods(){
         reference_price: document.getElementById('gRef').value || 0,
         end_time: endTime,
         delay_seconds: document.getElementById('gDelay').value || 0,
+        view_count: document.getElementById('gViews').value,
         cover: goodsImgs[0],
         images: goodsImgs.join(',')
     }, function(res){

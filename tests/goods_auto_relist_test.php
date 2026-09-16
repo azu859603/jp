@@ -31,10 +31,12 @@ try {
     ok('  写入后台操作日志', (int)$pdo->query("select count(*) from admin_log where action like '%自动上架流拍商品：卖家 {$qa}，2 件%'")->fetchColumn() == 1);
     ok('  心跳与日志文件存在', file_exists("$root/runtime/auto_relist.heartbeat") && strpos((string)file_get_contents("$root/runtime/log/auto_relist.log"), "ids=$g1,$g2") !== false);
     $o = run('goods:auto-relist'); ok('再次执行：没有流拍商品', strpos($o, '没有流拍商品') !== false, $o);
-    // settle 联动：到期未出价 → 流拍 → 立即自动上架
+    // 命令各自独立：settle 只把到期商品结算为流拍；goods:auto-relist 才负责上架
     $o = run('settle'); $x5 = g($g5);
-    ok('settle 结算后立即自动上架到期流拍的商品', strpos($o, '自动上架卖家') !== false && strpos($o, "ids=$g5") !== false && $x5['status'] == 1 && $x5['end_time'] - $x5['start_time'] >= 9000 && $x5['end_time'] - $x5['start_time'] <= 9000 + 21600, $o . ' | ' . json_encode([$x5['status'], $x5['end_time'] - $x5['start_time']]));
-    ok('  settle 日志文件记录了自动上架', strpos((string)file_get_contents("$root/runtime/log/settle.log"), "ids=$g5") !== false);
+    ok('settle 只结算为流拍，不再顺带上架', strpos($o, '自动上架卖家') === false && strpos($o, "ids=$g5") !== false && $x5['status'] == 3, $o . ' status=' . $x5['status']);
+    $o = run('goods:auto-relist'); $x5 = g($g5);
+    ok('goods:auto-relist 独立上架刚流拍的商品', strpos($o, "ids=$g5") !== false && $x5['status'] == 1 && $x5['end_time'] - $x5['start_time'] >= 9000 && $x5['end_time'] - $x5['start_time'] <= 9000 + 21600, $o . ' | ' . json_encode([$x5['status'], $x5['end_time'] - $x5['start_time']]));
+    ok('  auto_relist 日志文件记录了这次上架', strpos((string)file_get_contents("$root/runtime/log/auto_relist.log"), "ids=$g5") !== false);
     // 后台设置页
     [$c, $b] = req($asid, 'GET', '/admin1314/setting/index', null, false); ok('设置页含两个新字段并回显当前值', $c == 200 && strpos($b, 'name="auto_relist_seller_id" value="' . $qa . '"') !== false && strpos($b, 'name="auto_relist_hours" value="2.5"') !== false, "HTTP $c");
     [, , $j] = req($asid, 'POST', '/admin1314/setting/index', ['auto_relist_seller_id' => '-5', 'auto_relist_hours' => '-1']); ok('负数保存后归零', ($j['code'] ?? 0) == 1 && $pdo->query("select value from setting where name='auto_relist_seller_id'")->fetchColumn() === '0' && $pdo->query("select value from setting where name='auto_relist_hours'")->fetchColumn() === '0', json_encode($j, JSON_UNESCAPED_UNICODE));

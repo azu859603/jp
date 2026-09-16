@@ -292,6 +292,10 @@ document.addEventListener('keydown', function(e){
     if (typeof loadList === 'function') { e.preventDefault(); loadList(1); }
 });
 </script>
+<script>
+// 列表 JS 拼接 HTML 时的转义：所有来自会员输入的字段（昵称、标题、备注、单号等）必须经过 esc()
+function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+</script>
 {block name="script"}{/block}
 </body>
 </html>

@@ -185,7 +185,7 @@ class Index extends Base
         $keyword    = $goods['keyword'];
         $sort       = $goods['sort'];
         $now        = $goods['now'];
-        $categories = $this->dropMissingImages(Db::name('category')->where('status', 1)->order('sort', 'asc')->select()->toArray());
+        $categories = $this->dropMissingImages(active_categories());
 
         // 首页数据条：在拍拍品 / 累计成交 / 注册会员
         $stats = [
@@ -222,9 +222,13 @@ class Index extends Base
         // 时间落在最近 3 天内；按小时固定随机种子，同一小时内刷新页面内容不变
         $need = 10 - count($deals);
         if ($need > 0) {
-            mt_srand((int)floor(time() / 3600));
-            $pool = Db::name('goods')->where('status', 1)->where('end_time', '>', $now)
-                ->field('title,start_price,raise_price')->orderRaw('RAND(' . (int)floor(time() / 3600) . ')')->limit($need)->select()->toArray();
+            $hourSeed = (int)floor(time() / 3600);
+            mt_srand($hourSeed);
+            // ORDER BY RAND() 全表扫描，结果按小时固定，缓存到 Redis（每小时只查一次）
+            $pool = \think\facade\Cache::remember('deals_pool_' . $hourSeed . '_' . $need, function () use ($now, $hourSeed, $need) {
+                return Db::name('goods')->where('status', 1)->where('end_time', '>', $now)
+                    ->field('title,start_price,raise_price')->orderRaw('RAND(' . $hourSeed . ')')->limit($need)->select()->toArray();
+            }, 3600);
             if (count($pool) < $need && count($pool) > 0) {
                 while (count($pool) < $need) {
                     $pool[] = $pool[mt_rand(0, count($pool) - 1)];
@@ -261,7 +265,7 @@ class Index extends Base
         $homeCates = array_slice($categories, 0, 4);
 
         // 首页banner（轮播图）
-        $banners = Db::name('banner')->where('status', 1)->order('sort', 'asc')->order('id', 'asc')->select()->toArray();
+        $banners = active_banners();
 
         View::assign([
             'list'        => $list,
@@ -293,7 +297,7 @@ class Index extends Base
      */
     public function category()
     {
-        $categories = $this->dropMissingImages(Db::name('category')->where('status', 1)->order('sort', 'asc')->select()->toArray());
+        $categories = $this->dropMissingImages(active_categories());
         // 多语言映射分类名
         $langField = Lang::getLangSet() === 'zh-tw' ? 'name_tw' : (Lang::getLangSet() === 'en-us' ? 'name_en' : 'name');
         foreach ($categories as &$c) {
@@ -333,7 +337,7 @@ class Index extends Base
         $categoryId = (int)$this->request->param('category_id', 0);
         $cate = null;
         if ($categoryId > 0) {
-            $cate = Db::name('category')->where('id', $categoryId)->where('status', 1)->find();
+            $cate = active_category($categoryId);
             if (!$cate) {
                 return redirect('/');
             }
@@ -464,7 +468,7 @@ class Index extends Base
 
         foreach ($list as &$d) {
             $d['seller_name'] = !empty($d['seller_shop']) ? $d['seller_shop'] : (translate_nickname($d['seller_nick']) ?: lang('卖家'));
-            $d['buyer_name']  = !empty($d['buyer_nick']) ? mb_substr($d['buyer_nick'], 0, 1) . '***' : '匿***';
+            $d['buyer_name']  = !empty($d['buyer_nick']) ? mb_substr($d['buyer_nick'], 0, 1) . '***' : lang('匿') . '***';
             $d['deal_time']   = $d['pay_time'] ?: $d['create_time'];
         }
         unset($d);

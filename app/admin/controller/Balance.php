@@ -23,8 +23,7 @@ class Balance extends Base
 
             if ($keyword !== '') {
                 $query->where(function ($q) use ($keyword) {
-                    $q->where('l.user_id', (int)$keyword)
-                        ->whereOr('u.mobile', 'like', "%{$keyword}%");
+                    $q->where('u.mobile', 'like', "%{$keyword}%")->whereOr('u.nickname', 'like', "%{$keyword}%");
                 });
             }
             if ($type !== '') {

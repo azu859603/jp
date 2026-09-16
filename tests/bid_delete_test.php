@@ -19,8 +19,8 @@ function u($id) { global $pdo; return $pdo->query("select balance,freeze_balance
 function bid($id) { global $pdo; return $pdo->query("select * from bid_record where id=$id")->fetch(PDO::FETCH_ASSOC); }
 function bc($g) { global $pdo; return (int)$pdo->query("select bid_count from goods where id=$g")->fetchColumn(); }
 try {
-    [$c, $b] = req($asid, 'GET', '/admin1314/bid/index', null, false); ok('主后台页面含操作列与删除按钮脚本', $c == 200 && strpos($b, '<th>操作</th>') !== false && strpos($b, 'function delBid') !== false && strpos($b, 'colspan="8"') !== false, "HTTP $c");
-    [$c, $b] = req($gsid, 'GET', '/agent/bid/index', null, false); ok('代理端页面含操作列与删除按钮脚本', $c == 200 && strpos($b, '<th>操作</th>') !== false && strpos($b, 'function delBid') !== false && strpos($b, 'colspan="9"') !== false, "HTTP $c");
+    [$c, $b] = req($asid, 'GET', '/admin1314/bid/index', null, false); ok('主后台页面含操作列与删除按钮脚本', $c == 200 && strpos($b, '<th>操作</th>') !== false && strpos($b, 'function delBid') !== false && strpos($b, 'colspan="9"') !== false && strpos($b, '<th>手机号</th>') !== false, "HTTP $c");
+    [$c, $b] = req($gsid, 'GET', '/agent/bid/index', null, false); ok('代理端页面含操作列与删除按钮脚本', $c == 200 && strpos($b, '<th>操作</th>') !== false && strpos($b, 'function delBid') !== false && strpos($b, 'colspan="10"') !== false && strpos($b, '<th>手机号</th>') !== false, "HTTP $c");
     [, , $j] = req($asid, 'POST', '/admin1314/bid/delete', ['id' => $win]); ok('得标出价不能删除', ($j['code'] ?? 1) == 0 && bid($win), json_encode($j, JSON_UNESCAPED_UNICODE));
     [, , $j] = req($asid, 'POST', '/admin1314/bid/delete', ['id' => 999999999]); ok('不存在的记录被拒', ($j['code'] ?? 1) == 0, json_encode($j, JSON_UNESCAPED_UNICODE));
     [$c, $b] = req($asid, 'GET', '/goods/detail?id=' . $g, null, false); ok('删除前前台最低出价为 140（当前价 130）', strpos($b, 'id="bidMin">140.00') !== false, "HTTP $c");
@@ -34,7 +34,7 @@ try {
     [, , $j] = req($gsid, 'POST', '/agent/bid/delete', ['id' => $o1]); ok('代理不能删除团队外的出价', ($j['code'] ?? 1) == 0 && bid($o1), json_encode($j, JSON_UNESCAPED_UNICODE));
     [, , $j] = req($gsid, 'POST', '/agent/bid/delete', ['id' => $b1]); $ub = u($B);
     ok('代理删除团队拍品上外部买家 B 的出价：保证金退回 B', ($j['code'] ?? 0) == 1 && !bid($b1) && (float)$ub['balance'] == 100 && (float)$ub['freeze_balance'] == 0 && bc($g) == 0, json_encode([$j, $ub, bc($g)], JSON_UNESCAPED_UNICODE));
-    [$c, $b] = req($bsid, 'GET', '/user/wallet', null, false); ok('B 的前台钱包显示退回记录', $c == 200 && strpos($b, '出价记录删除，保证金退回') !== false, "HTTP $c");
+    [$c, $b] = req($bsid, 'GET', '/user/balance_log', null, false); ok('B 的前台余额明细显示退回记录', $c == 200 && strpos($b, '出价记录删除，保证金退回') !== false, "HTTP $c");
     [$c, $b] = req($asid, 'GET', '/goods/detail?id=' . $g, null, false); ok('无出价后前台最低出价回到起拍价 100', strpos($b, 'id="bidMin">100.00') !== false, "HTTP $c");
     [, , $j] = req($asid, 'POST', '/admin1314/bid/delete', ['id' => $o1]); ok('主后台删除无保证金的出价', ($j['code'] ?? 0) == 1 && !bid($o1) && bc($gOut) == 0 && (float)u($C)['balance'] == 90, json_encode($j, JSON_UNESCAPED_UNICODE));
 } finally {

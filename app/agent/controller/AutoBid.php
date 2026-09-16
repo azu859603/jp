@@ -9,7 +9,7 @@ use think\facade\View;
  *
  * 与主后台逻辑一致，数据范围收口为「拍品卖家 ∈ 我的下级」：
  * 只能为团队卖家拍卖中的拍品添加任务，列表 / 编辑 / 启停 / 删除也只限这些拍品。
- * 执行由 php think bid:auto / php think settle 定时完成，逻辑在 app/common.php 的 auto_bid_run()。
+ * 执行由 php think bid:auto 定时完成（平台自营任务由 php think platform:auto-bid 负责），逻辑在 app/common.php 的 auto_bid_run()。
  */
 class AutoBid extends Base
 {
@@ -26,10 +26,8 @@ class AutoBid extends Base
             $query = $this->listQuery();
             if ($keyword !== '') {
                 $query->where(function ($q) use ($keyword) {
-                    $q->where('g.title', 'like', "%{$keyword}%");
-                    if (ctype_digit($keyword)) {
-                        $q->whereOr('a.goods_id', (int)$keyword);
-                    }
+                    // 拍品标题 / 卖家手机号
+                    $q->where('g.title', 'like', "%{$keyword}%")->whereOr('u.mobile', 'like', "%{$keyword}%");
                 });
             }
             if ($status !== '') {
@@ -40,7 +38,7 @@ class AutoBid extends Base
             $this->decorate($list);
             return json(['code' => 0, 'msg' => '', 'count' => $total, 'data' => $list]);
         }
-        View::assign(['menu_active' => '/agent/auto_bid/index', 'virtual_count' => $this->virtualCount()]);
+        View::assign(['menu_active' => '/agent/auto_bid/index', 'virtual_count' => $this->virtualCount(), 'platform_auto_bid_on' => platform_auto_bid_enabled() ? 1 : 0]);
         return View::fetch();
     }
 
@@ -53,6 +51,9 @@ class AutoBid extends Base
         $goods   = $this->findGoods($goodsId);
         if (!$goods) {
             return json(['code' => 0, 'msg' => '该拍品不属于您的团队']);
+        }
+        if (auto_bid_blocked_seller($goods['seller_id'])) {
+            return json(['code' => 0, 'msg' => '该拍品属于会员 ID 1 的卖家（平台自营），已由系统脚本统一自动出价，不能手动添加任务']);
         }
         if (Db::name('auto_bid')->where('goods_id', $goodsId)->count()) {
             return json(['code' => 0, 'msg' => '该拍品已有自动出价任务，请直接编辑']);
@@ -93,9 +94,15 @@ class AutoBid extends Base
         if (!$task) {
             return json(['code' => 0, 'msg' => '任务不存在或不属于您的团队']);
         }
+        if (($task['creator_type'] ?? '') === 'platform') {
+            return json(['code' => 0, 'msg' => '该任务由「平台自营自动出价」脚本管理，请在系统设置中调整参数或关闭该功能']);
+        }
         $goods = $this->findGoods($task['goods_id']);
         if (!$goods) {
             return json(['code' => 0, 'msg' => '该拍品不属于您的团队']);
+        }
+        if (auto_bid_blocked_seller($goods['seller_id'])) {
+            return json(['code' => 0, 'msg' => '该拍品属于会员 ID 1 的卖家（平台自营），已由系统脚本统一自动出价，不能手动添加任务']);
         }
         [$interval, $maxPrice, $stopHours] = $this->readParams();
         $err = auto_bid_validate($goods, $interval, $maxPrice, $stopHours);
@@ -121,6 +128,9 @@ class AutoBid extends Base
         $task = $this->findTask((int)$this->request->post('id', 0));
         if (!$task) {
             return json(['code' => 0, 'msg' => '任务不存在或不属于您的团队']);
+        }
+        if (($task['creator_type'] ?? '') === 'platform') {
+            return json(['code' => 0, 'msg' => '该任务由「平台自营自动出价」脚本管理，请在系统设置中调整参数或关闭该功能']);
         }
         $status = (int)$this->request->post('status', 0) === 1 ? 1 : 0;
         $now    = time();
@@ -152,6 +162,9 @@ class AutoBid extends Base
         if (!$task) {
             return json(['code' => 0, 'msg' => '任务不存在或不属于您的团队']);
         }
+        if (($task['creator_type'] ?? '') === 'platform') {
+            return json(['code' => 0, 'msg' => '该任务由「平台自营自动出价」脚本管理，请在系统设置中调整参数或关闭该功能']);
+        }
         Db::name('auto_bid')->where('id', $task['id'])->delete();
         return json(['code' => 1, 'msg' => '任务已删除，已产生的出价记录保留']);
     }
@@ -164,7 +177,7 @@ class AutoBid extends Base
         return Db::name('auto_bid')->alias('a')
             ->leftJoin('goods g', 'a.goods_id = g.id')
             ->leftJoin('user u', 'g.seller_id = u.id')
-            ->field('a.*, g.title, g.cover, g.status as goods_status, g.start_price, g.raise_price, g.end_time, g.bid_count as goods_bid_count, g.seller_id, u.nickname as seller_name, u.shop_name')
+            ->field('a.*, g.title, g.cover, g.status as goods_status, g.start_price, g.raise_price, g.end_time, g.bid_count as goods_bid_count, g.seller_id, u.nickname as seller_name, u.mobile as seller_mobile, u.shop_name')
             ->whereIn('g.seller_id', $ids ?: [-1]);
     }
 

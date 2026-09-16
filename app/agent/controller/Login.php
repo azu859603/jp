@@ -76,8 +76,9 @@ class Login extends BaseController
             return json(['code' => 0, 'msg' => '请输入手机号和密码']);
         }
         if ($captcha === '' || strtolower($captcha) !== strtolower((string)session('agent_captcha'))) {
-            // 验证码一次性：无论对错都作废，防止重复使用
+            // 验证码一次性：无论对错都作废，防止重复使用；错误同样计入失败次数
             session('agent_captcha', null);
+            $this->markFail($lockKey, $fails);
             return json(['code' => 0, 'msg' => '验证码错误']);
         }
         session('agent_captcha', null);
@@ -110,6 +111,8 @@ class Login extends BaseController
         ]);
 
         unset($user['password']);
+        // 登录成功换一个新的会话 ID（旧 ID 作废），防止会话固定攻击
+        \think\facade\Session::regenerate(true);
         session('user', $user);
 
         return json(['code' => 1, 'msg' => '登录成功', 'url' => '/agent/index/index']);
@@ -129,7 +132,7 @@ class Login extends BaseController
     public function captcha()
     {
         $code  = '';
-        $chars = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
+        $chars = '0123456789';   // 4 位纯数字验证码
         for ($i = 0; $i < 4; $i++) {
             $code .= $chars[mt_rand(0, strlen($chars) - 1)];
         }
@@ -198,7 +201,7 @@ class Login extends BaseController
      */
     protected function siteName()
     {
-        $name = (string)Db::name('setting')->where('name', 'site_name')->value('value');
+        $name = (string)get_setting('site_name');
         return $name !== '' ? $name : '竞拍商城';
     }
 }

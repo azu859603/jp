@@ -20,7 +20,7 @@ class Withdraw extends Base
             $status = $this->request->param('status', '');
             $query = Db::name('withdraw')->alias('w')
                 ->leftJoin('user u', 'w.user_id = u.id')
-                ->field('w.*, u.mobile, u.nickname')
+                ->field('w.*, u.mobile, u.nickname, u.is_virtual')
                 ->whereIn('w.user_id', $this->memberIds());
             if ($status !== '') {
                 $query->where('w.status', (int)$status);
@@ -29,9 +29,6 @@ class Withdraw extends Base
             if ($keyword !== '') {
                 $query->where(function ($q) use ($keyword) {
                     $q->where('u.mobile', 'like', "%{$keyword}%")->whereOr('u.nickname', 'like', "%{$keyword}%");
-                    if (ctype_digit($keyword)) {
-                        $q->whereOr('w.user_id', (int)$keyword);
-                    }
                 });
             }
             $total = $query->count();
@@ -55,15 +52,25 @@ class Withdraw extends Base
         if (!$withdraw) {
             return json(['code' => 0, 'msg' => '提现申请不存在']);
         }
-        $user = $this->assertMyMember($withdraw['user_id']);
-        if ($withdraw['status'] != 0) {
-            return json(['code' => 0, 'msg' => '该申请已处理过']);
-        }
+        $this->assertMyMember($withdraw['user_id']);
 
         Db::startTrans();
         try {
+            // 行锁在事务内：重复点击只有一次生效
+            $withdraw = Db::name('withdraw')->where('id', $id)->lock(true)->find();
+            if (!$withdraw || $withdraw['status'] != 0) {
+                Db::rollback();
+                return json(['code' => 0, 'msg' => '该申请已处理过']);
+            }
+            $user = Db::name('user')->where('id', $withdraw['user_id'])->lock(true)->find();
+            if (!$user) {
+                Db::rollback();
+                return json(['code' => 0, 'msg' => '会员不存在']);
+            }
             if ($action === 'pass') {
-                Db::name('withdraw')->where('id', $id)->update(['status' => 1, 'handle_time' => time()]);
+                if (Db::name('withdraw')->where('id', $id)->where('status', 0)->update(['status' => 1, 'handle_time' => time()]) !== 1) {
+                    throw new \RuntimeException('申请状态已变化');
+                }
             } else {
                 if ($reason === '') {
                     Db::rollback();
@@ -79,7 +86,9 @@ class Withdraw extends Base
                     'remark'      => '提现拒绝退回：' . $withdraw['amount'] . '元',
                     'create_time' => time(),
                 ]);
-                Db::name('withdraw')->where('id', $id)->update(['status' => 2, 'refuse_reason' => mb_substr($reason, 0, 200), 'handle_time' => time()]);
+                if (Db::name('withdraw')->where('id', $id)->where('status', 0)->update(['status' => 2, 'refuse_reason' => mb_substr($reason, 0, 200), 'handle_time' => time()]) !== 1) {
+                    throw new \RuntimeException('申请状态已变化');
+                }
             }
             Db::commit();
         } catch (\Throwable $e) {

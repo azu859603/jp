@@ -50,10 +50,12 @@ class Banner extends Base
 
         if ($id > 0) {
             Db::name('banner')->where('id', $id)->update($data);
+            banners_cache_clear();
             admin_log('编辑轮播：' . ($title ?: 'ID ' . $id));
         } else {
             $data['create_time'] = time();
             Db::name('banner')->insert($data);
+            banners_cache_clear();
             admin_log('新增轮播：' . ($title ?: '未命名'));
         }
 
@@ -74,6 +76,7 @@ class Banner extends Base
         }
 
         Db::name('banner')->where('id', $id)->delete();
+        banners_cache_clear();
         admin_log('删除轮播：ID ' . $id);
         return json(['code' => 1, 'msg' => '删除成功']);
     }
@@ -99,13 +102,18 @@ class Banner extends Base
         if (!in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp'])) {
             return json(['code' => 0, 'msg' => '仅支持jpg/png/gif/webp格式']);
         }
+        // 按文件内容校验，防止把脚本改个扩展名传上来
+        $imgInfo = @getimagesize($file->getPathname());
+        if (!$imgInfo || !in_array($imgInfo[2], [IMAGETYPE_JPEG, IMAGETYPE_PNG, IMAGETYPE_GIF, IMAGETYPE_WEBP], true)) {
+            return json(['code' => 0, 'msg' => '文件不是有效的图片']);
+        }
 
         $savePath = app()->getRootPath() . 'public' . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR . date('Ymd');
         if (!is_dir($savePath)) {
             mkdir($savePath, 0755, true);
         }
 
-        $name = date('His') . '_' . mt_rand(1000, 9999) . '.' . $ext;
+        $name = date('His') . '_' . substr(md5(uniqid((string)mt_rand(), true)), 0, 10) . '.' . $ext;
         try {
             $file->move($savePath, $name);
         } catch (\Throwable $e) {

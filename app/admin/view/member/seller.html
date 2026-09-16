@@ -11,6 +11,8 @@
         <option value="1">已通过</option>
         <option value="2">已拒绝</option>
     </select>
+    <span class="spacer"></span>
+    <button class="btn btn-green" onclick="openSeller(0)">＋ 录入卖家资料</button>
 </div>
 
 <div class="card">
@@ -27,8 +29,69 @@
     <div class="pagination" id="pagination"></div>
 </div>
 
+<!-- 录入 / 修改卖家资料 -->
+<div class="mask" id="sellerMask">
+    <div class="dialog" style="width:520px;">
+        <div class="dialog-title" id="sellerTitle">录入卖家资料</div>
+        <div class="dialog-body">
+            <input type="hidden" id="pickUser" value="0">
+            <div class="form-group" id="pickGroup">
+                <label>会员 <span class="req">*</span> <span class="tip" style="display:inline">（只能选择还没有入驻资料的会员）</span></label>
+                <div style="position:relative;">
+                    <input type="text" class="form-control" id="userKw" placeholder="手机号 / 昵称 / 会员 ID" autocomplete="off">
+                    <div id="userList" class="pick-list"></div>
+                </div>
+                <div class="tip" id="userSel" style="color:#16a34a;min-height:16px;"></div>
+            </div>
+            <div class="form-group" id="roGroup" style="display:none;">
+                <label>会员</label>
+                <div class="form-control" style="background:#f8fafc;color:#64748b;" id="roText"></div>
+            </div>
+            <div class="form-group">
+                <label>店铺名称 <span class="req">*</span></label>
+                <input type="text" class="form-control" id="sShop" maxlength="50" placeholder="前台展示的店铺名称">
+            </div>
+            <div class="form-group">
+                <label>企业名称</label>
+                <input type="text" class="form-control" id="sCompany" maxlength="100" placeholder="可不填">
+            </div>
+            <div class="form-group">
+                <label>企业资料 / 营业执照 <span class="tip" style="display:inline">（最多 5 张，可不传）</span></label>
+                <div id="licBox" style="display:flex;gap:8px;flex-wrap:wrap;"></div>
+                <input type="hidden" id="sLicense" value="">
+            </div>
+            <div class="form-group" style="margin-bottom:0;">
+                <label>审核状态</label>
+                <select class="form-control" id="sStatus">
+                    <option value="1">已通过（开通卖家权限）</option>
+                    <option value="0">待审核</option>
+                    <option value="2">已拒绝</option>
+                </select>
+                <div class="tip">设为「已通过」要求该会员已通过实名认证；设为其它状态会同时取消其卖家权限。</div>
+            </div>
+        </div>
+        <div class="dialog-footer">
+            <button class="btn" onclick="document.getElementById('sellerMask').classList.remove('show')">取消</button>
+            <button class="btn btn-primary" onclick="saveSeller()">保存</button>
+        </div>
+    </div>
+</div>
+
+<style>
+.pick-list{display:none;position:absolute;left:0;right:0;top:100%;z-index:20;background:#fff;border:1px solid #e2e8f0;border-radius:8px;box-shadow:0 4px 14px rgba(0,0,0,.08);max-height:220px;overflow-y:auto;margin-top:4px;}
+.pick-item{padding:8px 12px;cursor:pointer;border-bottom:1px solid #f1f5f9;font-size:13px;}
+.pick-item:last-child{border-bottom:0;}
+.pick-item:hover{background:#fff3e6;}
+.lic-item{position:relative;width:72px;height:72px;border-radius:8px;overflow:hidden;border:1px solid #e2e8f0;}
+.lic-item img{width:100%;height:100%;object-fit:cover;}
+.lic-item .del{position:absolute;right:2px;top:2px;background:rgba(0,0,0,.55);color:#fff;width:18px;height:18px;line-height:18px;text-align:center;border-radius:9px;cursor:pointer;font-size:12px;}
+.lic-add{width:72px;height:72px;border:1px dashed #cbd5e1;border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#94a3b8;background:#f8fafc;}
+</style>
+
 <script>
 var currentPage = 1;
+var rowMap = {};
+var licArr = [];
 
 function loadList(page){
     currentPage = page;
@@ -36,10 +99,12 @@ function loadList(page){
         .then(function(r){ return r.json(); })
         .then(function(res){
             var html = '';
+            rowMap = {};
             if(!res.data || !res.data.length){
-                html = '<tr><td colspan="7" class="empty">暂无数据</td></tr>';
+                html = '<tr><td colspan="8" class="empty">暂无数据</td></tr>';
             } else {
                 res.data.forEach(function(u){
+                    rowMap[u.id] = u;
                     var st = u.seller_check;
                     var stHtml = st == 0 ? '<span class="tag tag-orange">待审核</span>'
                         : (st == 1 ? '<span class="tag tag-green">已通过</span>' : '<span class="tag tag-red">已拒绝</span>');
@@ -47,19 +112,20 @@ function loadList(page){
                     if (u.license_img) {
                         var arr = String(u.license_img).split(',').filter(function(s){ return s; });
                         licHtml = arr.map(function(p){
-                            return '<img src="' + p + '" style="height:34px;border-radius:4px;cursor:pointer;margin-right:4px;" onclick="window.open(\'' + p + '\')">';
+                            return '<img src="' + esc(p) + '" style="height:34px;border-radius:4px;cursor:pointer;margin-right:4px;" onclick="window.open(\'' + esc(p) + '\')">';
                         }).join('');
                     }
                     html += '<tr>'
                         + '<td>' + u.id + '</td>'
-                        + '<td>' + (u.nickname || '-') + '<br><span style="color:#94a3b8;font-size:12px;">' + u.mobile + (u.real_name ? ' ｜ ' + u.real_name : '') + '</span></td>'
-                        + '<td>' + (u.shop_name || '-') + '<br><span style="color:#94a3b8;font-size:12px;">' + (u.company_name || '') + '</span></td>'
+                        + '<td>' + esc(u.nickname || '-') + '<br><span style="color:#94a3b8;font-size:12px;">' + esc(u.mobile) + (u.real_name ? ' ｜ ' + esc(u.real_name) : '') + '</span></td>'
+                        + '<td>' + esc(u.shop_name || '-') + '<br><span style="color:#94a3b8;font-size:12px;">' + esc(u.company_name || '') + '</span></td>'
                         + '<td><span style="color:#f59e0b;">' + '★'.repeat(Math.round(u.shop_score || 0)) + '</span><span style="color:#cbd5e1;">' + '★'.repeat(5 - Math.round(u.shop_score || 0)) + '</span><br><span style="font-size:12px;color:' + (u.credit_score >= 90 ? '#16a34a' : (u.credit_score >= 60 ? '#f59e0b' : '#dc2626')) + ';">信誉 ' + (u.credit_score == null ? '-' : u.credit_score) + '</span></td>'
                         + '<td>' + licHtml + '</td>'
                         + '<td>' + (u.reg_time ? fmtTime(u.reg_time) : '-') + '</td>'
                         + '<td>' + stHtml + '</td>'
                         + '<td style="white-space:nowrap;">'
                         + '<a class="btn btn-sm" href="/admin1314/member/detail?id=' + u.id + '">详情</a> '
+                        + '<a class="btn btn-sm" href="javascript:;" onclick="openSeller(' + u.id + ')">编辑</a> '
                         + (st == 0 ? '<a class="btn btn-sm btn-green" href="javascript:;" onclick="audit(' + u.id + ',\'pass\')">通过</a> '
                             + '<a class="btn btn-sm btn-danger" href="javascript:;" onclick="audit(' + u.id + ',\'reject\')">拒绝</a>' : '')
                         + '</td></tr>';
@@ -72,6 +138,109 @@ function loadList(page){
             ph += '<a class="' + (page >= pages ? 'disabled' : '') + '" href="javascript:;" onclick="loadList(' + (page + 1) + ')">下一页</a>';
             document.getElementById('pagination').innerHTML = ph;
         });
+}
+
+/* ===== 上传 / 会员选择 ===== */
+function pickImage(cb){
+    var input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = function(e){
+        var file = e.target.files[0];
+        if(!file) return;
+        var fd = new FormData();
+        fd.append('file', file);
+        fetch('/admin1314/upload/image', {method:'POST', headers:{'X-Requested-With':'XMLHttpRequest'}, body:fd})
+            .then(function(r){ return r.json(); })
+            .then(function(res){ if(res.code === 1) cb(res.url); else alert(res.msg || '上传失败'); })
+            .catch(function(){ alert('网络错误，请重试'); });
+    };
+    input.click();
+}
+function renderLic(){
+    var h = licArr.map(function(u, i){
+        return '<div class="lic-item"><img src="' + esc(u) + '"><span class="del" onclick="delLic(' + i + ')">×</span></div>';
+    }).join('');
+    if(licArr.length < 5) h += '<div class="lic-add" onclick="addLic()">＋</div>';
+    document.getElementById('licBox').innerHTML = h;
+    document.getElementById('sLicense').value = licArr.join(',');
+}
+function addLic(){ pickImage(function(u){ licArr.push(u); renderLic(); }); }
+function delLic(i){ licArr.splice(i, 1); renderLic(); }
+
+var pickerReady = false;
+function initPicker(){
+    if(pickerReady) return;
+    pickerReady = true;
+    var kw = document.getElementById('userKw'), list = document.getElementById('userList'),
+        hid = document.getElementById('pickUser'), sel = document.getElementById('userSel');
+    var timer = null;
+    function search(){
+        fetch('/admin1314/member/searchUser?scene=seller&kw=' + encodeURIComponent(kw.value.trim()), {headers:{'X-Requested-With':'XMLHttpRequest'}})
+            .then(function(r){ return r.json(); })
+            .then(function(res){
+                var d = res.data || [];
+                list.innerHTML = d.length ? d.map(function(u){
+                    var text = (u.nickname || '-') + '（' + u.mobile + '）';
+                    var tag = u.auth_status == 2 ? '<span class="tag tag-green">已实名</span>' : '<span class="tag tag-gray">未实名</span>';
+                    return '<div class="pick-item" data-id="' + u.id + '" data-text="' + esc(text) + '">' + esc(u.nickname || '-') + ' <span style="color:#94a3b8;">' + esc(u.mobile) + ' · ID ' + u.id + '</span> ' + tag + '</div>';
+                }).join('') : '<div style="padding:12px;text-align:center;color:#94a3b8;font-size:12px;">没有匹配的会员（已有入驻资料的不在列表中）</div>';
+                list.style.display = 'block';
+            })
+            .catch(function(){ list.style.display = 'none'; });
+    }
+    kw.addEventListener('input', function(){ hid.value = 0; sel.textContent = ''; clearTimeout(timer); timer = setTimeout(search, 250); });
+    kw.addEventListener('focus', function(){ if(!parseInt(hid.value)){ clearTimeout(timer); timer = setTimeout(search, 100); } });
+    list.addEventListener('mousedown', function(e){
+        var it = e.target.closest('.pick-item');
+        if(!it) return;
+        e.preventDefault();
+        hid.value = it.getAttribute('data-id');
+        kw.value = it.getAttribute('data-text');
+        sel.textContent = '已选择：' + it.getAttribute('data-text');
+        list.style.display = 'none';
+    });
+    document.addEventListener('click', function(e){
+        if(!e.target.closest('#userKw') && !e.target.closest('#userList')) list.style.display = 'none';
+    });
+}
+
+function openSeller(id){
+    initPicker();
+    var u = id ? rowMap[id] : null;
+    document.getElementById('sellerTitle').textContent = u ? ('修改卖家资料（ID:' + u.id + '）') : '录入卖家资料';
+    document.getElementById('pickGroup').style.display = u ? 'none' : '';
+    document.getElementById('roGroup').style.display = u ? '' : 'none';
+    document.getElementById('pickUser').value = u ? u.id : 0;
+    document.getElementById('userKw').value = '';
+    document.getElementById('userSel').textContent = '';
+    document.getElementById('roText').textContent = u ? ((u.nickname || '-') + '（' + u.mobile + '）') : '';
+    document.getElementById('sShop').value = u ? (u.shop_name || '') : '';
+    document.getElementById('sCompany').value = u ? (u.company_name || '') : '';
+    licArr = u && u.license_img ? String(u.license_img).split(',').filter(function(s){ return s; }) : [];
+    renderLic();
+    document.getElementById('sStatus').value = u ? String(u.seller_check) : '1';
+    document.getElementById('sellerMask').classList.add('show');
+    setTimeout(function(){ document.getElementById(u ? 'sShop' : 'userKw').focus(); }, 50);
+}
+
+function saveSeller(){
+    var uid = parseInt(document.getElementById('pickUser').value) || 0;
+    if(!uid){ alert('请先搜索并选择会员'); return; }
+    var shop = document.getElementById('sShop').value.trim();
+    if(!shop){ alert('请输入店铺名称'); return; }
+    ajaxPost('/admin1314/member/sellerSave', {
+        id: uid, shop_name: shop,
+        company_name: document.getElementById('sCompany').value.trim(),
+        license_img: document.getElementById('sLicense').value,
+        seller_check: document.getElementById('sStatus').value
+    }, function(res){
+        alert(res.msg);
+        if(res.code == 1){
+            document.getElementById('sellerMask').classList.remove('show');
+            loadList(currentPage);
+        }
+    });
 }
 
 function audit(id, action){

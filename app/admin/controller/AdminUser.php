@@ -219,4 +219,29 @@ class AdminUser extends Base
         admin_log('重置管理员谷歌验证器：' . $target['username']);
         return json(['code' => 1, 'msg' => '已重置，该管理员下次登录需重新绑定']);
     }
+    /**
+     * 超级管理员为未绑定的管理员生成谷歌验证器绑定码（密钥直接写入，对方扫码后即可登录）
+     */
+    public function googleInit()
+    {
+        if (!$this->request->isPost()) {
+            return json(['code' => 0, 'msg' => '请求方式错误']);
+        }
+        if ((int)$this->admin['role'] !== 1) {
+            return json(['code' => 0, 'msg' => '只有超级管理员可以生成绑定码']);
+        }
+        $id = (int)$this->request->post('id');
+        $target = Db::name('admin_user')->find($id);
+        if (!$target) {
+            return json(['code' => 0, 'msg' => '管理员不存在']);
+        }
+        if (!empty($target['google_secret'])) {
+            return json(['code' => 0, 'msg' => '该管理员已绑定，如需更换请先重置']);
+        }
+        $secret = google_auth_secret();
+        Db::name('admin_user')->where('id', $id)->update(['google_secret' => $secret, 'update_time' => time()]);
+        $issuer = (string)get_setting('site_name', '竞拍商城') ?: '竞拍商城';
+        admin_log('为管理员生成谷歌验证器绑定码：' . $target['username']);
+        return json(['code' => 1, 'msg' => '已生成，请让该管理员用验证器 App 扫码', 'uri' => google_auth_uri($secret, $target['username'], $issuer . '后台'), 'secret' => $secret]);
+    }
 }

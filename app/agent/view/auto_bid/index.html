@@ -36,12 +36,13 @@
 <div class="ab-note">
     定时脚本每分钟检查一次任务：到了出价时间就随机挑一个<b>虚拟会员</b>（排除卖家和当前最高价者）按一个加价幅度出价，出价不冻结保证金。
     当前价达到「最高出价金额」、或距截拍不足「停止提前量」时任务自动结束；真人买家被超过时会收到出局通知。只能为您团队卖家拍卖中的拍品添加任务。
+    {if $platform_auto_bid_on}<span style="color:#c2410c;font-weight:600">「平台自营自动出价」已开启：会员 ID 1 的拍品由系统脚本统一出价（标记为「平台脚本」的任务不能在此修改），此处不能再为其添加任务；参数在「系统设置 › 基础设置」调整。</span><br>{/if}
     当前启用的虚拟会员：<b>{$virtual_count}</b> 个{if $virtual_count == 0}，<span style="color:#dc2626">请先到会员管理添加虚拟会员，否则任务不会出价</span>{/if}。
-    注意：停止时段内若无真人出价，最后一手仍可能是虚拟会员中标，请合理设置停止提前量。
+    注意：停止时段内若无真人出价，最后一手仍可能是虚拟会员中标，产生无人付款的订单，请合理设置停止提前量并开启「待付款超时」。
 </div>
 
 <div class="search-bar">
-    <input type="text" class="form-control" id="keyword" placeholder="拍品 ID / 标题">
+    <input type="text" class="form-control" id="keyword" placeholder="拍品标题 / 卖家手机号">
     <select class="form-control" id="status">
         <option value="">全部状态</option>
         <option value="1">运行中</option>
@@ -58,7 +59,7 @@
         <table class="table">
             <thead>
             <tr>
-                <th>ID</th><th>拍品</th><th>卖家</th><th>当前价 / 最高出价</th><th>间隔</th><th>停止提前</th><th>已出价</th><th>最近 / 下次出价</th><th>截拍</th><th>状态</th><th>操作</th>
+                <th>ID</th><th>拍品</th><th>卖家</th><th>卖家手机号</th><th>当前价 / 最高出价</th><th>间隔</th><th>停止提前</th><th>已出价</th><th>最近 / 下次出价</th><th>截拍</th><th>状态</th><th>操作</th>
             </tr>
             </thead>
             <tbody id="tbody"></tbody>
@@ -74,7 +75,7 @@
         <div class="dialog-body">
             <input type="hidden" id="taskId" value="0">
             <div class="form-group" style="margin-bottom:12px;" id="goodsGroup">
-                <label>拍品 <span class="tip" style="display:inline">（输入拍品 ID 或标题关键词搜索，只列拍卖中的拍品）</span></label>
+                <label>拍品 <span class="tip" style="display:inline">（输入拍品 ID 或标题关键词搜索，只列拍卖中的拍品{if $platform_auto_bid_on}；会员 ID 为 1 的卖家的拍品由平台脚本出价，不能添加{/if}）</span></label>
                 <div class="picker" id="goodsPicker">
                     <input type="text" class="form-control" id="goodsKw" placeholder="拍品 ID / 标题关键词" autocomplete="off">
                     <input type="hidden" id="taskGoods" value="">
@@ -122,7 +123,7 @@ function loadList(page){
         .then(function(res){
             var html = '';
             if(!res.data || !res.data.length){
-                html = '<tr><td colspan="11" class="empty">暂无数据</td></tr>';
+                html = '<tr><td colspan="12" class="empty">暂无数据</td></tr>';
             } else {
                 res.data.forEach(function(t){
                     var st = t.status == 1 ? '<span class="tag tag-green">运行中</span>' : (t.status == 2 ? '<span class="tag tag-gray">已结束</span>' : '<span class="tag tag-orange">已停用</span>');
@@ -131,10 +132,12 @@ function loadList(page){
                     var ops = '<a class="btn btn-sm" href="javascript:;" onclick="openTask(' + t.id + ')">编辑</a> '
                         + (t.status == 1 ? '<a class="btn btn-sm" href="javascript:;" onclick="setStatus(' + t.id + ',0)">停用</a> ' : '<a class="btn btn-sm btn-green" href="javascript:;" onclick="setStatus(' + t.id + ',1)">启用</a> ')
                         + '<a class="btn btn-sm btn-danger" href="javascript:;" onclick="delTask(' + t.id + ')">删除</a>';
+                    if (t.creator_type == 'platform') { ops = '<span class="tag tag-blue" title="由平台自营自动出价脚本管理，参数在系统设置中调整">平台脚本</span>'; }
                     html += '<tr data-row=\'' + JSON.stringify({id:t.id, goods_id:t.goods_id, title:t.title, interval_min:t.interval_min, max_price:t.max_price, stop_hours:t.stop_hours, current_price:t.current_price, has_bid:t.has_bid, raise_price:t.raise_price, end_time:t.end_time}).replace(/'/g, '&#39;') + '\'>'
                         + '<td>' + t.id + '</td>'
                         + '<td><div class="ab-goods"><img src="' + esc(t.cover || '') + '" onerror="this.style.visibility=\'hidden\'"><div style="min-width:0"><div class="t" title="' + esc(t.title) + '"><a href="' + PRE + 'goods/detail?id=' + t.goods_id + '" target="_blank">' + esc(t.title || ('拍品#' + t.goods_id)) + '</a></div><div class="s">ID ' + t.goods_id + ' · 加价 ¥' + num(t.raise_price) + ' · 共 ' + (t.goods_bid_count || 0) + ' 次出价' + gs + '</div></div></div></td>'
-                        + '<td>' + esc(t.seller_text) + '</td>'
+                        + '<td>' + esc(t.seller_text) + (t.creator_type == 'platform' ? '<br><span class="tag tag-blue">平台脚本</span>' : '') + '</td>'
+                        + '<td>' + esc(t.seller_mobile || '-') + '</td>'
                         + '<td><span class="price">￥' + num(t.current_price) + '</span> / ￥' + num(t.max_price) + '</td>'
                         + '<td>' + t.interval_min + ' 分钟</td>'
                         + '<td>' + num1(t.stop_hours) + ' 小时</td>'
@@ -179,7 +182,7 @@ function makePicker(opt){
     }
     function search(){
         var q = kw.value.trim();
-        fetch(opt.url + '?kw=' + encodeURIComponent(q), {headers:{'X-Requested-With':'XMLHttpRequest'}})
+        fetch(opt.url + (opt.url.indexOf('?') >= 0 ? '&' : '?') + 'kw=' + encodeURIComponent(q), {headers:{'X-Requested-With':'XMLHttpRequest'}})
             .then(function(r){ return r.json(); })
             .then(function(res){ if(kw.value.trim() !== q) return; items = res.data || []; active = -1; render(); })
             .catch(function(){ items = []; render(); });
@@ -219,7 +222,7 @@ function showTip(g){
 }
 function initPicker(){
     goodsPicker = makePicker({
-        kw: 'goodsKw', hidden: 'taskGoods', list: 'goodsList', sel: 'goodsSel', url: PRE + 'bid/searchGoods',
+        kw: 'goodsKw', hidden: 'taskGoods', list: 'goodsList', sel: 'goodsSel', url: PRE + 'bid/searchGoods?scene=auto_bid',
         row: function(g){ return '<img src="' + esc(g.cover || '') + '" onerror="this.style.visibility=\'hidden\'"><div class="pi-main"><div class="pi-title">' + esc(g.title) + '</div><div class="pi-sub">当前价 ¥' + (parseFloat(g.top_price)||0).toFixed(2) + ' · 加价 ¥' + (parseFloat(g.raise_price)||0).toFixed(2) + ' · ' + (g.bid_count||0) + ' 次出价 · 截拍 ' + esc(g.end_text) + '</div></div><span class="pi-id">ID ' + g.id + '</span>'; },
         text: function(g){ return '[' + g.id + '] ' + g.title; },
         onPick: function(g){ picked = g; showTip(g); },

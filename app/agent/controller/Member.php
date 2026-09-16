@@ -79,7 +79,7 @@ class Member extends Base
         $total = $query->count();
         $list  = $query->order('id', 'desc')
             ->page($page, $limit)
-            ->field('id,nickname,avatar,mobile,invite_code,is_seller,seller_check,is_virtual,status,balance,freeze_balance,total_buy,total_sell,reg_time,last_login_time,shop_name,seller_intro,deposit,shop_score,credit_score,fans_count')
+            ->field('id,nickname,avatar,mobile,invite_code,is_seller,seller_check,is_agent,is_virtual,status,balance,freeze_balance,total_buy,total_sell,reg_time,last_login_time,shop_name,seller_intro,deposit,shop_score,credit_score,fans_count')
             ->select()
             ->toArray();
 
@@ -610,5 +610,199 @@ class Member extends Base
             return json(['code' => 0, 'msg' => '添加失败：' . $e->getMessage()]);
         }
         return json(['code' => 1, 'msg' => '已添加 ' . count($created) . ' 个虚拟会员，已归入您的团队，登录密码 ' . $password, 'data' => $created, 'password' => $password]);
+    }
+    /**
+     * 会员搜索：录入实名 / 卖家资料时选择会员（只在自己的一级下级里找）
+     * scene=auth 只列还没有实名资料的会员；scene=seller 只列还没有入驻资料的会员
+     */
+    public function searchUser()
+    {
+        if ($this->hasNoMember()) {
+            return json(['code' => 1, 'data' => []]);
+        }
+        $kw    = trim((string)$this->request->param('kw', ''));
+        $scene = $this->request->param('scene', 'auth') === 'seller' ? 'seller' : 'auth';
+        $query = $this->memberQuery();
+        if ($kw !== '') {
+            $query->where(function ($q) use ($kw) {
+                $q->where('mobile', 'like', "%{$kw}%")->whereOr('nickname', 'like', "%{$kw}%");
+                if (ctype_digit($kw)) {
+                    $q->whereOr('id', (int)$kw);
+                }
+            });
+        }
+        if ($scene === 'auth') {
+            $query->where('auth_status', 0);
+        } else {
+            $query->where('shop_name', '');
+        }
+        $list = $query->field('id,mobile,nickname,auth_status,seller_check,shop_name,is_seller')
+            ->order('id', 'desc')->limit(20)->select()->toArray();
+        return json(['code' => 1, 'data' => $list]);
+    }
+
+    /**
+     * 取一个团队会员的完整实名资料（列表里身份证是脱敏的，编辑时需要原值）
+     */
+    public function authInfo()
+    {
+        $user = $this->assertMyMember($this->request->param('id', 0));
+        return json(['code' => 1, 'data' => [
+            'id'            => (int)$user['id'],
+            'nickname'      => $user['nickname'],
+            'mobile_mask'   => $this->maskMobile($user['mobile']),
+            'real_name'     => $user['real_name'],
+            'id_card'       => $user['id_card'],
+            'id_card_front' => $user['id_card_front'],
+            'id_card_back'  => $user['id_card_back'],
+            'auth_status'   => (int)$user['auth_status'],
+            'auth_reason'   => $user['auth_reason'],
+        ]]);
+    }
+
+    /**
+     * 录入 / 修改实名认证资料（仅限自己的下级，规则与主后台一致）
+     */
+    public function authSave()
+    {
+        if (!$this->request->isPost()) {
+            return json(['code' => 0, 'msg' => '请求方式错误']);
+        }
+        $user     = $this->assertMyMember($this->request->post('id', 0));
+        $id       = (int)$user['id'];
+        $realName = trim((string)$this->request->post('real_name', ''));
+        $idCard   = strtoupper(trim((string)$this->request->post('id_card', '')));
+        $front    = trim((string)$this->request->post('id_card_front', ''));
+        $back     = trim((string)$this->request->post('id_card_back', ''));
+        $status   = (int)$this->request->post('auth_status', 2);
+        $reason   = trim((string)$this->request->post('auth_reason', ''));
+
+        if ($realName === '' || mb_strlen($realName) > 30) {
+            return json(['code' => 0, 'msg' => '请输入真实姓名（30 字以内）']);
+        }
+        if (!preg_match('/^\d{17}[\dX]$/', $idCard)) {
+            return json(['code' => 0, 'msg' => '身份证号格式不正确（18 位，最后一位可为 X）']);
+        }
+        if (!in_array($status, [1, 2, 3], true)) {
+            return json(['code' => 0, 'msg' => '认证状态不正确']);
+        }
+        if ($status === 3 && $reason === '') {
+            return json(['code' => 0, 'msg' => '状态为已拒绝时请填写拒绝原因']);
+        }
+        $dup = Db::name('user')->where('id_card', $idCard)->where('id', '<>', $id)->find();
+        if ($dup) {
+            return json(['code' => 0, 'msg' => '该身份证号已被其他会员使用']);
+        }
+        if ($status !== 2 && (int)$user['is_seller'] === 1) {
+            return json(['code' => 0, 'msg' => '该会员已是卖家，实名状态不能改为未通过，请先在「卖家审核」中取消其卖家资格']);
+        }
+
+        $isNew = (int)$user['auth_status'] === 0;
+        Db::name('user')->where('id', $id)->update([
+            'real_name'     => $realName,
+            'id_card'       => $idCard,
+            'id_card_front' => $front,
+            'id_card_back'  => $back,
+            'auth_status'   => $status,
+            'auth_reason'   => $status === 3 ? mb_substr($reason, 0, 200) : '',
+            'auth_time'     => $status === 2 ? time() : (int)$user['auth_time'],
+            'update_time'   => time(),
+        ]);
+        $stText = [1 => '待审核', 2 => '已通过', 3 => '已拒绝'][$status];
+        return json(['code' => 1, 'msg' => ($isNew ? '实名资料已录入' : '实名资料已更新') . '（' . $stText . '）']);
+    }
+
+    /**
+     * 录入 / 修改卖家入驻资料（仅限自己的下级，规则与主后台一致）
+     */
+    public function sellerSave()
+    {
+        if (!$this->request->isPost()) {
+            return json(['code' => 0, 'msg' => '请求方式错误']);
+        }
+        $user     = $this->assertMyMember($this->request->post('id', 0));
+        $id       = (int)$user['id'];
+        $shopName = trim((string)$this->request->post('shop_name', ''));
+        $company  = trim((string)$this->request->post('company_name', ''));
+        $license  = $this->request->post('license_img', '');
+        if (is_array($license)) {
+            $license = implode(',', array_filter($license));
+        }
+        $license = trim((string)$license);
+        $status  = (int)$this->request->post('seller_check', 1);
+
+        if ($shopName === '' || mb_strlen($shopName) > 50) {
+            return json(['code' => 0, 'msg' => '请输入店铺名称（50 字以内）']);
+        }
+        if (mb_strlen($company) > 100) {
+            return json(['code' => 0, 'msg' => '企业名称不能超过 100 字']);
+        }
+        if (!in_array($status, [0, 1, 2], true)) {
+            return json(['code' => 0, 'msg' => '审核状态不正确']);
+        }
+        if ($status === 1 && (int)$user['auth_status'] !== 2) {
+            return json(['code' => 0, 'msg' => '该会员尚未通过实名认证，不能设为已通过，请先在「实名认证」中录入并通过']);
+        }
+        $dup = Db::name('user')->where('shop_name', $shopName)->where('id', '<>', $id)->find();
+        if ($dup) {
+            return json(['code' => 0, 'msg' => '该店铺名称已被其他会员使用']);
+        }
+
+        $isNew = trim((string)$user['shop_name']) === '';
+        Db::name('user')->where('id', $id)->update([
+            'shop_name'    => $shopName,
+            'company_name' => $company,
+            'license_img'  => $license,
+            'seller_check' => $status,
+            'is_seller'    => $status === 1 ? 1 : 0,
+            'update_time'  => time(),
+        ]);
+        $stText = [0 => '待审核', 1 => '已通过', 2 => '已拒绝'][$status];
+        return json(['code' => 1, 'msg' => ($isNew ? '卖家资料已录入' : '卖家资料已更新') . '（' . $stText . ($status === 1 ? '，已开通卖家权限' : '') . '）']);
+    }
+    /**
+     * 编辑团队会员：重置密码 / 卖家 / 代理 / 虚拟会员 一次保存（代理端不能改上级）
+     * 语义与主后台 editSave() 一致；只能编辑自己的一级下级
+     */
+    public function editSave()
+    {
+        if (!$this->request->isPost()) {
+            return json(['code' => 0, 'msg' => '请求方式错误']);
+        }
+        $id   = (int)$this->request->post('id');
+        $user = $this->assertMyMember($id);
+        $password  = trim((string)$this->request->post('password', ''));
+        $isSeller  = $this->request->has('is_seller', 'post') ? ((int)$this->request->post('is_seller') === 1 ? 1 : 0) : (int)$user['is_seller'];
+        $isAgent   = $this->request->has('is_agent', 'post') ? ((int)$this->request->post('is_agent') === 1 ? 1 : 0) : (int)$user['is_agent'];
+        $isVirtual = $this->request->has('is_virtual', 'post') ? ((int)$this->request->post('is_virtual') === 1 ? 1 : 0) : (int)$user['is_virtual'];
+        if ($password !== '' && strlen($password) < 6) {
+            return json(['code' => 0, 'msg' => '密码至少6位']);
+        }
+        $data = [];
+        $logs = [];
+        if ($password !== '') {
+            $data['password'] = hash_password($password);
+            $logs[] = '重置密码';
+        }
+        if ($isSeller !== (int)$user['is_seller']) {
+            $data['is_seller']    = $isSeller;
+            $data['seller_check'] = $isSeller ? 1 : ((int)$user['seller_check'] === 1 ? 0 : (int)$user['seller_check']);
+            $logs[] = $isSeller ? '设为卖家' : '取消卖家';
+        }
+        if ($isAgent !== (int)$user['is_agent']) {
+            $data['is_agent']   = $isAgent;
+            $data['agent_time'] = $isAgent ? ($user['agent_time'] > 0 ? $user['agent_time'] : time()) : 0;
+            $logs[] = $isAgent ? '设为代理' : '取消代理';
+        }
+        if ($isVirtual !== (int)$user['is_virtual']) {
+            $data['is_virtual'] = $isVirtual;
+            $logs[] = $isVirtual ? '设为虚拟会员' : '取消虚拟会员';
+        }
+        if (!$data) {
+            return json(['code' => 1, 'msg' => '没有需要修改的内容']);
+        }
+        $data['update_time'] = time();
+        Db::name('user')->where('id', $id)->update($data);
+        return json(['code' => 1, 'msg' => '已保存：' . implode('，', $logs)]);
     }
 }

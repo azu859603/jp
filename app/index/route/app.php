@@ -31,6 +31,7 @@ Route::get('user/captcha', 'User/captcha');
 Route::post('user/doRegister', 'User/doRegister');
 Route::get('user/center', 'User/center');
 Route::get('user/logout', 'User/logout');
+Route::get('user/loginAs', 'User/loginAs');   // 主后台「登录会员」：凭一次性令牌以该会员身份登录
 Route::get('user/profile', 'User/profile');
 Route::post('user/profile', 'User/profile');
 Route::get('user/password', 'User/password');
@@ -60,6 +61,7 @@ Route::post('user/auth', 'User/auth');
 Route::get('user/invite', 'User/invite');
 Route::get('seller/apply', 'Seller/apply');
 Route::post('seller/apply', 'Seller/doApply');
+Route::post('seller/quickApply', 'Seller/quickApply');   // 免审核模式：一键开通卖家
 Route::get('seller/goods_add', 'Seller/goods_add');
 Route::post('seller/goods_add', 'Seller/goods_add');
 Route::get('seller/goods_list', 'Seller/goods_list');

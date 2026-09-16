@@ -17,7 +17,8 @@ try {
             [$c, $b] = req($sid, "$pre/$mod/index", false); ok("$label 页面含搜索框与查询/重置按钮", $c == 200 && strpos($b, 'id="keyword"') !== false && strpos($b, 'resetSearch()') !== false && strpos($b, "&keyword=") !== false, "HTTP $c");
             [, , $j] = req($sid, "$pre/$mod/index?page=1&limit=15&status=0&keyword=" . urlencode('19999990201')); ok("  按手机号搜到甲", uids($j) == [$m1], json_encode($j, JSON_UNESCAPED_UNICODE));
             [, , $j] = req($sid, "$pre/$mod/index?page=1&limit=15&status=&keyword=" . urlencode('乙搜索')); ok("  按昵称搜到乙", uids($j) == [$m2], json_encode($j, JSON_UNESCAPED_UNICODE));
-            [, , $j] = req($sid, "$pre/$mod/index?page=1&limit=15&status=&keyword=$m1"); ok("  按会员 ID 搜到甲", uids($j) == [$m1], json_encode($j, JSON_UNESCAPED_UNICODE));
+            // 搜索只按手机号 / 昵称：纯数字会员 ID 不再作为匹配条件（除非它恰好是手机号片段）
+            [, , $j] = req($sid, "$pre/$mod/index?page=1&limit=15&status=&keyword=$m1"); ok("  按会员 ID 不再命中甲", !in_array($m1, uids($j)), json_encode($j, JSON_UNESCAPED_UNICODE));
             [, , $j] = req($sid, "$pre/$mod/index?page=1&limit=15&status=&keyword=" . urlencode('QA')); $u = uids($j); sort($u);
             if ($scope === 'admin') { ok("  模糊搜索 QA 命中 3 人", $u == [$m1, $m2, $out], json_encode($u)); } else { ok("  模糊搜索 QA 只命中团队 2 人", $u == [$m1, $m2], json_encode($u)); }
             [, , $j] = req($sid, "$pre/$mod/index?page=1&limit=15&status=&keyword=" . urlencode('19999990203')); ok($scope === 'admin' ? "  主后台能搜到外部会员丙" : "  代理端搜不到外部会员丙", $scope === 'admin' ? uids($j) == [$out] : uids($j) == [], json_encode($j, JSON_UNESCAPED_UNICODE));

@@ -7,7 +7,7 @@ use think\facade\View;
 class Index extends Base
 {
     /**
-     * 仪表盘
+     * 数据中心（系统概览）
      */
     public function index()
     {

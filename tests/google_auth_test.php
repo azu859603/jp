@@ -41,11 +41,12 @@ echo "== 登录页 ==\n";
 $A = new C('a');
 $b = $A->get('/admin1314/login/index'); ok('开关开启时登录页显示谷歌验证码输入框', strpos($b, 'id="google_code"') !== false);
 
-echo "== 未绑定管理员 ==\n";
+echo "== 开关开启时未绑定管理员 ==\n";
 $r = $A->login("ga_super_$T", 'Qa123456');
-ok('未绑定：不填动态码可登录，并被引导到绑定页', ($r['code'] ?? 0) == 1 && strpos($r['url'] ?? '', '/admin_user/google') !== false, j($r));
-$A->get('/admin1314/index/index'); ok('绑定前访问首页被重定向到绑定页', $A->code == 302 && strpos($A->loc, '/admin_user/google') !== false, 'HTTP ' . $A->code . ' ' . $A->loc);
-$r = $A->post('/admin1314/member/add', ['mobile' => '13900000000']); ok('绑定前 AJAX 接口被拦截', ($r['code'] ?? 0) == -1, j($r));
+ok('未绑定：开关开启时不能登录，提示联系超管生成绑定码', ($r['code'] ?? 1) != 1 && strpos($r['msg'] ?? '', '绑定') !== false, j($r));
+q('update setting set value=? where name=?', ['0', 'admin_google_auth']);
+$r = $A->login("ga_super_$T", 'Qa123456'); ok('开关关闭时可登录', ($r['code'] ?? 0) == 1, j($r));
+$r = $A->post('/admin1314/setting/index', ['admin_google_auth' => '1']); ok('自己未绑定时不能开启开关', ($r['code'] ?? 1) != 1 && val('select value from setting where name=?', ['admin_google_auth']) === '0', j($r));
 $b = $A->get('/admin1314/admin_user/google'); ok('绑定页可访问且含二维码密钥', $A->code == 200 && strpos($b, 'otpauth://totp/') !== false, 'HTTP ' . $A->code);
 $secret = $A->sess()['admin_ga_pending'] ?? '';
 ok('会话中生成了 16 位临时密钥', preg_match('/^[A-Z2-7]{16}$/', $secret), $secret);
@@ -54,9 +55,8 @@ $r = $A->post('/admin1314/admin_user/googleBind', ['code' => '000000']); ok('错
 ok('错误码后数据库仍未绑定', val('select google_secret from admin_user where id=?', [$superId]) === '');
 $r = $A->post('/admin1314/admin_user/googleBind', ['code' => google_auth_code($secret)]); ok('正确动态码绑定成功', ($r['code'] ?? 0) == 1, j($r));
 ok('密钥已写入数据库', val('select google_secret from admin_user where id=?', [$superId]) === $secret);
-$A->get('/admin1314/index/index'); ok('绑定后可以进入首页', $A->code == 200, 'HTTP ' . $A->code);
 $r = $A->post('/admin1314/admin_user/googleBind', ['code' => google_auth_code($secret)]); ok('重复绑定被拒绝', ($r['code'] ?? 1) != 1, j($r));
-
+$r = $A->post('/admin1314/setting/index', ['admin_google_auth' => '1']); ok('已绑定的超管可以开启开关', ($r['code'] ?? 0) == 1 && val('select value from setting where name=?', ['admin_google_auth']) === '1', j($r));
 echo "== 已绑定管理员登录 ==\n";
 $A->get('/admin1314/login/logout');
 $r = $A->login("ga_super_$T", 'Qa123456'); ok('不填动态码不能登录', ($r['code'] ?? 1) != 1 && strpos($r['msg'] ?? '', '谷歌') !== false, j($r));
@@ -68,9 +68,14 @@ $r = $A->login("ga_super_$T", 'Qa123456', $code); ok('同一动态码不能重�
 $r = $A->login("ga_super_$T", 'Qa123456', google_auth_code($secret, (int)floor(time() / 30) - 1)); ok('上一时间片的动态码仍可用（±30 秒容差）', ($r['code'] ?? 0) == 1, j($r));
 
 echo "== 超管重置他人 / 列表 ==\n";
-// 普通管理员绑定
-$S = new C('s'); $S->login("ga_sub_$T", 'Qa123456'); $S->get('/admin1314/admin_user/google'); $subSecret = $S->sess()['admin_ga_pending'] ?? '';
-$r = $S->post('/admin1314/admin_user/googleBind', ['code' => google_auth_code($subSecret)]); ok('普通管理员绑定', ($r['code'] ?? 0) == 1, j($r));
+// 普通管理员未绑定：不能登录；由超管生成绑定码后用动态码登录
+$S = new C('s'); $r = $S->login("ga_sub_$T", 'Qa123456'); ok('未绑定的普通管理员不能登录', ($r['code'] ?? 1) != 1 && strpos($r['msg'] ?? '', '绑定') !== false, j($r));
+$r = $A->post('/admin1314/admin_user/googleInit', ['id' => $subId]); ok('超管为普通管理员生成绑定码', ($r['code'] ?? 0) == 1 && preg_match('/^[A-Z2-7]{16}$/', $r['secret'] ?? '') && strpos($r['uri'] ?? '', 'otpauth://totp/') !== false, j($r));
+$subSecret = $r['secret'] ?? '';
+ok('密钥已写入普通管理员', val('select google_secret from admin_user where id=?', [$subId]) === $subSecret);
+$r = $A->post('/admin1314/admin_user/googleInit', ['id' => $subId]); ok('已绑定不能重复生成', ($r['code'] ?? 1) != 1, j($r));
+$r = $S->login("ga_sub_$T", 'Qa123456', google_auth_code($subSecret)); ok('普通管理员用生成的密钥登录成功', ($r['code'] ?? 0) == 1, j($r));
+$r = $S->post('/admin1314/admin_user/googleInit', ['id' => $superId]); ok('普通管理员不能生成绑定码', ($r['code'] ?? 1) != 1, j($r));
 $b = $A->get('/admin1314/admin_user/index', true); $list = json_decode($b, true);
 $row = null; foreach (($list['data'] ?? []) as $x) if ($x['id'] == $subId) $row = $x;
 ok('列表显示绑定状态且不泄露密钥和密码', $row && $row['ga_bound'] == 1 && !isset($row['google_secret']) && !isset($row['password']), j($row));
@@ -90,7 +95,7 @@ $b = $A->get('/admin1314/login/index'); ok('关闭后登录页不显示动态码
 $r = $A->login("ga_super_$T", 'Qa123456'); ok('关闭后无需动态码直接登录', ($r['code'] ?? 0) == 1 && strpos($r['url'] ?? '', 'index/index') !== false, j($r));
 $A->get('/admin1314/index/index'); ok('关闭后未绑定也能进首页', $A->code == 200, 'HTTP ' . $A->code);
 $b = $A->get('/admin1314/setting/index'); ok('设置页含谷歌验证开关', strpos($b, 'admin_google_auth') !== false);
-$r = $A->post('/admin1314/setting/index', ['admin_google_auth' => '1']); ok('通过设置页保存开关', ($r['code'] ?? 0) == 1 && val('select value from setting where name=?', ['admin_google_auth']) === '1', j($r));
+$r = $A->post('/admin1314/setting/index', ['admin_google_auth' => '1']); ok('解绑后未绑定不能开启开关', ($r['code'] ?? 1) != 1 && val('select value from setting where name=?', ['admin_google_auth']) === '0', j($r));
 
 $fail = array_filter($R, function ($x) { return !$x[1]; });
 printf("\n总计 %d 项，通过 %d，失败 %d\n", count($R), count($R) - count($fail), count($fail));

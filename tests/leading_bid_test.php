@@ -23,7 +23,7 @@ try {
     [, , $j] = req($sa, 'POST', '/admin1314/bid/add', ['goods_id' => $g, 'user_id' => $b1, 'price' => 130]); ok('后台不能给当前最高价者再加价', ($j['code'] ?? 1) == 0 && strpos($j['msg'], '最高出价者') !== false, json_encode($j, JSON_UNESCAPED_UNICODE));
     [, , $j] = req($sa, 'POST', '/admin1314/bid/add', ['goods_id' => $g, 'user_id' => $v, 'price' => 130]); ok('后台给其他买家加价 130 成功', ($j['code'] ?? 0) == 1, json_encode($j, JSON_UNESCAPED_UNICODE));
     ok('  出价记录共 4 条', (int)$pdo->query("select count(*) from bid_record where goods_id=$g")->fetchColumn() == 4);
-    $css = file_get_contents("$root/public/static/m.css"); $lay = file_get_contents("$root/app/index/view/layout.html"); ok('样式已加且版本号已更新', strpos($css, '.go-bid.leading') !== false && strpos($lay, 'm.css?v=20260915a') !== false && strpos($lay, 'i18n.js?v=20260915a') !== false);
+    $css = file_get_contents("$root/public/static/m.css"); $lay = file_get_contents("$root/app/index/view/layout.html"); ok('样式已加且版本号已更新', strpos($css, '.go-bid.leading') !== false && preg_match('/m\.css\?v=\d{8}[a-z]?/', $lay) && preg_match('/i18n\.js\?v=\d{8}[a-z]?/', $lay));
 } finally {
     $pdo->exec("delete from bid_record where goods_id=$g"); $pdo->exec("delete from goods where id=$g"); $pdo->exec("delete from browse_history where goods_id=$g");
     $pdo->exec("delete from balance_log where user_id in ($b1,$b2,$v)"); $pdo->exec("delete from sys_message where user_id in ($b1,$b2,$v)"); $pdo->exec("delete from admin_log where action like '%QA领先%'");

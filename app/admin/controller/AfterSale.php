@@ -85,13 +85,6 @@ class AfterSale extends Base
         $action = trim($this->request->post('action', ''));
         $note = trim($this->request->post('note', ''));
 
-        $sale = Db::name('after_sale')->where('id', $id)->lock(true)->find();
-        if (!$sale) {
-            return json(['code' => 0, 'msg' => '售后单不存在']);
-        }
-        if ($sale['status'] != 0) {
-            return json(['code' => 0, 'msg' => '该售后单已处理']);
-        }
         if ($action !== 'agree' && $action !== 'reject') {
             return json(['code' => 0, 'msg' => '操作类型错误']);
         }
@@ -100,10 +93,20 @@ class AfterSale extends Base
         }
 
         $now = time();
-        $order = Db::name('order')->where('id', $sale['order_id'])->lock(true)->find();
-
         Db::startTrans();
         try {
+            // 行锁在事务内：双击「同意退款」只有一次生效
+            $sale = Db::name('after_sale')->where('id', $id)->lock(true)->find();
+            if (!$sale) {
+                Db::rollback();
+                return json(['code' => 0, 'msg' => '售后单不存在']);
+            }
+            if ($sale['status'] != 0) {
+                Db::rollback();
+                return json(['code' => 0, 'msg' => '该售后单已处理']);
+            }
+            $order = Db::name('order')->where('id', $sale['order_id'])->lock(true)->find();
+
             if ($action === 'agree') {
                 // 1. 买家余额退款
                 $buyer = Db::name('user')->where('id', $sale['user_id'])->lock(true)->find();
@@ -120,7 +123,8 @@ class AfterSale extends Base
                 $this->addBalanceLog($buyer['id'], 'refund', $refund, $newBalance, '售后退款：' . $sale['order_no']);
 
                 // 2. 卖家收入扣回（成交价 - 佣金）
-                if ($order && $order['seller_income'] > 0) {
+                // 成交款只有在买家确认收货后才会打给卖家；未入账的（income_paid=0）不需要扣回
+                if ($order && (int)$order['income_paid'] === 1 && $order['seller_income'] > 0) {
                     $seller = Db::name('user')->where('id', $order['seller_id'])->lock(true)->find();
                     if (!$seller) {
                         Db::rollback();
@@ -147,11 +151,13 @@ class AfterSale extends Base
                     ]);
                 }
 
-                Db::name('after_sale')->where('id', $id)->update([
+                if (Db::name('after_sale')->where('id', $id)->where('status', 0)->update([
                     'status'      => 1,
                     'admin_note'  => $note,
                     'handle_time' => $now,
-                ]);
+                ]) !== 1) {
+                    throw new \RuntimeException('售后单状态已变化');
+                }
                 admin_log('售后同意退款：' . $sale['order_no']);
             } else {
                 // 驳回：订单恢复已完成

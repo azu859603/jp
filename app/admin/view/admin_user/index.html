@@ -97,6 +97,7 @@ function loadList(){
                         + '<a class="btn btn-sm" href="javascript:;" onclick="openEdit(' + a.id + ')">编辑</a> '
                         + (a.id != 1 ? '<a class="btn btn-sm btn-danger" href="javascript:;" onclick="del(' + a.id + ')">删除</a> ' : '')
                         + (a.ga_bound == 1 && myRole == 1 && a.id != myId ? '<a class="btn btn-sm" href="javascript:;" onclick="gaReset(' + a.id + ')">重置谷歌验证</a>' : '')
+                        + (a.ga_bound != 1 && myRole == 1 && a.id != myId ? '<a class="btn btn-sm btn-green" href="javascript:;" onclick="gaInit(' + a.id + ')">生成绑定码</a>' : '')
                         + '</td></tr>';
                 });
             }
@@ -153,6 +154,18 @@ function doSave(){
     });
 }
 
+function gaInit(id){
+    confirmDialog('为该管理员生成谷歌验证器绑定码？生成后请让对方用验证器 App 扫码，开启谷歌验证时对方登录需输入动态码。', function(){
+        ajaxPost('/admin1314/admin_user/googleInit', {id:id}, function(res){
+            if(res.code != 1){ alert(res.msg); return; }
+            document.getElementById('gaInitSecret').textContent = res.secret;
+            var box = document.getElementById('gaInitQr'); box.innerHTML = '';
+            if(window.QRCode){ new QRCode(box, {text: res.uri, width: 180, height: 180}); } else { box.textContent = res.uri; }
+            document.getElementById('gaInitMask').classList.add('show');
+            loadList(1);
+        });
+    });
+}
 function gaReset(id){
     confirmDialog('确定重置该管理员的谷歌验证器？重置后对方下次登录需要重新扫码绑定。', function(){
         ajaxPost('/admin1314/admin_user/googleReset', {id:id}, function(res){
@@ -177,4 +190,19 @@ function fmtTime(ts){
 
 loadList();
 </script>
+<!-- 生成绑定码弹层 -->
+<div class="mask" id="gaInitMask">
+    <div class="dialog" style="width:420px;">
+        <div class="dialog-title">谷歌验证器绑定码</div>
+        <div class="dialog-body" style="text-align:center;">
+            <div id="gaInitQr" style="display:flex;justify-content:center;min-height:180px;padding:10px;"></div>
+            <div class="tip">请让该管理员用 Google Authenticator 等验证器 App 扫码；无法扫码时手动输入密钥：</div>
+            <div id="gaInitSecret" style="font-family:Consolas,monospace;font-size:16px;margin-top:6px;"></div>
+        </div>
+        <div class="dialog-footer">
+            <button class="btn btn-primary" onclick="document.getElementById('gaInitMask').classList.remove('show')">关闭</button>
+        </div>
+    </div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 {/block}

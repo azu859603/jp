@@ -2,9 +2,16 @@
 {block name="content"}
 <div class="wallet2">
     <div class="wl-card">
-        <div class="wl-title"><span class="wl-bag">¥</span>{:lang('我的钱包')}</div>
-        <div class="wl-total"><small>¥</small> {$total_assets}</div>
+        <div class="wl-title">
+            <span class="wl-bag">¥</span>{:lang('我的钱包')}
+            <a class="wl-title-link" href="/user/balance_log">{:lang('全部流水')} ›</a>
+        </div>
         <div class="wl-total-lbl">{:lang('总资产')}</div>
+        <div class="wl-total"><small>¥</small>{$total_assets}</div>
+        <div class="wl-chips">
+            <span class="wl-chip"><i></i>{:lang('可用余额')} <b>¥{$balance_text}</b></span>
+            <span class="wl-chip"><i class="lock"></i>{:lang('冻结保证金')} <b>¥{$freeze_text}</b></span>
+        </div>
         <div class="wl-io">
             <div class="wl-io-item">
                 <div class="k">{:lang('总收入')}</div>
@@ -16,23 +23,51 @@
             </div>
         </div>
         <div class="wl-btns">
-            <a class="wl-btn" href="/user/withdraw"><i class="ic-wd"></i>{:lang('申请提现')}</a>
-            <a class="wl-btn light" href="/user/recharge">{:lang('充值')}</a>
+            <a class="wl-btn" href="/user/withdraw">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="12" rx="2.5"/><path d="M3 10h18"/><path d="M7 14h4"/></svg>{:lang('申请提现')}
+            </a>
+            <a class="wl-btn light" href="/user/recharge">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 8v8M8 12h8"/></svg>{:lang('充值')}
+            </a>
         </div>
     </div>
 
     <div class="wl-list">
-        <div class="wl-head"><i class="ic-list"></i>{:lang('资产明细')}</div>
+        <div class="wl-head">
+            <span class="wl-head-t"><i class="ic-list"></i>{:lang('资产明细')}</span>
+            <button type="button" class="wl-filter{if $type != ''} on{/if}" id="wlTypeBtn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5h18l-7 8v6l-4-2v-4z"/></svg>
+                <span id="wlTypeTxt">{$type != '' ? $type_names[$type] : lang('全部类型')}</span><i class="arr"></i>
+            </button>
+        </div>
         <div id="wlItems">
             {include file="user/wallet_items" /}
         </div>
-        {if empty($logs)}
-        <div class="empty" style="padding:40px 0;">{:lang('暂无记录')}</div>
-        {else /}
-        <div class="wl-more" id="wlMore" data-has-more="{$has_more ? 1 : 0}">
+        <div class="wl-empty" id="wlEmpty"{if !empty($logs)} style="display:none"{/if}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M3 10h18"/><path d="M7 15h3"/></svg>
+            <div>{:lang('暂无记录')}</div>
+        </div>
+        <div class="wl-more" id="wlMore" data-has-more="{$has_more ? 1 : 0}"{if empty($logs)} style="display:none"{/if}>
             {if $has_more}<span class="wl-spin"></span>{:lang('加载中...')}{else}{:lang('没有更多了')}{/if}
         </div>
-        {/if}
+    </div>
+</div>
+
+<!-- 底部滚动选择框 -->
+<div class="bl-sheet-mask" id="wlSheet">
+    <div class="bl-sheet">
+        <div class="bl-sheet-bar">
+            <span class="bl-cancel" id="wlCancel">{:lang('取消')}</span>
+            <span class="bl-sheet-t">{:lang('选择类型')}</span>
+            <span class="bl-ok" id="wlOk">{:lang('确定')}</span>
+        </div>
+        <div class="bl-wheel-wrap">
+            <div class="bl-wheel-band"></div>
+            <div class="bl-wheel" id="wlWheel">
+                <div class="bl-opt" data-v="">{:lang('全部类型')}</div>
+                {foreach $type_names as $k => $n}<div class="bl-opt" data-v="{$k}">{$n}</div>{/foreach}
+            </div>
+        </div>
     </div>
 </div>
 {/block}
@@ -42,31 +77,99 @@ document.querySelector('.page').classList.add('no-bg');
 (function(){
     var box = document.getElementById('wlItems');
     var more = document.getElementById('wlMore');
+    var empty = document.getElementById('wlEmpty');
+    var btn = document.getElementById('wlTypeBtn');
+    var btnTxt = document.getElementById('wlTypeTxt');
+    var sheet = document.getElementById('wlSheet');
+    var wheel = document.getElementById('wlWheel');
+    var opts = wheel ? [].slice.call(wheel.querySelectorAll('.bl-opt')) : [];
+    var ITEM_H = 44;
     if (!box || !more) return;
     var page = 1, loading = false, hasMore = more.getAttribute('data-has-more') === '1';
+    var type = {:json_encode($type)}, seq = 0;
     var txtLoading = '<span class="wl-spin"></span>' + {:json_encode(lang('加载中...'))};
     var txtEnd = {:json_encode(lang('没有更多了'))};
     var txtFail = {:json_encode(lang('加载失败，上拉重试'))};
-    function loadNext(){
-        if (loading || !hasMore) return;
+    // reset=true：切换类型后从第一页重新加载，替换列表；否则追加下一页
+    function load(reset){
+        if (loading) return;
+        if (!reset && !hasMore) return;
         loading = true;
+        var mySeq = ++seq, target = reset ? 1 : page + 1;
+        more.style.display = '';
         more.innerHTML = txtLoading;
         var xhr = new XMLHttpRequest();
-        xhr.open('GET', '/user/wallet?page=' + (page + 1), true);
+        xhr.open('GET', '/user/wallet?page=' + target + '&type=' + encodeURIComponent(type), true);
         xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
         xhr.onload = function(){
+            if (mySeq !== seq) return; // 已切换到别的类型，丢弃旧响应
             loading = false;
             var res = null;
             try { res = JSON.parse(xhr.responseText); } catch(e) {}
             if (!res || res.code != 1) { more.innerHTML = txtFail; return; }
             page = res.page;
-            box.insertAdjacentHTML('beforeend', res.html);
+            if (reset) { box.innerHTML = res.html; } else { box.insertAdjacentHTML('beforeend', res.html); }
             hasMore = !!res.has_more;
+            var isEmpty = !box.querySelector('.wl-item');
+            if (empty) empty.style.display = isEmpty ? '' : 'none';
+            more.style.display = isEmpty ? 'none' : '';
             more.innerHTML = hasMore ? txtLoading : txtEnd;
             if (hasMore) check(); // 一页不足一屏时继续拉
         };
-        xhr.onerror = function(){ loading = false; more.innerHTML = txtFail; };
+        xhr.onerror = function(){ if (mySeq !== seq) return; loading = false; more.innerHTML = txtFail; };
         xhr.send();
+    }
+    function loadNext(){ load(false); }
+    // ---------- 底部滚动选择框 ----------
+    if (btn && sheet && wheel) {
+        function indexOfType(v){
+            for (var i = 0; i < opts.length; i++) if (opts[i].getAttribute('data-v') === v) return i;
+            return 0;
+        }
+        function curIndex(){
+            var i = Math.round(wheel.scrollTop / ITEM_H);
+            return Math.max(0, Math.min(opts.length - 1, i));
+        }
+        function mark(i){
+            for (var k = 0; k < opts.length; k++) opts[k].classList.toggle('on', k === i);
+        }
+        function openSheet(){
+            sheet.classList.add('show');
+            var i = indexOfType(type);
+            wheel.scrollTop = i * ITEM_H;
+            mark(i);
+            document.body.style.overflow = 'hidden';
+        }
+        function closeSheet(){
+            sheet.classList.remove('show');
+            document.body.style.overflow = '';
+        }
+        var tick = null;
+        wheel.addEventListener('scroll', function(){
+            if (tick) clearTimeout(tick);
+            tick = setTimeout(function(){ mark(curIndex()); }, 60);
+        }, {passive:true});
+        opts.forEach(function(o, i){
+            o.addEventListener('click', function(){
+                if (wheel.scrollTo) wheel.scrollTo({top: i * ITEM_H, behavior: 'smooth'}); else wheel.scrollTop = i * ITEM_H;
+                mark(i);
+            });
+        });
+        btn.addEventListener('click', openSheet);
+        document.getElementById('wlCancel').addEventListener('click', closeSheet);
+        sheet.addEventListener('click', function(e){ if (e.target === sheet) closeSheet(); });
+        document.getElementById('wlOk').addEventListener('click', function(){
+            var i = curIndex();
+            var v = opts[i].getAttribute('data-v');
+            closeSheet();
+            if (v === type) return;
+            type = v;
+            btnTxt.textContent = opts[i].textContent;
+            btn.classList.toggle('on', v !== '');
+            try { history.replaceState(null, '', '/user/wallet' + (v ? '?type=' + v : '')); } catch(e) {}
+            loading = false; hasMore = true;
+            load(true);
+        });
     }
     function check(){
         if (!hasMore || loading) return;

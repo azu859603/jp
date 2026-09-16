@@ -13,7 +13,7 @@
         <tr><td>卖家</td><td>{$order.seller_name ?: $order.seller_mobile}（ID:{$order.seller_id}）</td></tr>
         <tr><td>成交价</td><td class="price">￥{$order.price}</td></tr>
         <tr><td>佣金</td><td>￥{$order.commission}（{$order.commission_rate}%）</td></tr>
-        <tr><td>卖家实收</td><td>￥{$order.seller_income}</td></tr>
+        <tr><td>卖家实收</td><td>￥{$order.seller_income} {if $order.income_paid == 1}<span class="tag tag-green">已入账</span>{elseif $order.pay_status == 1 /}<span class="tag tag-orange">待买家确认收货后入账</span>{/if}</td></tr>
         <tr><td>保证金</td><td>￥{$order.deposit}</td></tr>
         <tr><td>支付状态</td><td>{if $order.pay_status == 1}<span class="tag tag-green">已支付</span>（{$order.pay_time_text}）{else /}<span class="tag tag-orange">未支付</span>{/if}</td></tr>
         <tr><td>订单状态</td>

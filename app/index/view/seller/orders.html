@@ -27,13 +27,14 @@
         </div>
         <div class="oinfo">
             <div class="oname">{$o.goods_title}</div>
-            <div class="oprice"><small>¥ </small>{$o.price|number_format=2}</div>
-            <div class="osub">买家：{$o.buyer_name|default='匿名'} · {$o.create_time|date='Y-m-d H:i'}</div>
+            <div class="oprice"><small>{:lang('成交价')} ¥</small>{$o.price|number_format=2}</div>
+            <div class="otop">{:lang('起拍价')} <b>¥{$o.start_price|number_format=2}</b></div>
+            <div class="osub">{:lang('买家：')}{$o.buyer_name|default=lang('匿名')} · {$o.create_time|date='Y-m-d H:i'}</div>
         </div>
     </div>
     <div class="o-foot">
         {if $o.order_status==1}
-        <a class="btn-sm solid-red" href="javascript:void(0)" onclick="shipOrder({$o.id})">{:lang('发货')}</a>
+        <a class="btn-sm solid-red" href="javascript:void(0)" data-name="{$o.ship_name}" data-mobile="{$o.ship_mobile}" data-address="{$o.ship_address}" onclick="shipOrder({$o.id}, this)">{:lang('发货')}</a>
         {/if}
     </div>
 </div>
@@ -48,18 +49,38 @@
 <div class="mask" id="shipMask" onclick="closeShip()"></div>
 <div class="sheet" id="shipSheet">
     <div class="s-title">{:lang('确认发货')} <span class="s-close" onclick="closeShip()">×</span></div>
+    <div class="ship-addr" id="shipAddr">
+        <div class="sa-title">{:lang('买家收货信息')}</div>
+        <div class="sa-row"><span class="k">{:lang('收货人')}</span><span class="v" id="saName">-</span></div>
+        <div class="sa-row"><span class="k">{:lang('联系电话')}</span><span class="v" id="saMobile">-</span></div>
+        <div class="sa-row"><span class="k">{:lang('收货地址')}</span><span class="v" id="saAddress">-</span></div>
+    </div>
     <div class="form-card" style="margin:8px 12px 0;">
         <div class="form-row"><span class="fl">{:lang('快递公司')}</span><div class="fr"><input type="text" id="shipCompany" placeholder="{:lang('请输入快递公司')}"></div></div>
         <div class="form-row"><span class="fl">{:lang('快递单号')}</span><div class="fr"><input type="text" id="shipNo" placeholder="{:lang('请输入快递单号')}"></div></div>
     </div>
     <div style="padding:14px 20px 0;"><button class="btn btn-red" style="width:100%;" onclick="submitShip()">{:lang('确认发货')}</button></div>
 </div>
+<style>
+.ship-addr{margin:8px 12px 0;padding:10px 12px;background:#fff7f0;border:1px solid #ffe0c2;border-radius:10px;}
+.ship-addr .sa-title{font-size:12px;color:#c2410c;font-weight:600;margin-bottom:6px;}
+.ship-addr .sa-row{display:flex;gap:8px;font-size:13px;line-height:1.7;}
+.ship-addr .sa-row .k{flex:none;width:64px;color:#999;}
+.ship-addr .sa-row .v{flex:1;color:#333;word-break:break-all;}
+.order-card .otop{font-size:12px;color:#999;margin-top:2px;}
+.order-card .otop b{color:#E4393C;font-weight:600;}
+</style>
 {/block}
 {block name="script"}
 <script>
 var shipOrderId = 0;
-function shipOrder(id) {
+function shipOrder(id, el) {
     shipOrderId = id;
+    // 弹层里显示买家收货信息，方便核对后再填快递
+    var d = (el && el.dataset) ? el.dataset : {};
+    document.getElementById('saName').textContent = d.name || '-';
+    document.getElementById('saMobile').textContent = d.mobile || '-';
+    document.getElementById('saAddress').textContent = d.address || '-';
     document.getElementById('shipCompany').value = '';
     document.getElementById('shipNo').value = '';
     document.getElementById('shipMask').classList.add('show');

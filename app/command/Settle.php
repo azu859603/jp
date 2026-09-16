@@ -12,6 +12,7 @@ use think\console\Output;
  *
  * 用法：php think settle
  * 部署：每分钟执行一次（Linux crontab / Windows 计划任务）
+ * 只负责结算；流拍自动上架、自动出价、平台自营出价分别由各自的命令独立执行，互不串联。
  *
  * 结算逻辑本身在 app/index/common.php 的 settle_goods() / settle_expired_goods()，
  * 这里只负责按时调用、输出结果、写心跳，不复制业务规则。
@@ -28,6 +29,12 @@ class Settle extends Command
 
     protected function execute(Input $input, Output $output)
     {
+        // 上一轮还没跑完时本轮直接跳过，避免两轮重叠执行
+        $lock = command_lock('settle');
+        if ($lock === null) {
+            $output->writeln('[' . date('Y-m-d H:i:s') . '] 上一轮仍在执行，本轮跳过');
+            return 0;
+        }
         // 多应用模式下 CLI 不会自动加载 index 应用的公共函数，这里显式引入
         if (!function_exists('settle_expired_goods')) {
             require_once $this->app->getBasePath() . 'index' . DIRECTORY_SEPARATOR . 'common.php';
@@ -63,34 +70,6 @@ class Settle extends Command
                   . ($err > 0 ? "，未处理 {$err}" : '') . "（{$cost}ms） ids=" . implode(',', array_keys($results));
             $output->writeln($line);
             @file_put_contents($logFile, $line . PHP_EOL, FILE_APPEND);
-        }
-
-        // 指定卖家的流拍商品自动重新上架（后台设置拍卖时长为 0 时不处理）
-        try {
-            $relist = auto_relist_failed_goods();
-            if (!empty($relist['ids'])) {
-                $rl = '[' . date('Y-m-d H:i:s') . "] 自动上架卖家 {$relist['seller_id']} 的流拍商品 " . count($relist['ids']) . " 件，截拍 " . date('Y-m-d H:i', $relist['end_time']) . ' 起 0~6 小时内随机 ids=' . implode(',', $relist['ids']);
-                $output->writeln($rl);
-                @file_put_contents($logFile, $rl . PHP_EOL, FILE_APPEND);
-            }
-        } catch (\Throwable $e) {
-            $rl = '[' . date('Y-m-d H:i:s') . '] ERROR 自动上架 ' . $e->getMessage();
-            $output->writeln('<error>' . $rl . '</error>');
-            @file_put_contents($logFile, $rl . PHP_EOL, FILE_APPEND);
-        }
-
-        // 虚拟用户自动出价（后台按拍品配置，没有任务时直接返回）
-        try {
-            $ab = auto_bid_run();
-            foreach ($ab['logs'] as $line) {
-                $rl = '[' . date('Y-m-d H:i:s') . '] 自动出价 ' . $line;
-                $output->writeln($rl);
-                @file_put_contents($logFile, $rl . PHP_EOL, FILE_APPEND);
-            }
-        } catch (\Throwable $e) {
-            $rl = '[' . date('Y-m-d H:i:s') . '] ERROR 自动出价 ' . $e->getMessage();
-            $output->writeln('<error>' . $rl . '</error>');
-            @file_put_contents($logFile, $rl . PHP_EOL, FILE_APPEND);
         }
 
         return 0;

@@ -1,212 +1,198 @@
 {extend name="layout" /}
 {block name="content"}
-<!-- 红色头部 -->
-<div class="mine-head">
-    <div class="row1">
-        <div class="avatar">
-            {if !empty($user.avatar)}
-            <img src="{$user.avatar}" alt="avatar">
-            {else}
-            <span class="noa">👤</span>
-            {/if}
-        </div>
-        <div class="uinfo">
-            <div class="uname"><a href="/user/profile">{$user.nickname}</a>
-                 <!-- <span class="level">{$level}</span> -->
+<div class="mine2">
+    <!-- 头部：红色渐变（背景层单独裁切），右上语言选择 -->
+    <div class="mh">
+        <div class="mh-bg"></div>
+        <div class="mh-top">
+            <a class="mh-avatar" href="/user/profile">
+                {if !empty($user.avatar)}<img src="{$user.avatar}" alt="avatar">{else}<span class="noa">👤</span>{/if}
+            </a>
+            <div class="mh-info">
+                <div class="mh-name"><a href="/user/profile">{$user.nickname}</a><a class="mh-edit" href="/user/profile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></a></div>
+                <div class="mh-acc">{:lang('账号：')}{:mask_mobile($user.mobile)}</div>
+                <div class="mh-chips">
+                    {if ($user.auth_status ?? 0) == 2}<span class="chip ok">{:lang('已实名')}</span>{else}<a class="chip warn" href="/user/auth">{:lang('未实名')} ›</a>{/if}
+                    {if $user.is_seller==1 && $user.seller_check==1}<span class="chip">{:lang('卖家')}</span>{/if}
+                    {if $user.is_agent==1}<span class="chip">{:lang('代理')}</span>{/if}
                 </div>
-            <div class="upoints">{:lang('积分：')}{$user.points}</div>
-        </div>
-        <!-- 语言选择 -->
-        <div class="lang-box">
-            <span class="lang-btn" onclick="toggleLangMenu(event)">🌐 <b>{:lang('语言')}</b> <i style="font-style:normal;font-size:9px;">▾</i></span>
-            <div class="lang-menu" id="langMenu" style="display:none;">
-                <a href="javascript:void(0)" onclick="setLang('zh-cn')" class="{if $current_lang=='zh-cn'}on{/if}">简体中文</a>
-                <a href="javascript:void(0)" onclick="setLang('zh-tw')" class="{if $current_lang=='zh-tw'}on{/if}">繁體中文</a>
-                <a href="javascript:void(0)" onclick="setLang('en-us')" class="{if $current_lang=='en-us'}on{/if}">English</a>
+            </div>
+            <!-- 语言选择 -->
+            <div class="lang-box">
+                <span class="lang-btn" onclick="toggleLangMenu(event)">🌐 <b>{:lang('语言')}</b> <i style="font-style:normal;font-size:9px;">▾</i></span>
+                <div class="lang-menu" id="langMenu" style="display:none;">
+                    <a href="javascript:void(0)" onclick="setLang('zh-cn')" class="{if $current_lang=='zh-cn'}on{/if}">简体中文</a>
+                    <a href="javascript:void(0)" onclick="setLang('zh-tw')" class="{if $current_lang=='zh-tw'}on{/if}">繁體中文</a>
+                    <a href="javascript:void(0)" onclick="setLang('en-us')" class="{if $current_lang=='en-us'}on{/if}">English</a>
+                </div>
             </div>
         </div>
     </div>
-    <div class="ustats">
-        <a class="item" href="/user/favorites"><div class="num">{$data.fav_count}</div><div class="lbl">{:lang('关注拍品')}</div></a>
-        <a class="item" href="/user/follows"><div class="num">{$data.follow_count}</div><div class="lbl">{:lang('关注店铺')}</div></a>
-        <a class="item" href="/user/footprints"><div class="num">{$data.browse_count}</div><div class="lbl">{:lang('我的足迹')}</div></a>
+    <!-- 资产卡：可用余额 + 充值 / 提现，下方关注 / 足迹（浮在头部底边） -->
+    <div class="asset">
+        <div class="as-top">
+            <a class="as-bal" href="/user/wallet">
+                <i>{:lang('可用余额')}</i>
+                <b><small>¥</small>{$user.balance|number_format=2}</b>
+            </a>
+            <div class="as-btns">
+                <a class="as-btn primary" href="/user/recharge">{:lang('充值')}</a>
+                <a class="as-btn" href="/user/withdraw">{:lang('提现')}</a>
+            </div>
+        </div>
+        <div class="ustats">
+            <a class="item" href="/user/favorites"><div class="num">{$data.fav_count}</div><div class="lbl">{:lang('关注拍品')}</div></a>
+            <a class="item" href="/user/follows"><div class="num">{$data.follow_count}</div><div class="lbl">{:lang('关注店铺')}</div></a>
+            <a class="item" href="/user/footprints"><div class="num">{$data.browse_count}</div><div class="lbl">{:lang('我的足迹')}</div></a>
+        </div>
     </div>
-</div>
 
-<!-- 我的订单 -->
-<div class="mine-orders">
-    <div class="o-head">
-        <span class="t">{:lang('我的订单')}</span>
-        <a class="all" href="/order/list">{:lang('查看全部')} ›</a>
-    </div>
-    <div class="o-list">
-        <div class="o-item">
-            <a href="/order/list?order_status=0">
-                <span class="ico">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="6" width="18" height="15" rx="2"/><line x1="3" y1="10.5" x2="21" y2="10.5"/><line x1="8" y1="3" x2="8" y2="7"/><line x1="16" y1="3" x2="16" y2="7"/></svg>
-                    {if $data.wait_pay>0}<span class="badge">{$data.wait_pay}</span>{/if}
-                </span>
+    <!-- 买家订单 -->
+    <div class="mc mine-orders">
+        <div class="mc-head">
+            <span class="t">{:lang('买家订单')}</span>
+            <a class="all" href="/order/list">{:lang('查看全部')} ›</a>
+        </div>
+        <div class="o-list">
+            <a class="o-item c1" href="/order/list?order_status=0">
+                <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="15" rx="2"/><line x1="3" y1="10.5" x2="21" y2="10.5"/><line x1="8" y1="3" x2="8" y2="7"/><line x1="16" y1="3" x2="16" y2="7"/></svg>{if $data.wait_pay>0}<span class="badge">{$data.wait_pay}</span>{/if}</span>
                 <span class="lbl">{:lang('待付款')}</span>
             </a>
-        </div>
-        <div class="o-item">
-            <a href="/order/list?order_status=1">
-                <span class="ico">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="16" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/></svg>
-                    {if $data.wait_ship>0}<span class="badge">{$data.wait_ship}</span>{/if}
-                </span>
+            <a class="o-item c2" href="/order/list?order_status=1">
+                <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/></svg>{if $data.wait_ship>0}<span class="badge">{$data.wait_ship}</span>{/if}</span>
                 <span class="lbl">{:lang('待发货')}</span>
             </a>
-        </div>
-        <div class="o-item">
-            <a href="/order/list?order_status=2">
-                <span class="ico">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1 6.5 12 2l11 4.5"/><path d="M1 6.5 12 11l11-4.5"/><path d="M12 11v10"/><path d="M1 6.5v11L12 21"/><path d="M23 6.5v11L12 21"/></svg>
-                    {if $data.wait_receive>0}<span class="badge">{$data.wait_receive}</span>{/if}
-                </span>
+            <a class="o-item c3" href="/order/list?order_status=2">
+                <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 6.5 12 2l11 4.5"/><path d="M1 6.5 12 11l11-4.5"/><path d="M12 11v10"/><path d="M1 6.5v11L12 21"/><path d="M23 6.5v11L12 21"/></svg>{if $data.wait_receive>0}<span class="badge">{$data.wait_receive}</span>{/if}</span>
                 <span class="lbl">{:lang('待收货')}</span>
             </a>
-        </div>
-        <div class="o-item">
-            <a href="/order/list?order_status=3">
-                <span class="ico">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.5 2.5L16 9.5"/></svg>
-                </span>
+            <a class="o-item c4" href="/order/list?order_status=3">
+                <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.5 2.5L16 9.5"/></svg></span>
                 <span class="lbl">{:lang('已完成')}</span>
             </a>
         </div>
     </div>
-</div>
 
-<!-- 我的服务（2×4宫格） -->
-<div class="mine-services">
-    <div class="sv-head">{:lang('我的服务')}</div>
-    <div class="sv-grid">
-        <a href="/user/wallet">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="6" width="18" height="14" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><circle cx="16.5" cy="15" r="1.5"/></svg>
-            <span>{:lang('我的钱包')}</span>
+    <!-- 卖家中心 / 申请成为卖家 -->
+    {if $user.is_seller==1 && $user.seller_check==1}
+    <div class="zone seller">
+        <a class="zone-head" href="/seller/goods_list">
+            <span class="z-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 9l1-5h16l1 5"/><path d="M4 9v11h16V9"/><path d="M9 20v-6h6v6"/></svg></span>
+            <span class="z-txt">
+                <b>{:lang('卖家中心')}</b>
+                <i>{:lang('店铺星级')} <span class="star">{:str_repeat('★', (int)round($user.shop_score ?? 5))}</span> · {:lang('信誉分')} <b class="credit {if ($user.credit_score ?? 100) >= 90}g{elseif ($user.credit_score ?? 100) >= 60 /}y{else /}r{/if}">{$user.credit_score|default=100}</b></i>
+            </span>
+            <span class="z-btn">{:lang('进入')} ›</span>
         </a>
-        <a href="/user/recharge_log">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v10"/><path d="M8.5 10.5 12 7l3.5 3.5"/><path d="M8.5 13.5 12 17l3.5-3.5"/></svg>
-            <span>{:lang('充值记录')}</span>
-        </a>
-        <a href="/user/withdraw_log">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="12" y1="3" x2="12" y2="21"/><polyline points="5 10 12 3 19 10"/></svg>
-            <span>{:lang('提现记录')}</span>
-        </a>
-        <a href="/user/bids">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 4 9 15l-4 4"/><path d="M14 4h6v6"/></svg>
-            <span>{:lang('出价记录')}</span>
-        </a>
-        <a href="/user/auth">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="3" width="16" height="18" rx="2"/><circle cx="12" cy="9" r="3"/><path d="M8 17.5a4.5 4.5 0 0 1 8 0"/></svg>
-            <span>{:lang('实名认证')}</span>
-        </a>
-        <a href="/user/profile">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="10" r="3"/><path d="M6.5 19a6 6 0 0 1 11 0"/></svg>
-            <span>{:lang('设置管理')}</span>
-        </a>
-        <a href="/user/messages" id="svMsg" class="{if $data.msg_unread > 0}has-new{/if}">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 5h16v14H4z"/><polyline points="4 6 12 12 20 6"/></svg>
-            <i class="sv-badge" {if $data.msg_unread <= 0}style="display:none;"{/if}>{$data.msg_unread}</i>
-            <span>{:lang('站内信')}</span>
-            <em class="sv-new">{:lang('有新消息')}</em>
-        </a>
-        <a href="/chat/list" id="svChat" class="{if $data.chat_unread > 0}has-new{/if}">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 13.5"/></svg>
-            <i class="sv-badge" {if $data.chat_unread <= 0}style="display:none;"{/if}>{$data.chat_unread}</i>
-            <span>{:lang('消息')}</span>
-            <em class="sv-new">{:lang('有新消息')}</em>
-        </a>
-        <a href="/service/index" id="svService" class="{if !empty($data.service_unread)}has-new{/if}">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
-            <i class="sv-badge" {if empty($data.service_unread)}style="display:none;"{/if}>{$data.service_unread|default=0}</i>
-            <span>{:lang('联系客服')}</span>
-            <em class="sv-new">{:lang('有新消息')}</em>
+        <div class="zone-links">
+            <a href="/seller/goods_list"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 8 12 3 3 8v8l9 5 9-5V8z"/><path d="M3 8l9 5 9-5"/><path d="M12 13v8"/></svg><span>{:lang('我的商品')}</span></a>
+            <a href="/seller/orders"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18"/><path d="M8 15h4"/></svg><span>{:lang('卖家订单')}</span>{if !empty($data.pending_ship)}<i class="sz-badge">{$data.pending_ship}</i>{/if}</a>
+            <a href="/shop/detail?id={$user.id}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 4h16v16H4z"/><path d="M4 10h16"/><path d="M10 20V10"/></svg><span>{:lang('店铺首页')}</span></a>
+        </div>
+    </div>
+    {else}
+    <div class="zone apply">
+        <a class="zone-head" href="{if $seller_auto==1}javascript:;{else}/seller/apply{/if}"{if $seller_auto==1} onclick="quickApplySeller()"{/if}>
+            <span class="z-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 9l1-5h16l1 5"/><path d="M4 9v11h16V9"/><path d="M9 20v-6h6v6"/></svg></span>
+            <span class="z-txt">
+                <b>{:lang('申请成为卖家')}</b>
+                <i>{if $seller_auto==1}{:lang('开通店铺 · 发布拍品 · 开启竞拍（无需审核，点击即开通）')}{else}{:lang('开通店铺 · 发布拍品 · 开启竞拍')}{/if}</i>
+            </span>
+            <span class="z-btn">{:lang('去申请')} ›</span>
         </a>
     </div>
-   
+    {/if}
+
+    <!-- 代理中心（仅 is_agent=1 可见） -->
+    {if $user.is_agent==1}
+    <div class="zone agent">
+        <a class="zone-head" href="/agent/index/index">
+            <span class="z-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><circle cx="17" cy="9" r="2.5"/><path d="M16.5 14.5a5 5 0 0 1 5 5"/></svg></span>
+            <span class="z-txt">
+                <b>{:lang('代理中心')}</b>
+                <i>{:lang('查看团队会员 · 团队业绩报表')}</i>
+            </span>
+            <span class="z-btn">{:lang('进入')} ›</span>
+        </a>
+    </div>
+    {/if}
+
+    <!-- 我的服务 -->
+    <div class="mc mine-services">
+        <div class="mc-head"><span class="t">{:lang('我的服务')}</span></div>
+        <div class="sv-grid">
+            <a href="/user/wallet" class="c1">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="6" width="18" height="14" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><circle cx="16.5" cy="15" r="1.5"/></svg>
+                <span>{:lang('我的钱包')}</span>
+            </a>
+            <a href="/user/recharge_log" class="c3">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v10"/><path d="M8.5 10.5 12 7l3.5 3.5"/><path d="M8.5 13.5 12 17l3.5-3.5"/></svg>
+                <span>{:lang('充值记录')}</span>
+            </a>
+            <a href="/user/withdraw_log" class="c2">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="12" y1="3" x2="12" y2="21"/><polyline points="5 10 12 3 19 10"/></svg>
+                <span>{:lang('提现记录')}</span>
+            </a>
+            <a href="/user/bids" class="c4">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 4 9 15l-4 4"/><path d="M14 4h6v6"/></svg>
+                <span>{:lang('出价记录')}</span>
+            </a>
+            <a href="/user/auth" class="c5">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="3" width="16" height="18" rx="2"/><circle cx="12" cy="9" r="3"/><path d="M8 17.5a4.5 4.5 0 0 1 8 0"/></svg>
+                <span>{:lang('实名认证')}</span>
+            </a>
+            <a href="/user/profile" class="c6">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="10" r="3"/><path d="M6.5 19a6 6 0 0 1 11 0"/></svg>
+                <span>{:lang('设置管理')}</span>
+            </a>
+            <a href="/user/messages" id="svMsg" class="c1 {if $data.msg_unread > 0}has-new{/if}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 5h16v14H4z"/><polyline points="4 6 12 12 20 6"/></svg>
+                <i class="sv-badge" {if $data.msg_unread <= 0}style="display:none;"{/if}>{$data.msg_unread}</i>
+                <span>{:lang('站内信')}</span>
+            </a>
+            <a href="/chat/list" id="svChat" class="c3 {if $data.chat_unread > 0}has-new{/if}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 21l1.9-5.4A8 8 0 1 1 21 12z"/></svg>
+                <i class="sv-badge" {if $data.chat_unread <= 0}style="display:none;"{/if}>{$data.chat_unread}</i>
+                <span>{:lang('消息')}</span>
+            </a>
+            <a href="/service/index" id="svService" class="c2 {if !empty($data.service_unread)}has-new{/if}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 13a8 8 0 0 1 16 0"/><rect x="3" y="13" width="4" height="6" rx="1.5"/><rect x="17" y="13" width="4" height="6" rx="1.5"/><path d="M19 19a3 3 0 0 1-3 3h-2"/></svg>
+                <i class="sv-badge" {if empty($data.service_unread)}style="display:none;"{/if}>{$data.service_unread|default=0}</i>
+                <span>{:lang('联系客服')}</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- 账户设置 -->
+    <div class="mc mine-menu">
+        <a href="/user/password">
+            <span class="m-ico c4"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4.5" y="10.5" width="15" height="10" rx="2"/><path d="M8 10.5V7a4 4 0 0 1 8 0v3.5"/></svg></span>
+            <span class="m-t">{:lang('修改密码')}</span>
+            <span class="arrow">›</span>
+        </a>
+        <a href="/user/address">
+            <span class="m-ico c2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 21s-7-5.5-7-11a7 7 0 0 1 14 0c0 5.5-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg></span>
+            <span class="m-t">{:lang('收货地址')}</span>
+            <span class="arrow">›</span>
+        </a>
+        <a href="/user/pay_account">
+            <span class="m-ico c3"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18"/><path d="M7 15h4"/></svg></span>
+            <span class="m-t">{:lang('提现账户')}</span>
+            <span class="arrow">›</span>
+        </a>
+        <a href="/user/invite">
+            <span class="m-ico c5"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M19 8v6"/><path d="M16 11h6"/></svg></span>
+            <span class="m-t">{:lang('邀请好友')}</span>
+            <span class="arrow">›</span>
+        </a>
+    </div>
+
+    <a class="mine-logout" href="/user/logout">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>{:lang('退出登录')}
+    </a>
+
+    <div class="mine-footer">{$site_name} © 2026 · {:lang('竞拍出价需缴纳保证金，请理性出价')}</div>
 </div>
-
-<!-- 卖家中心（移至底部菜单） -->
-<div class="mine-menu">
-    <a href="/user/password">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4.5" y="10.5" width="15" height="10" rx="2"/><path d="M8 10.5V7a4 4 0 0 1 8 0v3.5"/></svg>
-        <span class="m-t">{:lang('修改密码')}</span>
-        <span class="arrow">›</span>
-    </a>
-    <a href="/user/address">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 21s-7-5.5-7-11a7 7 0 0 1 14 0c0 5.5-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>
-        <span class="m-t">{:lang('收货地址')}</span>
-        <span class="arrow">›</span>
-    </a>
-    <a href="/user/pay_account">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18"/><path d="M7 15h4"/></svg>
-        <span class="m-t">{:lang('提现账户')}</span>
-        <span class="arrow">›</span>
-    </a>
-    <a href="/user/logout" style="color:#999;">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-        <span class="m-t">{:lang('退出登录')}</span>
-        <span class="arrow">›</span>
-    </a>
-</div>
-
-<!-- 卖家中心（独立高亮专区） -->
-{if $user.is_seller==1 && $user.seller_check==1}
-<a class="seller-zone" href="/seller/goods_list">
-    <span class="sz-ico">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 3h18v18H3z"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
-    </span>
-    <span class="sz-txt">
-        <b>{:lang('卖家中心')}</b>
-        <i>{:lang('店铺星级')} <span style="color:#f59e0b;">{:str_repeat('★', (int)round($user.shop_score ?? 5))}</span> · {:lang('信誉分')} <b style="color:{if ($user.credit_score ?? 100) >= 90}#16a34a{elseif ($user.credit_score ?? 100) >= 60 /}#f59e0b{else /}#dc2626{/if};">{$user.credit_score|default=100}</b></i>
-    </span>
-    <span class="sz-btn">{:lang('进入')} ›</span>
-</a>
-<div class="sz-links">
-    <a href="/seller/goods_list"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 8 12 3 3 8v8l9 5 9-5V8z"/><path d="M3 8l9 5 9-5"/><path d="M12 13v8"/></svg><span>{:lang('我的商品')}</span></a>
-    <a href="/seller/orders"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18"/><path d="M8 15h4"/></svg><span>{:lang('卖家订单')}</span>{if !empty($data.pending_ship)}<i class="sz-badge">{$data.pending_ship}</i>{/if}</a>
-    <a href="/shop/detail?id={$user.id}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 9l1-5h16l1 5"/><path d="M4 9v11h16V9"/><path d="M9 20v-6h6v6"/></svg><span>{:lang('店铺首页')}</span></a>
-</div>
-{else}
-<a class="seller-zone apply" href="/seller/apply">
-    <span class="sz-ico">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 3h18v18H3z"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
-    </span>
-    <span class="sz-txt">
-        <b>{:lang('申请成为卖家')}</b>
-        <i>{:lang('开通店铺 · 发布拍品 · 开启竞拍')}</i>
-    </span>
-    <span class="sz-btn">{:lang('去申请')} ›</span>
-</a>
-{/if}
-
-<!-- 代理中心（仅 is_agent=1 可见） -->
-{if $user.is_agent==1}
-<a class="seller-zone agent" href="/agent/index/index">
-    <span class="sz-ico">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><circle cx="17" cy="9" r="2.5"/><path d="M16.5 14.5a5 5 0 0 1 5 5"/></svg>
-    </span>
-    <span class="sz-txt">
-        <b>{:lang('代理中心')}</b>
-        <i>{:lang('查看团队会员 · 团队业绩报表')}</i>
-    </span>
-    <span class="sz-btn">{:lang('进入')} ›</span>
-</a>
-{/if}
-
-<div class="mine-footer">{$site_name} © 2026 · {:lang('竞拍出价需缴纳保证金，请理性出价')}</div>
-<style>
-/* 语言选择（个人中心头部） */
-.lang-box{position:relative;flex-shrink:0;margin-left:10px;}
-.lang-btn{display:inline-flex;align-items:center;gap:3px;padding:4px 10px;border:1px solid rgba(255,255,255,.65);border-radius:14px;color:#fff;background:rgba(255,255,255,.16);font-size:12px;line-height:1.6;cursor:pointer;}
-.lang-menu{position:absolute;top:34px;right:0;background:#fff;border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.15);min-width:104px;overflow:hidden;display:none;z-index:999;}
-.lang-menu a{display:block;padding:9px 14px;color:#333;font-size:13px;text-decoration:none;border-bottom:1px solid #f5f5f5;text-align:left;}
-.lang-menu a:last-child{border-bottom:none;}
-.lang-menu a.on{color:#E4393C;font-weight:600;}
-.lang-menu a:active{background:#fafafa;}
-</style>
 <script>
 function toggleLangMenu(e) {
     if (e) e.stopPropagation();
@@ -239,5 +225,22 @@ document.addEventListener('click', function () {
     setInterval(check, 60000);
     document.addEventListener('visibilitychange', function(){ if (!document.hidden) check(); });
 })();
+</script>
+<script>
+// 免审核模式：个人中心点「去申请」直接开通卖家，不再跳转填资料页
+var quickApplyBusy = false;
+function quickApplySeller(){
+    if (quickApplyBusy) return;
+    quickApplyBusy = true;
+    ajaxPost('/seller/quickApply', {}, function(res){
+        quickApplyBusy = false;
+        toast(res.msg || '');
+        if (res.code == 1) {
+            setTimeout(function(){ location.href = res.url || '/seller/apply'; }, 800);
+        } else if (res.url) {
+            setTimeout(function(){ location.href = res.url; }, 800);
+        }
+    });
+}
 </script>
 {/block}

@@ -29,9 +29,6 @@ class Recharge extends Base
             if ($keyword !== '') {
                 $query->where(function ($q) use ($keyword) {
                     $q->where('u.mobile', 'like', "%{$keyword}%")->whereOr('u.nickname', 'like', "%{$keyword}%");
-                    if (ctype_digit($keyword)) {
-                        $q->whereOr('r.user_id', (int)$keyword);
-                    }
                 });
             }
             $total = $query->count();
@@ -56,13 +53,21 @@ class Recharge extends Base
             return json(['code' => 0, 'msg' => '充值申请不存在']);
         }
         // 归属校验：申请人必须是我的下级
-        $user = $this->assertMyMember($recharge['user_id']);
-        if ($recharge['status'] != 0) {
-            return json(['code' => 0, 'msg' => '该申请已处理过']);
-        }
+        $this->assertMyMember($recharge['user_id']);
 
         Db::startTrans();
         try {
+            // 行锁在事务内：重复点击只有一次到账
+            $recharge = Db::name('recharge')->where('id', $id)->lock(true)->find();
+            if (!$recharge || $recharge['status'] != 0) {
+                Db::rollback();
+                return json(['code' => 0, 'msg' => '该申请已处理过']);
+            }
+            $user = Db::name('user')->where('id', $recharge['user_id'])->lock(true)->find();
+            if (!$user) {
+                Db::rollback();
+                return json(['code' => 0, 'msg' => '会员不存在']);
+            }
             if ($action === 'pass') {
                 $newBalance = round($user['balance'] + $recharge['amount'], 2);
                 Db::name('user')->where('id', $user['id'])->update(['balance' => $newBalance, 'update_time' => time()]);
@@ -74,7 +79,9 @@ class Recharge extends Base
                     'remark'      => '充值到账：' . $recharge['amount'] . '元',
                     'create_time' => time(),
                 ]);
-                Db::name('recharge')->where('id', $id)->update(['status' => 1, 'handle_time' => time()]);
+                if (Db::name('recharge')->where('id', $id)->where('status', 0)->update(['status' => 1, 'handle_time' => time()]) !== 1) {
+                    throw new \RuntimeException('申请状态已变化');
+                }
             } else {
                 if ($reason === '') {
                     Db::rollback();

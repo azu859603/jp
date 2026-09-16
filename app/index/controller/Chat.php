@@ -87,12 +87,24 @@ class Chat extends Base
         if (!$uid) {
             return json(['code' => -1, 'msg' => lang('请先登录')]);
         }
-        $goodsId = (int)Request::param('goods_id', 0);
-        $sellerId = (int)Request::param('seller_id', 0);
-        $content = trim(Request::param('content', ''));
+        $goodsId = (int)Request::post('goods_id', 0);
+        $sellerId = (int)Request::post('seller_id', 0);
+        $content = trim((string)Request::post('content', ''));
 
-        if (!$goodsId || !$sellerId) {
+        if (!$goodsId || !$sellerId || $sellerId === (int)$uid) {
             return json(['code' => 0, 'msg' => lang('参数错误')]);
+        }
+        // 会话必须围绕真实商品：收件人是该商品卖家，或者发送者是卖家在回复已聊过的买家
+        $goodsRow = Db::name('goods')->where('id', $goodsId)->field('id,seller_id')->find();
+        if (!$goodsRow) {
+            return json(['code' => 0, 'msg' => lang('参数错误')]);
+        }
+        if ((int)$goodsRow['seller_id'] !== $sellerId) {
+            $isReply = (int)$goodsRow['seller_id'] === (int)$uid
+                && Db::name('message')->where('goods_id', $goodsId)->where('from_uid', $sellerId)->where('to_uid', $uid)->count() > 0;
+            if (!$isReply) {
+                return json(['code' => 0, 'msg' => lang('参数错误')]);
+            }
         }
         if ($content === '') {
             return json(['code' => 0, 'msg' => lang('请输入消息内容')]);
@@ -181,6 +193,13 @@ class Chat extends Base
         }
         $tab = Request::param('tab', 'buyer');
 
+        // 未读回复条数：按（拍品，对方）一次性分组统计，避免每个会话各查一次
+        $unreadMap = [];
+        $unreadRows = Db::name('message')->field('goods_id, from_uid, COUNT(*) AS c')->where('to_uid', $uid)->where('is_read', 0)->group('goods_id, from_uid')->select()->toArray();
+        foreach ($unreadRows as $ur) {
+            $unreadMap[$ur['goods_id'] . '_' . $ur['from_uid']] = (int)$ur['c'];
+        }
+
         // 买家消息：当前用户发出的消息，按 goods_id 分组取最新一条
         $buyerMessages = Db::name('message')
             ->alias('m')
@@ -201,13 +220,7 @@ class Chat extends Base
                 $seen[$key] = true;
                 $m['time_str'] = date('m-d H:i', $m['create_time']);
                 $m['other_display'] = !empty($m['other_shop']) ? $m['other_shop'] : $m['other_name'];
-                // 未读回复条数
-                $m['unread'] = Db::name('message')
-                    ->where('goods_id', $m['goods_id'])
-                    ->where('from_uid', $m['to_uid'])
-                    ->where('to_uid', $uid)
-                    ->where('is_read', 0)
-                    ->count();
+                $m['unread'] = $unreadMap[$m['goods_id'] . '_' . $m['to_uid']] ?? 0;
                 $buyerGrouped[] = $m;
             }
         }
@@ -231,12 +244,7 @@ class Chat extends Base
                 $seen[$key] = true;
                 $m['time_str'] = date('m-d H:i', $m['create_time']);
                 $m['other_display'] = !empty($m['other_shop']) ? $m['other_shop'] : $m['other_name'];
-                $m['unread'] = Db::name('message')
-                    ->where('goods_id', $m['goods_id'])
-                    ->where('from_uid', $m['from_uid'])
-                    ->where('to_uid', $uid)
-                    ->where('is_read', 0)
-                    ->count();
+                $m['unread'] = $unreadMap[$m['goods_id'] . '_' . $m['from_uid']] ?? 0;
                 $sellerGrouped[] = $m;
             }
         }

@@ -1,3 +1,23 @@
+# ---------- 上传目录：白名单策略 ----------
+# 只允许直接读取图片文件；其它任何扩展名（php / py / sh / pl / cgi / html / js / svg / 无扩展名 …）一律 403，
+# 也不会被交给 fastcgi 执行。上传接口本身只放行 jpg/jpeg/png/gif/webp，这里是纵深防御。
+location ^~ /uploads/ {
+    deny all;
+    autoindex off;
+    location ~* \.(jpe?g|png|gif|webp)$ {
+        allow all;
+        # 按扩展名给出类型，并禁止浏览器嗅探成别的类型执行
+        add_header X-Content-Type-Options "nosniff" always;
+        expires 30d;
+        access_log off;
+    }
+}
+
+# 测试脚本目录：网站根目录是 public/，正常情况下访问不到；这里兜底，即便根目录配错也不允许通过 URL 执行
+location ^~ /tests/ {
+    deny all;
+}
+
 location / {
     if (!-e $request_filename) {
         rewrite ^(.*)$ /index.php?s=/$1 last;

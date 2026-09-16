@@ -42,7 +42,7 @@
 {if !empty($categories)}
 <div class="home-cates">
     {foreach $categories as $i => $c}{if $i < 7}
-    <a href="/?category_id={$c.id}" data-cate="{$c.id}" class="hc-item">
+    <a href="/category/list?category_id={$c.id}" class="hc-item">
         <span class="cate-icon c{$i % 6}">{if !empty($c.image)}<img src="{$c.image}" alt="{$c.name}">{else}{$c.name|mb_substr=0,1}{/if}</span>
         <span class="cate-name">{$c.name}</span>
     </a>
@@ -220,8 +220,8 @@ function switchSort(s) {
     loadGoods(1, false);
 }
 
-// 分类 tab / 分类宫格 点击
-document.querySelectorAll('#cateTabs a[data-cate], .home-cates a[data-cate]').forEach(function (a) {
+// 分类 tab 点击：页内切换列表（分类宫格是直接跳转到 /category/list，不走这里）
+document.querySelectorAll('#cateTabs a[data-cate]').forEach(function (a) {
     a.addEventListener('click', function (e) {
         e.preventDefault();
         var id = parseInt(a.getAttribute('data-cate'));

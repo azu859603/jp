@@ -52,10 +52,10 @@ function loadList(page){
                     html += '<tr>'
                         + '<td>' + a.id + '</td>'
                         + '<td>' + a.order_no + '</td>'
-                        + '<td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + a.goods_title + '">' + a.goods_title + '</td>'
-                        + '<td>' + (a.buyer_name || a.buyer_mobile || a.user_id) + '</td>'
+                        + '<td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + esc(a.goods_title) + '">' + esc(a.goods_title) + '</td>'
+                        + '<td>' + esc(a.buyer_name || a.buyer_mobile || a.user_id) + '</td>'
                         + '<td class="price">￥' + a.price + '</td>'
-                        + '<td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + a.reason + '">' + a.reason + '</td>'
+                        + '<td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + esc(a.reason) + '">' + esc(a.reason) + '</td>'
                         + '<td><span class="tag ' + st[1] + '">' + st[0] + '</span></td>'
                         + '<td>' + (a.create_time ? fmtTime(a.create_time) : '-') + '</td>'
                         + '<td><a class="btn btn-sm" href="/admin1314/after_sale/detail?id=' + a.id + '">详情/处理</a></td></tr>';

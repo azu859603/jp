@@ -9,7 +9,7 @@
         "后台登录",
         "后台验证码写入会话",
         true,
-        "session={\"admin_captcha\":\"8U6C\"}"
+        "session={\"admin_captcha\":\"3480\"}"
     ],
     [
         "后台登录",
@@ -33,13 +33,13 @@
         "后台添加会员（代理）",
         "代理标记 is_agent=1",
         true,
-        "{\"id\":\"308\",\"mobile\":\"19900473963\",\"password\":\"$2y$10$zPWsxlWCKtDl4dfJ3lk3juFRyEgQRkroQCdzDoF\\\/VCXUdoxBt.eqm\",\"nickname\":\"QA代理\",\"real_name\":\"\",\"id_card\":\"\",\"id_card_front\":\"\",\"id_card_back\":\"\",\"auth_status\":\"0\",\"auth_reason\":\"\",\"auth_time\":\"0\",\"shop_name\":\"\",\"seller_intro\":\"\",\"avatar\":\"\",\"invite_code\":\"452754\",\"pid\":\"0\",\"is_seller\":\"0\",\"is_agent\":\"1\",\"agent_time\":\"1789473964\",\"is_virtual\":\"0\",\"seller_check\":\"0\",\"balance\":\"0.00\",\"freeze_balance\":\"0.00\",\"points\":\"0\",\"commission_rate\":\"0.00\",\"total_buy\":\"0\",\"total_sell\":\"0\",\"status\":\"1\",\"reg_ip\":\"127.0.0.1\",\"reg_time\":\"1789473964\",\"last_login_time\":\"0\",\"create_time\":\"1789473964\",\"update_time\":\"1789473964\",\"company_name\":\"\",\"license_img\":null,\"shop_score\":\"5.00\",\"credit_score\":\"100\",\"fans_count\":\"0\",\"deposit\":\"0.00\"}"
+        "{\"id\":\"1606\",\"mobile\":\"19900593973\",\"password\":\"$2y$10$zM8Tfkpo9lWKUxuPunp2aucrrTMFKJN8aaCfAAy05wnJbBuaEEiDi\",\"nickname\":\"QA代理\",\"real_name\":\"\",\"id_card\":\"\",\"id_card_front\":\"\",\"id_card_back\":\"\",\"auth_status\":\"0\",\"auth_reason\":\"\",\"auth_time\":\"0\",\"shop_name\":\"\",\"seller_intro\":\"\",\"avatar\":\"\",\"invite_code\":\"159243\",\"pid\":\"0\",\"is_seller\":\"0\",\"is_agent\":\"1\",\"agent_time\":\"1789593974\",\"is_virtual\":\"0\",\"seller_check\":\"0\",\"balance\":\"0.00\",\"freeze_balance\":\"0.00\",\"points\":\"0\",\"commission_rate\":\"0.00\",\"total_buy\":\"0\",\"total_sell\":\"0\",\"status\":\"1\",\"reg_ip\":\"127.0.0.1\",\"reg_time\":\"1789593974\",\"last_login_time\":\"0\",\"create_time\":\"1789593974\",\"update_time\":\"1789593974\",\"company_name\":\"\",\"license_img\":null,\"shop_score\":\"5.00\",\"credit_score\":\"100\",\"fans_count\":\"0\",\"deposit\":\"0.00\"}"
     ],
     [
         "后台添加会员（代理）",
         "邀请码为 6 位纯数字",
         true,
-        "452754"
+        "159243"
     ],
     [
         "后台添加会员（代理）",
@@ -55,9 +55,9 @@
     ],
     [
         "后台添加会员（代理）",
-        "虚拟会员余额 100000 且不写流水",
-        false,
-        "{\"id\":\"309\",\"mobile\":\"19800473963\",\"password\":\"$2y$10$fy8r5T3vS8Pdq8ggOQctW.CoegtE\\\/4kshQh7ivo1.L1S8MZBAtmEa\",\"nickname\":\"QA虚拟\",\"real_name\":\"\",\"id_card\":\"\",\"id_card_front\":\"\",\"id_card_back\":\"\",\"auth_status\":\"0\",\"auth_reason\":\"\",\"auth_time\":\"0\",\"shop_name\":\"\",\"seller_intro\":\"\",\"avatar\":\"\",\"invite_code\":\"320802\",\"pid\":\"0\",\"is_seller\":\"0\",\"is_agent\":\"0\",\"agent_time\":\"0\",\"is_virtual\":\"1\",\"seller_check\":\"0\",\"balance\":\"100000.00\",\"freeze_balance\":\"0.00\",\"points\":\"0\",\"commission_rate\":\"0.00\",\"total_buy\":\"0\",\"total_sell\":\"0\",\"status\":\"1\",\"reg_ip\":\"127.0.0.1\",\"reg_time\":\"1789473965\",\"last_login_time\":\"0\",\"create_time\":\"1789473965\",\"update_time\":\"1789473965\",\"company_name\":\"\",\"license_img\":null,\"shop_score\":\"5.00\",\"credit_score\":\"100\",\"fans_count\":\"0\",\"deposit\":\"0.00\"}"
+        "虚拟会员余额 100000 且写入赠送流水",
+        true,
+        "{\"id\":\"1607\",\"mobile\":\"19800593973\",\"password\":\"$2y$10$LzVKConOmDBYwUTptGK\\\/FOHoGghhLjZ37hUxMQ8I5BvCWnPbHDjw.\",\"nickname\":\"QA虚拟\",\"real_name\":\"\",\"id_card\":\"\",\"id_card_front\":\"\",\"id_card_back\":\"\",\"auth_status\":\"0\",\"auth_reason\":\"\",\"auth_time\":\"0\",\"shop_name\":\"\",\"seller_intro\":\"\",\"avatar\":\"\",\"invite_code\":\"593183\",\"pid\":\"0\",\"is_seller\":\"0\",\"is_agent\":\"0\",\"agent_time\":\"0\",\"is_virtual\":\"1\",\"seller_check\":\"0\",\"balance\":\"100000.00\",\"freeze_balance\":\"0.00\",\"points\":\"0\",\"commission_rate\":\"0.00\",\"total_buy\":\"0\",\"total_sell\":\"0\",\"status\":\"1\",\"reg_ip\":\"127.0.0.1\",\"reg_time\":\"1789593975\",\"last_login_time\":\"0\",\"create_time\":\"1789593975\",\"update_time\":\"1789593975\",\"company_name\":\"\",\"license_img\":null,\"shop_score\":\"5.00\",\"credit_score\":\"100\",\"fans_count\":\"0\",\"deposit\":\"0.00\"}"
     ],
     [
         "前台注册与登录",
@@ -81,13 +81,13 @@
         "前台注册与登录",
         "买家上级为代理",
         true,
-        "pid=308"
+        "pid=1606"
     ],
     [
         "前台注册与登录",
         "前台注册邀请码为 6 位纯数字（与后台一致）",
         true,
-        "实际=261721"
+        "实际=576374"
     ],
     [
         "前台注册与登录",
@@ -153,13 +153,13 @@
         "实名认证",
         "前台上传图片",
         true,
-        "{\"code\":1,\"msg\":\"上传成功\",\"url\":\"\\\/uploads\\\/20260915\\\/200613_6706.png\"}"
+        "{\"code\":1,\"msg\":\"上传成功\",\"url\":\"\\\/uploads\\\/20260917\\\/052623_0d37853d11.png\"}"
     ],
     [
         "实名认证",
         "上传文件真实存在",
         true,
-        "\/uploads\/20260915\/200613_6706.png"
+        "\/uploads\/20260917\/052623_0d37853d11.png"
     ],
     [
         "实名认证",
@@ -247,7 +247,7 @@
     ],
     [
         "代理端",
-        "代理页面 \/agent\/member\/index?keyword=19700473963",
+        "代理页面 \/agent\/member\/index?keyword=19700593973",
         true,
         "HTTP 200"
     ],
@@ -255,7 +255,7 @@
         "代理端",
         "代理会员列表包含直接下级",
         true,
-        "{\"code\":0,\"msg\":\"\",\"count\":2,\"data\":[{\"id\":311,\"nickname\":\"QA卖家\",\"avatar\":\"\",\"mobile\":\"19600473963\",\"invite_code\":\"42562"
+        "{\"code\":0,\"msg\":\"\",\"count\":2,\"data\":[{\"id\":1609,\"nickname\":\"QA卖家\",\"avatar\":\"\",\"mobile\":\"19600593973\",\"invite_code\":\"6674"
     ],
     [
         "代理端",
@@ -411,7 +411,7 @@
         "发布商品",
         "后台修改拍卖时间",
         true,
-        "{\"code\":1,\"msg\":\"拍卖时间已更新：09-15 20:05 ~ 09-15 22:06\"}"
+        "{\"code\":1,\"msg\":\"拍卖时间已更新：09-17 05:25 ~ 09-17 07:26\"}"
     ],
     [
         "竞拍",
@@ -457,20 +457,32 @@
     ],
     [
         "竞拍",
-        "等于当前价被拒绝",
+        "未实名的买家2不能出价",
         true,
         "{\"code\":-3,\"msg\":\"请先完成实名认证后再出价\",\"url\":\"\\\/user\\\/auth\"}"
     ],
     [
         "竞拍",
+        "后台通过买家2实名",
+        true,
+        "{\"code\":1,\"msg\":\"已通过，该会员可申请成为卖家\"}"
+    ],
+    [
+        "竞拍",
+        "等于当前价被拒绝",
+        true,
+        "{\"code\":0,\"msg\":\"出价不能低于 120.00 元\"}"
+    ],
+    [
+        "竞拍",
         "买家2 出价 120",
-        false,
-        "{\"code\":-3,\"msg\":\"请先完成实名认证后再出价\",\"url\":\"\\\/user\\\/auth\"}"
+        true,
+        "{\"code\":1,\"msg\":\"出价成功\"}"
     ],
     [
         "竞拍",
         "买家收到出局站内信",
-        false,
+        true,
         ""
     ],
     [
@@ -548,14 +560,14 @@
     [
         "竞拍",
         "临近截拍出价自动延时",
-        false,
-        "{\"code\":-3,\"msg\":\"请先完成实名认证后再出价\",\"url\":\"\\\/user\\\/auth\"} end=29"
+        true,
+        "{\"code\":1,\"msg\":\"出价成功\"} end=120"
     ],
     [
         "聊天与客服",
         "买家咨询卖家",
         true,
-        "{\"code\":1,\"msg\":\"发送成功\",\"id\":2}"
+        "{\"code\":1,\"msg\":\"发送成功\",\"id\":37}"
     ],
     [
         "聊天与客服",
@@ -579,13 +591,13 @@
         "聊天与客服",
         "买家发客服消息",
         true,
-        "{\"code\":1,\"msg\":\"发送成功\",\"id\":4,\"time_str\":\"09-15 20:06\"}"
+        "{\"code\":1,\"msg\":\"发送成功\",\"id\":158,\"time_str\":\"09-17 05:26\"}"
     ],
     [
         "聊天与客服",
         "未读接口返回",
         true,
-        "{\"code\":1,\"msg_unread\":1,\"chat_unread\":0,\"service_unread\":0}"
+        "{\"code\":1,\"msg_unread\":3,\"chat_unread\":0,\"service_unread\":0}"
     ],
     [
         "聊天与客服",
@@ -603,25 +615,25 @@
         "聊天与客服",
         "后台回复客服消息",
         true,
-        "{\"code\":1,\"msg\":\"已发送\",\"id\":5,\"time_str\":\"2026-09-15 20:06\"}"
+        "{\"code\":1,\"msg\":\"已发送\",\"id\":159,\"time_str\":\"2026-09-17 05:26\"}"
     ],
     [
         "聊天与客服",
         "买家轮询到回复",
         true,
-        "{\"code\":1,\"data\":[{\"id\":4,\"user_id\":310,\"from_type\":1,\"admin_id\":0,\"type\":1,\"content\":\"客服在吗，我想充值\",\"is_read\":0,\"create_time\":1789473997,\"time_str\":\"09-15 20:06\"},{\"id\":5,\"user_id\":310,\"from_type\":2,\"admin_id\":16,\"type\":1,\"content\":\"您好，请联系财务转账\",\"is_read\":0,\"create_time\":1789473998,\"time_str\":\"09-15 20:06\"}]}"
+        "{\"code\":1,\"data\":[{\"id\":158,\"user_id\":1608,\"guest_key\":\"\",\"from_type\":1,\"admin_id\":0,\"type\":1,\"content\":\"客服在吗，我想充值\",\"is_read\":0,\"create_time\":1789594008,\"time_str\":\"09-17 05:26\"},{\"id\":159,\"user_id\":1608,\"guest_key\":\"\",\"from_type\":2,\"admin_id\":40,\"type\":1,\"content\":\"您好，请联系财务转账\",\"is_read\":0,\"create_time\":1789594009,\"time_str\":\"09-17 05:26\"}]}"
     ],
     [
         "聊天与客服",
         "买家未读提示含客服未读",
         true,
-        "{\"code\":1,\"msg_unread\":1,\"chat_unread\":0,\"service_unread\":0}"
+        "{\"code\":1,\"msg_unread\":3,\"chat_unread\":0,\"service_unread\":0}"
     ],
     [
         "聊天与客服",
         "后台主动发起会话",
         true,
-        "{\"code\":1,\"msg\":\"已发送\",\"id\":6,\"time_str\":\"2026-09-15 20:06\"}"
+        "{\"code\":1,\"msg\":\"已发送\",\"id\":160,\"time_str\":\"2026-09-17 05:26\"}"
     ],
     [
         "聊天与客服",
@@ -645,13 +657,13 @@
         "结算与订单",
         "settle 生成订单",
         true,
-        "[2026-09-15 20:06:40] 结算 1 件：成交 1，流拍 0（40ms） ids=3184\n"
+        "[2026-09-17 05:26:51] 结算 1 件：成交 1，流拍 0（31ms） ids=3812\n"
     ],
     [
         "结算与订单",
         "中标者为买家，成交价 170",
         true,
-        "{\"buyer\":\"310\",\"price\":\"170.00\"}"
+        "{\"buyer\":\"1608\",\"price\":\"170.00\"}"
     ],
     [
         "结算与订单",
@@ -727,9 +739,9 @@
     ],
     [
         "结算与订单",
-        "卖家入账 153",
+        "付款后卖家尚未入账（确认收货后才到账）",
         true,
-        "balance=153.00"
+        "balance=0.00"
     ],
     [
         "结算与订单",
@@ -799,6 +811,18 @@
     ],
     [
         "结算与订单",
+        "确认收货后卖家入账 153",
+        true,
+        "balance=153.00"
+    ],
+    [
+        "结算与订单",
+        "入账流水与到账通知已写",
+        true,
+        ""
+    ],
+    [
+        "结算与订单",
         "售后理由太短被拒绝",
         true,
         "{\"code\":0,\"msg\":\"请填写售后理由（至少 5 个字）\"}"
@@ -813,7 +837,7 @@
         "结算与订单",
         "后台售后列表含申请",
         true,
-        "{\"code\":0,\"msg\":\"\",\"count\":2,\"data\":[{\"id\":3,\"order_id\":7,\"order_no\":\"AU20260915200640301559\",\"user_id\":310,\"seller_id\":"
+        "{\"code\":0,\"msg\":\"\",\"count\":2,\"data\":[{\"id\":37,\"order_id\":467,\"order_no\":\"AU20260917052651126667\",\"user_id\":1608,\"seller_"
     ],
     [
         "结算与订单",
@@ -843,7 +867,7 @@
         "结算与订单",
         "后台订单列表可搜到",
         true,
-        "{\"code\":0,\"msg\":\"\",\"count\":1,\"data\":[{\"id\":7,\"order_no\":\"AU20260915200640301559\",\"goods_id\":3184,\"goods_title\":\"QA测试拍品47"
+        "{\"code\":0,\"msg\":\"\",\"count\":1,\"data\":[{\"id\":467,\"order_no\":\"AU20260917052651126667\",\"goods_id\":3812,\"goods_title\":\"QA测试拍品"
     ],
     [
         "结算与订单",
@@ -897,7 +921,7 @@
         "流拍与自动处理",
         "超时未付款自动取消",
         true,
-        "{\"os\":\"4\",\"out\":\"[2026-09-15 20:06:49] 取消 1 单（阈值 1 小时，保证金：refund_buyer） 明细={\\\"8\\\":\\\"保证金已退还买家\\\"}\"}"
+        "{\"os\":\"4\",\"out\":\"[2026-09-17 05:27:00] 取消 1 单（阈值 1 小时，保证金：refund_buyer） 明细={\\\"468\\\":\\\"保证金已退还买家\\\"}\"}"
     ],
     [
         "流拍与自动处理",
@@ -933,7 +957,7 @@
         "流拍与自动处理",
         "催发货：卖家收到站内信",
         true,
-        "[2026-09-15 20:06:51] 发出提醒 1 单（阈值 1 天）ids=10"
+        "[2026-09-17 05:27:02] 发出提醒 1 单（阈值 1 天）ids=470"
     ],
     [
         "流拍与自动处理",
@@ -951,7 +975,7 @@
         "流拍与自动处理",
         "发货超期自动确认收货",
         true,
-        "[2026-09-15 20:06:52] 自动确认 1 单（阈值 1 天）ids=10"
+        "[2026-09-17 05:27:02] 自动确认 1 单（阈值 1 天）ids=470"
     ],
     [
         "充值与提现",
@@ -1010,8 +1034,8 @@
     [
         "充值与提现",
         "绑定银行卡",
-        false,
-        "{\"code\":0,\"msg\":\"请填写开户行\"}"
+        true,
+        "{\"code\":1,\"msg\":\"绑定成功\"}"
     ],
     [
         "充值与提现",
@@ -1028,50 +1052,50 @@
     [
         "充值与提现",
         "提交提现 200",
-        false,
-        "{\"code\":0,\"msg\":\"请先绑定该提现方式\"}"
+        true,
+        "{\"code\":1,\"msg\":\"提现申请已提交，等待平台审核\"}"
     ],
     [
         "充值与提现",
         "提现后可用余额减 200（提现不走冻结，直接扣减）",
-        false,
-        "{\"balance\":\"1340.00\",\"freeze_balance\":\"0.00\"}"
+        true,
+        "{\"balance\":\"1140.00\",\"freeze_balance\":\"0.00\"}"
     ],
     [
         "充值与提现",
         "待审核时不能再提",
         true,
-        "{\"code\":0,\"msg\":\"请先绑定该提现方式\"}"
+        "{\"code\":0,\"msg\":\"您有一笔提现正在审核中，审核通过后方可提交下一笔\"}"
     ],
     [
         "充值与提现",
         "手续费 2% = 4",
-        false,
-        ""
+        true,
+        "{\"id\":\"168\",\"user_id\":\"1608\",\"amount\":\"200.00\",\"fee\":\"4.00\",\"account_type\":\"3\",\"account\":\"6222000011112222\",\"account_name\":\"买家甲\",\"bank_name\":\"工商银行\",\"bank_branch\":\"北京分行\",\"qr_code\":\"\",\"status\":\"0\",\"refuse_reason\":\"\",\"handle_time\":\"0\",\"create_time\":\"1789594026\",\"update_time\":\"1789594026\"}"
     ],
     [
         "充值与提现",
         "后台提现打款",
-        false,
-        "{\"code\":0,\"msg\":\"提现申请不存在\"}"
+        true,
+        "{\"code\":1,\"msg\":\"已打款\"}"
     ],
     [
         "充值与提现",
         "打款后冻结清零",
-        false,
-        "{\"balance\":\"1340.00\",\"freeze_balance\":\"0.00\"}"
+        true,
+        "{\"balance\":\"1140.00\",\"freeze_balance\":\"0.00\"}"
     ],
     [
         "充值与提现",
         "后台拒绝提现",
-        false,
-        "{\"code\":0,\"msg\":\"提现申请不存在\"}"
+        true,
+        "{\"code\":1,\"msg\":\"已拒绝\"}"
     ],
     [
         "充值与提现",
         "拒绝后金额退回可用余额",
-        false,
-        "{\"balance\":\"1340.00\",\"freeze_balance\":\"0.00\"}"
+        true,
+        "{\"balance\":\"1140.00\",\"freeze_balance\":\"0.00\"}"
     ],
     [
         "充值与提现",
@@ -1088,18 +1112,18 @@
     [
         "充值与提现",
         "提现记录显示拒绝理由",
-        false,
+        true,
         ""
     ],
     [
         "充值与提现",
-        "虚拟会员不能充值",
-        false,
+        "虚拟会员可以充值（与普通会员一致）",
+        true,
         "{\"code\":1,\"msg\":\"充值申请已提交，请等待平台审核\"}"
     ],
     [
         "充值与提现",
-        "虚拟会员不能提现",
+        "虚拟会员未绑定账户不能提现",
         true,
         "{\"code\":0,\"msg\":\"请先绑定该提现方式\"}"
     ],
@@ -1107,7 +1131,7 @@
         "后台管理功能",
         "改上级为代理",
         true,
-        "{\"code\":1,\"msg\":\"已将上级改为 19900473963\"}"
+        "{\"code\":1,\"msg\":\"已将上级改为 19900593973\"}"
     ],
     [
         "后台管理功能",
@@ -1245,7 +1269,7 @@
         "后台管理功能",
         "首页显示轮播图",
         true,
-        "http=200 head= 首页 - 东方国际拍卖 东方国际拍卖  activeBanners=4 banner={\"id\":\"5\",\"image\":\"\\\/uploads\\\/20260915\\\/200613_6706.png\",\"status\":\"1\"} html=id=\"bannerSlider\"> <a href=\"javascript:void(0)\"> <img src=\"\/uploads\/20260909\/155631_4804.jpg\" alt=\"1\"> <\/a> <a href=\"\/about\"> <img src=\"\/uploads\/20260915\/200613_6706.png\" alt=\"QA轮播\"> <\/a> <a href=\"javascript:void(0)\"> <img src=\"\/uploads\/20260909\/155637_5304.jpg\" alt=\"2\"> <\/a> <a href=\"javascript:void(0)\"> <img src=\"\/uploads\/20260909\/155643_3900.jpg\" alt=\"3\"> <\/a> <\/div> <div class=\"dots\"> <i class=\"on\"><\/i><i class=\"\"><\/i><i class=\"\"><\/i><i class=\"\"><\/i> <\/div> <\/div> <!-- 分类宫格（彩色圆底图标，取分类图片） --> <div class=\"home-cates\"> <a href=\"\/?category_id=1\" data-cate=\"1\" class=\"hc-item\"> <span class=\"cate-icon c0\"><img src=\"\/uploads\/20260909\/155721_8749.jpg\" alt=\"字画\"><\/span> <span class=\"cate-name\">字画<\/span> <\/a> <a href=\"\/?category_id=2\" data-cate=\"2\" class=\"hc-item\"> <span class=\"cate-icon c1\"><img src=\"\/uploads\/20260909\/155729_2349.jpg\" alt=\"杂项\"><\/span> <span class=\"cate-name\">杂项<\/span> <\/a> <a href=\"\/?category_id=3\" data-cate=\"3\" class=\"hc-item\"> <span class=\"cate-icon c2\"><img src=\"\/uploads\/20260909\/155736_7694.jpg\" alt=\"玉器\"><\/span> <span class=\"cate-name\">玉器<\/span> <\/a> <a href=\"\/?category_id=4\" data-cate=\"4\" class=\"hc-item\"> <s"
+        "http=200 head= 首页 - 东方国际拍卖 东方国际拍卖  activeBanners=4 banner={\"id\":\"15\",\"image\":\"\\\/uploads\\\/20260917\\\/052623_0d37853d11.png\",\"status\":\"1\"} html=id=\"bannerSlider\"> <a href=\"javascript:void(0)\"> <img src=\"\/uploads\/20260909\/155631_4804.jpg\" alt=\"1\"> <\/a> <a href=\"\/about\"> <img src=\"\/uploads\/20260917\/052623_0d37853d11.png\" alt=\"QA轮播\"> <\/a> <a href=\"javascript:void(0)\"> <img src=\"\/uploads\/20260909\/155637_5304.jpg\" alt=\"2\"> <\/a> <a href=\"javascript:void(0)\"> <img src=\"\/uploads\/20260909\/155643_3900.jpg\" alt=\"3\"> <\/a> <\/div> <div class=\"dots\"> <i class=\"on\"><\/i><i class=\"\"><\/i><i class=\"\"><\/i><i class=\"\"><\/i> <\/div> <\/div> <!-- 分类宫格（彩色圆底图标，取分类图片） --> <div class=\"home-cates\"> <a href=\"\/category\/list?category_id=1\" class=\"hc-item\"> <span class=\"cate-icon c0\"><img src=\"\/uploads\/20260909\/155721_8749.jpg\" alt=\"字画\"><\/span> <span class=\"cate-name\">字画<\/span> <\/a> <a href=\"\/category\/list?category_id=2\" class=\"hc-item\"> <span class=\"cate-icon c1\"><img src=\"\/uploads\/20260909\/155729_2349.jpg\" alt=\"杂项\"><\/span> <span class=\"cate-name\">杂项<\/span> <\/a> <a href=\"\/category\/list?category_id=3\" class=\"hc-item\"> <span class=\"cate-icon c2\"><img src=\"\/uploads\/20260909\/155736_7694.jpg\" alt=\"玉器\"><\/span> <span class=\"cate-name\">玉器<\/span> <\/a> <a href=\"\/category\/list?category_id=4\" class=\"hc-item\"> "
     ],
     [
         "后台管理功能",
@@ -1285,7 +1309,7 @@
     ],
     [
         "后台管理功能",
-        "后台页面 \/admin1314\/member\/index?keyword=19700473963",
+        "后台页面 \/admin1314\/member\/index?keyword=19700593973",
         true,
         "HTTP 200"
     ],
@@ -1327,7 +1351,7 @@
     ],
     [
         "后台管理功能",
-        "后台页面 \/admin1314\/bid\/index?goods_id=3184",
+        "后台页面 \/admin1314\/bid\/index?goods_id=3812",
         true,
         "HTTP 200"
     ],
@@ -1363,7 +1387,7 @@
     ],
     [
         "后台管理功能",
-        "后台页面 \/admin1314\/balance\/index?keyword=19700473963",
+        "后台页面 \/admin1314\/balance\/index?keyword=19700593973",
         true,
         "HTTP 200"
     ],
@@ -1393,7 +1417,7 @@
     ],
     [
         "后台管理功能",
-        "后台页面 \/admin1314\/goods\/detail?id=3184",
+        "后台页面 \/admin1314\/goods\/detail?id=3812",
         true,
         "HTTP 200"
     ],
@@ -1465,13 +1489,13 @@
     ],
     [
         "前台页面冒烟",
-        "页面 \/goods\/detail?id=3184",
+        "页面 \/goods\/detail?id=3812",
         true,
         "HTTP 200"
     ],
     [
         "前台页面冒烟",
-        "页面 \/shop\/detail?id=311",
+        "页面 \/shop\/detail?id=1609",
         true,
         "HTTP 200"
     ],

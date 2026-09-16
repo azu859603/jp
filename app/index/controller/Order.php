@@ -40,7 +40,7 @@ class Order extends Base
             'page'        => $page,
             'limit'       => $limit,
             'order_status'=> $orderStatus,
-            'page_title'  => lang('我的订单'),
+            'page_title'  => lang('买家订单'),
             'center_tab'  => 'orders',
             'tab_active'  => 'mine',
         ]);
@@ -56,11 +56,15 @@ class Order extends Base
         $orderId = (int)$this->request->param('id', 0);
 
         if ($this->request->isPost()) {
+            // 整个支付流程在一个事务内：行锁生效，重复提交只会有一个成功
+            Db::startTrans();
             $order = Db::name('order')->where('id', $orderId)->where('buyer_id', $this->user['id'])->lock(true)->find();
             if (!$order) {
+                Db::rollback();
                 return json(['code' => 0, 'msg' => lang('订单不存在')]);
             }
             if ($order['order_status'] != 0 || $order['pay_status'] != 0) {
+                Db::rollback();
                 return json(['code' => 0, 'msg' => lang('订单状态不正确，无需支付')]);
             }
 
@@ -79,6 +83,7 @@ class Order extends Base
                 }
             }
             if ($shipName === '' || $shipMobile === '' || $shipAddress === '') {
+                Db::rollback();
                 return json(['code' => 0, 'msg' => lang('请填写或选择收货地址')]);
             }
 
@@ -89,11 +94,11 @@ class Order extends Base
             $freezeDeduct = min($order['deposit'], $user['freeze_balance']);
             $balanceDeduct = round($payAmount + ($order['deposit'] - $freezeDeduct), 2);
             if ($user['balance'] < $balanceDeduct) {
+                Db::rollback();
                 return json(['code' => 0, 'msg' => lang('余额不足，还需支付 ¥') . number_format($balanceDeduct, 2) . lang('，请先充值')]);
             }
 
             $now = time();
-            Db::startTrans();
             try {
                 $newBalance = round($user['balance'] - $balanceDeduct, 2);
                 $newFreeze = round($user['freeze_balance'] - $freezeDeduct, 2);
@@ -108,8 +113,8 @@ class Order extends Base
                     $this->addBalanceLog($user['id'], 'pay', -$payAmount, $newBalance, '拍卖订单支付：' . $order['order_no']);
                 }
 
-                // 订单更新
-                Db::name('order')->where('id', $orderId)->update([
+                // 订单更新（条件更新：状态已变则整笔回滚）
+                if (Db::name('order')->where('id', $orderId)->where('pay_status', 0)->where('order_status', 0)->update([
                     'pay_status'   => 1,
                     'pay_time'     => $now,
                     'order_status' => 1,
@@ -117,24 +122,16 @@ class Order extends Base
                     'ship_mobile'  => $shipMobile,
                     'ship_address' => $shipAddress,
                     'update_time'  => $now,
-                ]);
+                ]) !== 1) {
+                    throw new \RuntimeException(lang('订单状态已变化'));
+                }
 
                 // 买家累计
                 Db::name('user')->where('id', $user['id'])->update([
                     'total_buy'   => Db::raw('total_buy+1'),
                 ]);
 
-                // 卖家入账（成交价 - 佣金）
-                $seller = Db::name('user')->where('id', $order['seller_id'])->lock(true)->find();
-                if ($seller) {
-                    $sellerBalance = round($seller['balance'] + $order['seller_income'], 2);
-                    Db::name('user')->where('id', $seller['id'])->update([
-                        'balance'     => $sellerBalance,
-                        'total_sell'  => Db::raw('total_sell+1'),
-                        'update_time' => $now,
-                    ]);
-                    $this->addBalanceLog($seller['id'], 'income', $order['seller_income'], $sellerBalance, '拍卖成交收入：' . $order['order_no'] . '（平台佣金 ¥' . $order['commission'] . '）');
-                }
+                // 卖家成交款不在付款时入账：买家确认收货（或系统自动确认 / 后台标记完成）后由 pay_seller_income() 打给卖家
 
                 Db::commit();
             } catch (\Throwable $e) {
@@ -212,19 +209,32 @@ class Order extends Base
             return json(['code' => 0, 'msg' => lang('请求方式错误')]);
         }
         $orderId = (int)$this->request->post('id', 0);
-        $order = Db::name('order')->where('id', $orderId)->where('buyer_id', $this->user['id'])->find();
-        if (!$order) {
-            return json(['code' => 0, 'msg' => lang('订单不存在')]);
+        Db::startTrans();
+        try {
+            $order = Db::name('order')->where('id', $orderId)->where('buyer_id', $this->user['id'])->lock(true)->find();
+            if (!$order) {
+                Db::rollback();
+                return json(['code' => 0, 'msg' => lang('订单不存在')]);
+            }
+            if ((int)$order['order_status'] !== 2) {
+                Db::rollback();
+                return json(['code' => 0, 'msg' => lang('订单状态不正确')]);
+            }
+            $now = time();
+            if (Db::name('order')->where('id', $orderId)->where('buyer_id', $this->user['id'])->where('order_status', 2)->update([
+                'order_status' => 3,
+                'finish_time'  => $now,
+                'update_time'  => $now,
+            ]) !== 1) {
+                throw new \RuntimeException(lang('订单状态已变化'));
+            }
+            // 买家确认收货 → 成交款打给卖家
+            pay_seller_income($order);
+            Db::commit();
+        } catch (\Throwable $e) {
+            Db::rollback();
+            return json(['code' => 0, 'msg' => lang('操作失败：') . $e->getMessage()]);
         }
-        if ($order['order_status'] != 2) {
-            return json(['code' => 0, 'msg' => lang('订单状态不正确')]);
-        }
-
-        Db::name('order')->where('id', $orderId)->update([
-            'order_status' => 3,
-            'finish_time'  => time(),
-            'update_time'  => time(),
-        ]);
         return json(['code' => 1, 'msg' => lang('已确认收货，交易完成')]);
     }
 
@@ -249,15 +259,20 @@ class Order extends Base
             return json(['code' => 0, 'msg' => lang('售后理由不能超过 500 字')]);
         }
 
+        Db::startTrans();
+        try {
         $order = Db::name('order')->where('id', $orderId)->where('buyer_id', $this->user['id'])->lock(true)->find();
         if (!$order) {
+            Db::rollback();
             return json(['code' => 0, 'msg' => lang('订单不存在')]);
         }
         if ($order['order_status'] != 3) {
+            Db::rollback();
             return json(['code' => 0, 'msg' => lang('只有已完成的订单才能申请售后')]);
         }
         $exists = Db::name('after_sale')->where('order_id', $orderId)->find();
         if ($exists) {
+            Db::rollback();
             return json(['code' => 0, 'msg' => lang('该订单已申请过售后，请勿重复申请')]);
         }
 
@@ -274,10 +289,17 @@ class Order extends Base
             'status'      => 0,
             'create_time' => $now,
         ]);
-        Db::name('order')->where('id', $orderId)->update([
+        if (Db::name('order')->where('id', $orderId)->where('order_status', 3)->update([
             'order_status' => 5,
             'update_time'  => $now,
-        ]);
+        ]) !== 1) {
+            throw new \RuntimeException(lang('订单状态已变化'));
+        }
+        Db::commit();
+        } catch (\Throwable $e) {
+            Db::rollback();
+            return json(['code' => 0, 'msg' => lang('操作失败，请重试')]);
+        }
         return json(['code' => 1, 'msg' => lang('售后申请已提交，请等待平台处理')]);
     }
 }

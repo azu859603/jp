@@ -177,45 +177,54 @@
     </div>
 </div>
 
-<!-- 修改上级弹层 -->
-<div class="mask" id="parentMask">
+<!-- 编辑会员弹层：重置密码 / 上级 / 卖家 / 代理 / 虚拟会员 -->
+<div class="mask" id="editMask">
     <div class="dialog">
-        <div class="dialog-title" id="parentDialogTitle">修改上级</div>
+        <div class="dialog-title" id="editDialogTitle">编辑会员</div>
         <div class="dialog-body">
             <div class="form-group">
-                <label>当前上级</label>
-                <div id="parentCurrent" style="font-size:13px;color:#64748b;">无</div>
+                <label>重置密码</label>
+                <input type="text" class="form-control" id="editPwd" placeholder="留空表示不修改；至少 6 位" autocomplete="off">
+            </div>
+            <div class="form-group">
+                <label>上级（手机号）</label>
+                <div style="position:relative;">
+                    <input type="text" class="form-control" id="editParent" placeholder="输入手机号搜索并选择，留空表示无上级" autocomplete="off">
+                    <div id="parentList" class="pick-list"></div>
+                </div>
+                <div class="tip" id="editParentTip">当前上级：无</div>
+            </div>
+            <div class="form-group">
+                <label>卖家</label>
+                <div class="edit-seg"><label><input type="radio" name="editSeller" value="1"> 是</label><label><input type="radio" name="editSeller" value="0"> 否</label></div>
+                <div class="tip">「是」即开通卖家权限（审核状态置为已通过）；「否」取消卖家资格</div>
+            </div>
+            <div class="form-group">
+                <label>代理</label>
+                <div class="edit-seg"><label><input type="radio" name="editAgent" value="1"> 是</label><label><input type="radio" name="editAgent" value="0"> 否</label></div>
+                <div class="tip">代理可用前台账号登录 /agent 代理中心，管理注册时填写其邀请码的一级会员</div>
             </div>
             <div class="form-group" style="margin-bottom:0;">
-                <label>新上级（手机号 / 邀请码 / 会员ID）</label>
-                <input type="text" class="form-control" id="parentValue" placeholder="留空表示清空上级">
-                <div class="tip">上级即邀请人，修改后该会员会归到新上级的代理中心下级列表；留空并确定即清空上级。</div>
+                <label>虚拟会员</label>
+                <div class="edit-seg"><label><input type="radio" name="editVirtual" value="1"> 是</label><label><input type="radio" name="editVirtual" value="0"> 否</label></div>
+                <div class="tip">虚拟会员可被自动出价脚本选中、出价时免实名且不冻结保证金；其提现申请会在提现审核里标注</div>
             </div>
         </div>
         <div class="dialog-footer">
-            <button class="btn" onclick="document.getElementById('parentMask').classList.remove('show')">取消</button>
-            <button class="btn btn-primary" onclick="doSetParent()">确定</button>
+            <button class="btn" onclick="document.getElementById('editMask').classList.remove('show')">取消</button>
+            <button class="btn btn-primary" onclick="doEditSave()">保存</button>
         </div>
     </div>
 </div>
-
-<!-- 重置密码弹层 -->
-<div class="mask" id="pwdMask">
-    <div class="dialog">
-        <div class="dialog-title">重置密码</div>
-        <div class="dialog-body">
-            <div class="form-group">
-                <label>新密码（至少6位）</label>
-                <input type="text" class="form-control" id="pwdValue" placeholder="请输入新密码">
-            </div>
-        </div>
-        <div class="dialog-footer">
-            <button class="btn" onclick="document.getElementById('pwdMask').classList.remove('show')">取消</button>
-            <button class="btn btn-primary" onclick="doResetPwd()">确定</button>
-        </div>
-    </div>
-</div>
-
+<style>
+.edit-seg{display:flex;gap:18px;font-size:13px;color:#334155;}.edit-seg label{display:flex;align-items:center;gap:5px;cursor:pointer;}.edit-seg input{width:15px;height:15px;}
+.pick-list{display:none;position:absolute;left:0;right:0;top:100%;z-index:20;background:#fff;border:1px solid #e2e8f0;border-radius:8px;box-shadow:0 4px 14px rgba(0,0,0,.08);max-height:220px;overflow-y:auto;margin-top:4px;}
+.pick-item{padding:8px 12px;cursor:pointer;border-bottom:1px solid #f1f5f9;font-size:13px;display:flex;align-items:center;gap:8px;}
+.pick-item:last-child{border-bottom:0;}
+.pick-item:hover{background:#fff3e6;}
+.pick-item .pi-sub{color:#94a3b8;font-size:12px;}
+.pick-empty{padding:12px;text-align:center;color:#94a3b8;font-size:12px;}
+</style>
 <!-- 私信弹层 -->
 <div class="mask" id="msgMask">
     <div class="dialog">
@@ -238,6 +247,7 @@
 </div>
 
 <script>
+var memberRows = {};
 var currentId = 0;
 var currentPage = 1;
 
@@ -257,14 +267,15 @@ function loadList(page){
                 html = '<tr><td colspan="12" class="empty">暂无数据</td></tr>';
             } else {
                 res.data.forEach(function(u){
+                    memberRows[u.id] = u;
                     var typeHtml = u.is_seller == 1 ? '<span class="tag tag-orange">卖家</span>' : '<span class="tag tag-blue">买家</span>';
                     if(u.is_virtual == 1) typeHtml += '<div style="font-size:12px;color:#8b5cf6;margin-top:3px;">（虚拟会员）</div>';
                     var statusHtml = u.status == 1 ? '<span class="tag tag-green">正常</span>' : '<span class="tag tag-red">禁用</span>';
                     html += '<tr>'
                         + '<td>' + u.id + '</td>'
-                        + '<td>' + (u.nickname || '-') + '</td>'
-                        + '<td>' + u.mobile + '</td>'
-                        + '<td>' + (u.pid > 0 ? (u.parent_mobile ? u.parent_mobile + '<br><span class="gray" style="font-size:12px;">' + (u.parent_nickname || '#' + u.pid) + '</span>' : '<span class="gray">#' + u.pid + '(已删除)</span>') : '<span class="gray">-</span>') + '</td>'
+                        + '<td>' + esc(u.nickname || '-') + '</td>'
+                        + '<td>' + esc(u.mobile) + '</td>'
+                        + '<td>' + (u.pid > 0 ? (u.parent_mobile ? esc(u.parent_mobile) + '<br><span class="gray" style="font-size:12px;">' + esc(u.parent_nickname || '#' + u.pid) + '</span>' : '<span class="gray">#' + u.pid + '(已删除)</span>') : '<span class="gray">-</span>') + '</td>'
                         // + '<td>' + u.invite_code + '</td>'
                         + '<td>' + typeHtml + '</td>'
                         + '<td>' + (u.is_agent == 1 ? '<span class="tag tag-blue">代理</span>' : '<span class="gray">-</span>') + '</td>'
@@ -276,18 +287,12 @@ function loadList(page){
                         + '<td style="white-space:nowrap;">'
                         + '<a class="btn btn-sm" href="/admin1314/member/detail?id=' + u.id + '">详情</a> '
                         + '<a class="btn btn-sm" href="javascript:;" onclick="openBalance(' + u.id + ')">余额</a> '
-                        + '<a class="btn btn-sm" href="javascript:;" onclick="openPwd(' + u.id + ')">重置密码</a> '
-                        + '<a class="btn btn-sm" href="javascript:;" onclick="openParent(' + u.id + ',\'' + encodeURIComponent(u.mobile) + '\',\'' + encodeURIComponent(u.parent_mobile || '') + '\')">改上级</a> '
+                        + '<a class="btn btn-sm btn-primary" href="javascript:;" onclick="openEdit(' + u.id + ')">编辑</a> '
                         + '<a class="btn btn-sm" href="javascript:;" onclick="openMsg(' + u.id + ',\'' + encodeURIComponent(u.nickname || '-') + '\')">私信</a> '
+                        + (u.status == 1 ? '<a class="btn btn-sm btn-green" href="javascript:;" onclick="loginAs(' + u.id + ')" title="在新标签页打开前台并以该会员身份登录">登录会员</a> ' : '')
                         + (u.status == 1
                             ? '<a class="btn btn-sm btn-danger" href="javascript:;" onclick="toggleStatus(' + u.id + ',0)">禁用</a>'
-                            : '<a class="btn btn-sm btn-green" href="javascript:;" onclick="toggleStatus(' + u.id + ',1)">启用</a>') + ' '
-                        + (u.is_seller == 1
-                            ? '<a class="btn btn-sm btn-danger" href="javascript:;" onclick="toggleSeller(' + u.id + ',0)">取消卖家</a>'
-                            : '<a class="btn btn-sm" href="javascript:;" onclick="toggleSeller(' + u.id + ',1)">设为卖家</a>') + ' '
-                        + (u.is_agent == 1
-                            ? '<a class="btn btn-sm btn-danger" href="javascript:;" onclick="toggleAgent(' + u.id + ',0)">取消代理</a>'
-                            : '<a class="btn btn-sm" href="javascript:;" onclick="toggleAgent(' + u.id + ',1)">设为代理</a>')
+                            : '<a class="btn btn-sm btn-green" href="javascript:;" onclick="toggleStatus(' + u.id + ',1)">启用</a>')
                         + '</td></tr>';
                 });
             }
@@ -410,24 +415,6 @@ function toggleStatus(id, status){
     });
 }
 
-function toggleSeller(id, val){
-    confirmDialog('确定要' + (val == 1 ? '将该会员设为卖家' : '取消该会员的卖家资格') + '吗？', function(){
-        ajaxPost('/admin1314/member/setSeller', {id:id, is_seller:val}, function(res){
-            alert(res.msg); if(res.code == 1) loadList(currentPage);
-        });
-    });
-}
-
-function toggleAgent(id, val){
-    confirmDialog(val == 1
-        ? '确定将该会员设为代理吗？<br><span style="color:#94a3b8;font-size:12px;">设为代理后，该会员可用前台账号登录 /agent 代理中心，查看其直接邀请的一级会员（只读）。</span>'
-        : '确定取消该会员的代理资格吗？<br><span style="color:#94a3b8;font-size:12px;">取消后将立即无法访问代理中心。</span>', function(){
-        ajaxPost('/admin1314/member/setAgent', {id:id, is_agent:val}, function(res){
-            alert(res.msg); if(res.code == 1) loadList(currentPage);
-        });
-    });
-}
-
 function openBalance(id){
     currentId = id;
     document.getElementById('balanceAmount').value = '';
@@ -448,44 +435,89 @@ function doAdjustBalance(){
     });
 }
 
-function openParent(id, mobile, parentMobile){
+function setRadio(name, v){ var els = document.getElementsByName(name); for(var i = 0; i < els.length; i++){ els[i].checked = (els[i].value == v); } }
+function getRadio(name){ var els = document.getElementsByName(name); for(var i = 0; i < els.length; i++){ if(els[i].checked) return els[i].value; } return ''; }
+function openEdit(id){
+    var u = memberRows[id];
+    if(!u){ alert('请刷新列表后重试'); return; }
     currentId = id;
-    document.getElementById('parentDialogTitle').textContent = '修改上级 - ' + decodeURIComponent(mobile);
-    document.getElementById('parentCurrent').textContent = decodeURIComponent(parentMobile) || '无';
-    document.getElementById('parentValue').value = '';
-    document.getElementById('parentMask').classList.add('show');
+    document.getElementById('editDialogTitle').textContent = '编辑会员 - ' + (u.mobile || ('#' + id));
+    document.getElementById('editPwd').value = '';
+    document.getElementById('editParent').value = u.pid > 0 ? (u.parent_mobile || String(u.pid)) : '';
+    hideParentList();
+    document.getElementById('editParentTip').textContent = '当前上级：' + (u.pid > 0 ? (u.parent_mobile || ('#' + u.pid)) : '无') + '；输入其它会员的手机号并选择即换上级，清空并保存即取消上级';
+    setRadio('editSeller', u.is_seller == 1 ? 1 : 0);
+    setRadio('editAgent', u.is_agent == 1 ? 1 : 0);
+    setRadio('editVirtual', u.is_virtual == 1 ? 1 : 0);
+    document.getElementById('editMask').classList.add('show');
 }
 
-function doSetParent(){
-    var val = document.getElementById('parentValue').value.trim();
-    var go = function(){
-        ajaxPost('/admin1314/member/setParent', {id:currentId, parent:val}, function(res){
-            alert(res.msg);
-            if(res.code == 1){
-                document.getElementById('parentMask').classList.remove('show');
-                loadList(currentPage);
-            }
+/* 上级搜索下拉：输入手机号 / 昵称 / 会员ID，250ms 防抖请求，点选后把手机号填入输入框 */
+var parentTimer = null;
+function hideParentList(){ var l = document.getElementById('parentList'); l.style.display = 'none'; l.innerHTML = ''; }
+function searchParent(){
+    var kw = document.getElementById('editParent').value.trim();
+    var list = document.getElementById('parentList');
+    if(kw === ''){ hideParentList(); return; }
+    fetch('/admin1314/member/searchUser?scene=parent&exclude=' + currentId + '&kw=' + encodeURIComponent(kw), {headers:{'X-Requested-With':'XMLHttpRequest'}})
+        .then(function(r){ return r.json(); })
+        .then(function(res){
+            if(document.getElementById('editParent').value.trim() !== kw) return;   // 输入已变化，丢弃旧结果
+            var rows = res.data || [];
+            if(!rows.length){ list.innerHTML = '<div class="pick-empty">没有匹配的会员</div>'; list.style.display = 'block'; return; }
+            list.innerHTML = rows.map(function(u){
+                return '<div class="pick-item" data-mobile="' + esc(u.mobile) + '"><span>' + esc(u.nickname || '-') + '</span>'
+                    + (u.is_agent == 1 ? '<span class="tag tag-blue">代理</span>' : '')
+                    + '<span class="pi-sub">' + esc(u.mobile) + ' · ID ' + u.id + '</span></div>';
+            }).join('');
+            list.style.display = 'block';
         });
-    };
-    if(val === ''){ confirmDialog('未填写新上级，确定要清空该会员的上级吗？', go); } else { go(); }
 }
+document.getElementById('editParent').addEventListener('input', function(){
+    clearTimeout(parentTimer);
+    parentTimer = setTimeout(searchParent, 250);
+});
+document.getElementById('editParent').addEventListener('keydown', function(e){ if(e.key === 'Escape') hideParentList(); });
+document.getElementById('parentList').addEventListener('click', function(e){
+    var item = e.target.closest('.pick-item');
+    if(!item) return;
+    document.getElementById('editParent').value = item.getAttribute('data-mobile');
+    hideParentList();
+});
+document.addEventListener('click', function(e){
+    if(!e.target.closest('#parentList') && e.target.id !== 'editParent') hideParentList();
+});
 
-function openPwd(id){
-    currentId = id;
-    document.getElementById('pwdValue').value = '';
-    document.getElementById('pwdMask').classList.add('show');
-}
-
-function doResetPwd(){
-    var pwd = document.getElementById('pwdValue').value.trim();
-    if(pwd.length < 6){ alert('密码至少6位'); return; }
-    ajaxPost('/admin1314/member/resetPassword', {id:currentId, password:pwd}, function(res){
+function doEditSave(){
+    var pwd = document.getElementById('editPwd').value.trim();
+    if(pwd !== '' && pwd.length < 6){ alert('密码至少6位'); return; }
+    var data = {id: currentId, password: pwd, parent: document.getElementById('editParent').value.trim(),
+        is_seller: getRadio('editSeller'), is_agent: getRadio('editAgent'), is_virtual: getRadio('editVirtual')};
+    ajaxPost('/admin1314/member/editSave', data, function(res){
         alert(res.msg);
-        if(res.code == 1) document.getElementById('pwdMask').classList.remove('show');
+        if(res.code == 1){
+            document.getElementById('editMask').classList.remove('show');
+            loadList(currentPage);
+        }
     });
 }
-
 var msgUserId = 0;
+
+function loginAs(id){
+    var u = memberRows[id] || {};
+    confirmDialog('将在新标签页打开前台并以会员 <b>' + esc(u.mobile || ('#' + id)) + '</b> 的身份登录，确定？<br><span style="color:#94a3b8;font-size:12px;">你当前浏览器的前台登录状态会被替换为该会员，操作会记入后台日志。</span>', function(){
+        // 先同步打开空白标签页，避免异步回调里 window.open 被浏览器拦截
+        var win = window.open('', '_blank');
+        ajaxPost('/admin1314/member/loginAs', {id: id}, function(res){
+            if(res.code == 1){
+                win.location.href = res.url;
+            } else {
+                if(win) win.close();
+                alert(res.msg);
+            }
+        });
+    });
+}
 
 function openMsg(id, name){
     msgUserId = id;

@@ -1,7 +1,17 @@
-* * * * * cd /www/wwwroot/jp && php think settle >> runtime/log/settle-cron.log 2>&1
-*/5 * * * * cd /www/wwwroot/jp && php think order:timeout >> runtime/log/order_timeout-cron.log 2>&1
-0 * * * * cd /www/wwwroot/jp && php think order:confirm >> runtime/log/order_confirm-cron.log 2>&1
-0 9 * * * cd /www/wwwroot/jp && php think order:remind  >> runtime/log/order_remind-cron.log 2>&1
+# 每分钟 拍卖结算定时任务
+* * * * *   cd /www/wwwroot/jp && /usr/bin/php think settle            >> runtime/log/cron_settle.log 2>&1
+# 每分钟 虚拟用户自动出价定时任务
+* * * * *   cd /www/wwwroot/jp && /usr/bin/php think bid:auto          >> runtime/log/cron_bid_auto.log 2>&1
+# 每分钟 平台自营（会员 ID 1）拍品自动出价
+* * * * *   cd /www/wwwroot/jp && /usr/bin/php think platform:auto-bid >> runtime/log/cron_platform_auto_bid.log 2>&1
+# 每分钟 指定卖家流拍商品自动重新上架
+* * * * *   cd /www/wwwroot/jp && /usr/bin/php think goods:auto-relist >> runtime/log/cron_auto_relist.log 2>&1
+# 每 5 分钟：待付款超时取消
+*/5 * * * * cd /www/wwwroot/jp && /usr/bin/php think order:timeout     >> runtime/log/cron_order_timeout.log 2>&1
+# 每小时整点：待收货自动确认
+0 * * * *   cd /www/wwwroot/jp && /usr/bin/php think order:confirm     >> runtime/log/cron_order_confirm.log 2>&1
+# 每天 09:00：催发货提醒
+0 9 * * *   cd /www/wwwroot/jp && /usr/bin/php think order:remind      >> runtime/log/cron_order_remind.log 2>&1
 
 
 清空用户数据
@@ -12,3 +22,5 @@ php think schema:clear
 
 执行
 chmod -R 777 public/uploads && chmod -R 777 runtime
+
+缓存驱动：redis / file（Redis 不可用时可临时改回 file）

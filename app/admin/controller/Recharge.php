@@ -27,9 +27,6 @@ class Recharge extends Base
             if ($keyword !== '') {
                 $query->where(function ($q) use ($keyword) {
                     $q->where('u.mobile', 'like', "%{$keyword}%")->whereOr('u.nickname', 'like', "%{$keyword}%");
-                    if (ctype_digit($keyword)) {
-                        $q->whereOr('r.user_id', (int)$keyword);
-                    }
                 });
             }
 
@@ -55,21 +52,24 @@ class Recharge extends Base
         $action = $this->request->post('action', 'pass');
         $reason = trim($this->request->post('reason', ''));
 
-        $recharge = Db::name('recharge')->find($id);
-        if (!$recharge) {
-            return json(['code' => 0, 'msg' => '充值申请不存在']);
-        }
-        if ($recharge['status'] != 0) {
-            return json(['code' => 0, 'msg' => '该申请已处理过']);
-        }
-
-        $user = Db::name('user')->find($recharge['user_id']);
-        if (!$user) {
-            return json(['code' => 0, 'msg' => '会员不存在']);
-        }
-
         Db::startTrans();
         try {
+            // 行锁在事务内：重复点击只有一次到账
+            $recharge = Db::name('recharge')->where('id', $id)->lock(true)->find();
+            if (!$recharge) {
+                Db::rollback();
+                return json(['code' => 0, 'msg' => '充值申请不存在']);
+            }
+            if ($recharge['status'] != 0) {
+                Db::rollback();
+                return json(['code' => 0, 'msg' => '该申请已处理过']);
+            }
+            $user = Db::name('user')->where('id', $recharge['user_id'])->lock(true)->find();
+            if (!$user) {
+                Db::rollback();
+                return json(['code' => 0, 'msg' => '会员不存在']);
+            }
+
             if ($action === 'pass') {
                 // 审核通过：余额到账 + 流水
                 $newBalance = round($user['balance'] + $recharge['amount'], 2);
@@ -85,10 +85,12 @@ class Recharge extends Base
                     'remark'      => '充值到账：' . $recharge['amount'] . '元',
                     'create_time' => time(),
                 ]);
-                Db::name('recharge')->where('id', $id)->update([
+                if (Db::name('recharge')->where('id', $id)->where('status', 0)->update([
                     'status'      => 1,
                     'handle_time' => time(),
-                ]);
+                ]) !== 1) {
+                    throw new \RuntimeException('申请状态已变化');
+                }
                 admin_log('充值到账：会员 ' . $user['mobile'] . ' ' . $recharge['amount'] . '元');
             } else {
                 if (empty($reason)) {

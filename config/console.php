@@ -5,7 +5,7 @@
 return [
     // 指令定义
     'commands' => [
-        // 拍卖结算：php think settle（每分钟由定时任务调用）
+        // 拍卖结算：php think settle（每分钟；只做结算，不串联其它命令）
         'settle' => \app\command\Settle::class,
         // 待付款超时取消：php think order:timeout（每 5 分钟由定时任务调用）
         'order:timeout' => \app\command\OrderTimeout::class,
@@ -17,10 +17,12 @@ return [
         'user:init'     => \app\command\UserInit::class,
         // 采集远端商品并下载图片到本地（手动执行）：php think goods:collect [--start=11] [--end=N] [--limit=N] [--update]
         'goods:collect' => \app\command\GoodsCollect::class,
-        // 指定卖家流拍商品自动上架：php think goods:auto-relist（每分钟；settle 结算后也会自动调用）
+        // 指定卖家流拍商品自动上架：php think goods:auto-relist（每分钟，独立执行）
         'goods:auto-relist' => \app\command\GoodsAutoRelist::class,
-        // 虚拟用户自动出价：php think bid:auto（每分钟；settle 结算后也会自动调用）
+        // 虚拟用户自动出价：php think bid:auto（每分钟，独立执行；只跑后台 / 代理后台手动添加的任务）
         'bid:auto' => \app\command\BidAuto::class,
+        // 平台自营（会员 ID 1）拍品自动出价：php think platform:auto-bid（每分钟，独立执行；只同步并跑平台自营任务）
+        'platform:auto-bid' => \app\command\PlatformAutoBid::class,
         // 清理表结构缓存（数据库加字段后执行）
         'schema:clear'  => \app\command\SchemaClear::class,
     ],

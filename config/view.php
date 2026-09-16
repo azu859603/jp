@@ -22,4 +22,6 @@ return [
     'taglib_begin'  => '{',
     // 标签库标签结束标记
     'taglib_end'    => '}',
+    // 变量输出默认过滤：转义 < > & 双引号 单引号，杜绝 {$var} 放进 HTML 属性或 JS 字符串时被逃逸
+    'default_filter' => 'html_escape',
 ];

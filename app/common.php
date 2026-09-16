@@ -167,14 +167,86 @@ function arraySort($arr, $keys, $type = 'asc')
 function site_settings()
 {
     static $settings = null;
-    if ($settings === null) {
-        $list = \think\facade\Db::name('setting')->select()->toArray();
-        $settings = [];
-        foreach ($list as $row) {
-            $settings[$row['name']] = $row['value'];
+    if ($settings !== null) {
+        return $settings;
+    }
+    // Redis 缓存整张设置表；用「行数 + 键值 CRC 校验和」做版本号（MySQL 端计算，只回传两个数字），
+    // 任何方式改了设置版本都会变化；每次请求不再把含长文本（协议 / 关于我们）的整张表读回 PHP
+    $ver = setting_version();
+    $key = 'site_settings';
+    $cached = \think\facade\Cache::get($key);
+    if (is_array($cached) && ($cached['ver'] ?? '') === $ver && is_array($cached['data'] ?? null)) {
+        return $settings = $cached['data'];
+    }
+    $list = \think\facade\Db::name('setting')->field('name,value')->select()->toArray();
+    $settings = [];
+    foreach ($list as $row) {
+        $settings[$row['name']] = $row['value'];
+    }
+    \think\facade\Cache::set($key, ['ver' => $ver, 'data' => $settings], 600);
+    return $settings;
+}
+
+/**
+ * 设置表版本号：行数 + 全部键值的 CRC 校验和（在 MySQL 端计算，只回传两个数字）
+ * 任何写入路径（后台保存 / 脚本 / 手工改库 / 测试）只要值变了版本就变，缓存不会读到旧值
+ */
+function setting_version()
+{
+    $row = \think\facade\Db::name('setting')
+        ->fieldRaw("COUNT(*) AS c, IFNULL(SUM(CRC32(CONCAT(name, '=', IFNULL(value, '')))), 0) AS h")
+        ->select()->toArray();   // 无 where 条件时 find() 不执行查询，这里用 select 取首行
+    $row = $row[0] ?? [];
+    return (int)($row['c'] ?? 0) . '-' . (string)($row['h'] ?? 0);
+}
+
+/**
+ * 后台保存设置后立即失效缓存（版本号也会变化，这里只是让当前进程与其它 worker 立刻看到新值）
+ */
+function site_settings_refresh()
+{
+    \think\facade\Cache::delete('site_settings');
+}
+
+/**
+ * 启用中的分类（按 sort 升序），Redis 缓存 10 分钟；后台增删改分类时调用 categories_cache_clear()
+ */
+function active_categories()
+{
+    static $list = null;
+    if ($list === null) {
+        $list = \think\facade\Cache::remember('categories_active', function () {
+            return \think\facade\Db::name('category')->where('status', 1)->order('sort', 'asc')->select()->toArray();
+        }, 600);
+    }
+    return $list;
+}
+function active_category($id)
+{
+    foreach (active_categories() as $c) {
+        if ((int)$c['id'] === (int)$id) {
+            return $c;
         }
     }
-    return $settings;
+    return null;
+}
+function categories_cache_clear()
+{
+    \think\facade\Cache::delete('categories_active');
+}
+
+/**
+ * 启用中的轮播图（sort、id 升序），Redis 缓存 10 分钟；后台增删改轮播时调用 banners_cache_clear()
+ */
+function active_banners()
+{
+    return \think\facade\Cache::remember('banners_active', function () {
+        return \think\facade\Db::name('banner')->where('status', 1)->order('sort', 'asc')->order('id', 'asc')->select()->toArray();
+    }, 600);
+}
+function banners_cache_clear()
+{
+    \think\facade\Cache::delete('banners_active');
 }
 
 /**
@@ -395,6 +467,229 @@ function auto_bid_current_price(array $goods)
 }
 
 /**
+ * 把成交款（成交价 − 佣金）打给卖家
+ * 时机：买家确认收货 / 系统自动确认收货 / 后台、代理后台标记完成。
+ * 必须在调用方的事务内调用（订单行已加锁）；按 order.income_paid 条件更新，保证只入账一次。
+ * @param array $order 订单行
+ * @return bool 本次是否入账（未付款 / 已入账过 → false）
+ */
+function pay_seller_income(array $order)
+{
+    if ((int)($order['pay_status'] ?? 0) !== 1 || (int)($order['income_paid'] ?? 0) === 1) {
+        return false;
+    }
+    $now = time();
+    if (Db::name('order')->where('id', (int)$order['id'])->where('pay_status', 1)->where('income_paid', 0)->update([
+        'income_paid' => 1,
+        'update_time' => $now,
+    ]) !== 1) {
+        return false;
+    }
+    $income = round((float)$order['seller_income'], 2);
+    $seller = Db::name('user')->where('id', (int)$order['seller_id'])->lock(true)->find();
+    if (!$seller) {
+        return true;   // 卖家已不存在：标记已处理，避免反复尝试
+    }
+    $balance = round((float)$seller['balance'] + $income, 2);
+    Db::name('user')->where('id', $seller['id'])->update([
+        'balance'     => $balance,
+        'total_sell'  => Db::raw('total_sell+1'),
+        'update_time' => $now,
+    ]);
+    if ($income > 0) {
+        Db::name('balance_log')->insert([
+            'user_id'     => $seller['id'],
+            'type'        => 'income',
+            'amount'      => $income,
+            'balance'     => $balance,
+            'remark'      => '拍卖成交收入：' . $order['order_no'] . '（平台佣金 ¥' . number_format((float)$order['commission'], 2, '.', '') . '）',
+            'create_time' => $now,
+        ]);
+    }
+    Db::name('sys_message')->insert([
+        'user_id'     => $seller['id'],
+        'admin_id'    => 0,
+        'title'       => '成交款到账通知',
+        'content'     => '订单 ' . $order['order_no'] . '（' . $order['goods_title'] . '）买家已确认收货，成交款 ¥' . number_format($income, 2)
+                       . '（成交价 ¥' . number_format((float)$order['price'], 2) . ' − 平台佣金 ¥' . number_format((float)$order['commission'], 2) . '）已存入您的可用余额。',
+        'is_read'     => 0,
+        'create_time' => $now,
+    ]);
+    return true;
+}
+/**
+ * 卖家入驻是否免审核：后台「卖家入驻审核」设为「自动开通」时返回 true
+ * 此时买家在个人中心点「去申请」即可直接成为卖家，无需填写资料
+ * @return bool
+ */
+function seller_auto_open()
+{
+    return (int)get_setting('seller_check', 1) !== 1;
+}
+/**
+ * 平台自营自动出价：会员 ID 1（平台自营账号）发布的所有拍卖中拍品，由脚本按后台参数安排虚拟会员出价
+ * 配置直接读库（不走 site_settings() 的请求内缓存），保证后台刚保存的开关立即生效
+ * @return array ['enabled'=>bool,'seller_id'=>int,'interval'=>int(分钟),'multiple'=>float(起拍价倍数),'stop_hours'=>float]
+ */
+function platform_auto_bid_config()
+{
+    $names = ['platform_auto_bid_enabled', 'platform_auto_bid_interval', 'platform_auto_bid_multiple', 'platform_auto_bid_stop_hours'];
+    $v = Db::name('setting')->whereIn('name', $names)->column('value', 'name');
+    return [
+        'enabled'    => (int)($v['platform_auto_bid_enabled'] ?? 0) === 1,
+        'seller_id'  => 1,
+        'interval'   => max(1, min(1440, (int)($v['platform_auto_bid_interval'] ?? 30))),
+        'multiple'   => max(1, round((float)($v['platform_auto_bid_multiple'] ?? 2), 2)),
+        'stop_hours' => max(0, min(720, round((float)($v['platform_auto_bid_stop_hours'] ?? 1), 2))),
+    ];
+}
+
+/**
+ * 平台自营自动出价是否开启
+ */
+function platform_auto_bid_enabled()
+{
+    return platform_auto_bid_config()['enabled'];
+}
+
+/**
+ * 后台 / 代理后台手动添加自动出价任务时的黑名单卖家：
+ * 平台自营自动出价开启时，会员 ID 1 的拍品由脚本统一出价，不允许再手动挂任务；关闭时不限制
+ * @param int $sellerId
+ * @return bool
+ */
+function auto_bid_blocked_seller($sellerId)
+{
+    return (int)$sellerId === 1 && platform_auto_bid_enabled();
+}
+
+/**
+ * 同步平台自营自动出价任务（php think platform:auto-bid 每轮开头、后台保存开关/参数时调用）
+ *
+ * 开启时：
+ *   1. 会员 1 拍品上所有非脚本创建的任务 → 改由脚本接管（creator_type=platform），以脚本参数为准；
+ *   2. 会员 1 每件拍卖中的拍品若没有任务 → 新建脚本任务；已有脚本任务 → 参数同步为最新设置，
+ *      已结束 / 已停用但拍品仍满足条件的 → 重新运行。
+ * 关闭时：脚本创建的运行中任务全部停用（手动添加的任务不受影响）。
+ *
+ * @return array ['enabled'=>bool,'taken'=>int[],'created'=>int[],'resumed'=>int[],'updated'=>int,'stopped'=>int[]]
+ */
+function platform_auto_bid_sync()
+{
+    $cfg    = platform_auto_bid_config();
+    $now    = time();
+    $result = ['enabled' => $cfg['enabled'], 'taken' => [], 'created' => [], 'resumed' => [], 'updated' => 0, 'stopped' => [], 'errors' => []];
+
+    if (!$cfg['enabled']) {
+        $ids = Db::name('auto_bid')->where('creator_type', 'platform')->where('status', 1)->column('id');
+        if ($ids) {
+            Db::name('auto_bid')->whereIn('id', $ids)->update(['status' => 0, 'stop_reason' => '平台自营自动出价已关闭', 'update_time' => $now]);
+            $result['stopped'] = array_map('intval', $ids);
+        }
+        return $result;
+    }
+
+    // 1. 接管会员 1 拍品上的手动任务
+    $manual = Db::name('auto_bid')->alias('a')->leftJoin('goods g', 'a.goods_id = g.id')
+        ->where('g.seller_id', $cfg['seller_id'])->where('a.creator_type', '<>', 'platform')->column('a.id');
+    if ($manual) {
+        Db::name('auto_bid')->whereIn('id', $manual)->update(['creator_type' => 'platform', 'creator_id' => 0, 'update_time' => $now]);
+        $result['taken'] = array_map('intval', $manual);
+    }
+
+    // 2. 会员 1 拍卖中的拍品：没有任务的新建，有任务的同步参数 / 恢复
+    $goodsList = Db::name('goods')->where('seller_id', $cfg['seller_id'])->where('status', 1)
+        ->where('start_time', '<=', $now)->where('end_time', '>', $now)->select()->toArray();
+    if (!$goodsList) {
+        return $result;
+    }
+    $tasks = Db::name('auto_bid')->whereIn('goods_id', array_column($goodsList, 'id'))->select()->toArray();
+    $tasks = array_column($tasks, null, 'goods_id');
+    foreach ($goodsList as $goods) {
+        // 上限 = 起拍价 × 倍数，封顶到字段能存的最大值（decimal(10,2)）
+        $maxPrice  = min(round((float)$goods['start_price'] * $cfg['multiple'], 2), 99999999.99);
+        $task      = $tasks[(int)$goods['id']] ?? null;
+        // 只有需要新建或恢复时才做完整校验（避免每分钟对几千件运行中的拍品重复查询）
+        $qualifies = function () use ($goods, $cfg, $maxPrice) {
+            return auto_bid_validate($goods, $cfg['interval'], $maxPrice, $cfg['stop_hours']) === '';
+        };
+        try {
+            if (!$task) {
+                if (!$qualifies()) {
+                    continue;
+                }
+                $id = Db::name('auto_bid')->insertGetId([
+                    'goods_id'     => $goods['id'],
+                    'interval_min' => $cfg['interval'],
+                    'max_price'    => $maxPrice,
+                    'stop_hours'   => $cfg['stop_hours'],
+                    'status'       => 1,
+                    'stop_reason'  => '',
+                    'next_time'    => $now + mt_rand(60, max(60, $cfg['interval'] * 60)),
+                    'last_time'    => 0,
+                    'bid_count'    => 0,
+                    'creator_type' => 'platform',
+                    'creator_id'   => 0,
+                    'create_time'  => $now,
+                    'update_time'  => $now,
+                ]);
+                $result['created'][] = (int)$id;
+                continue;
+            }
+            $data = [];
+            if ((int)$task['interval_min'] !== $cfg['interval']) {
+                $data['interval_min'] = $cfg['interval'];
+            }
+            if (abs((float)$task['max_price'] - $maxPrice) >= 0.005) {
+                $data['max_price'] = $maxPrice;
+            }
+            if (abs((float)$task['stop_hours'] - $cfg['stop_hours']) >= 0.005) {
+                $data['stop_hours'] = $cfg['stop_hours'];
+            }
+            if ((int)$task['status'] !== 1 && $qualifies()) {
+                $data['status']      = 1;
+                $data['stop_reason'] = '';
+                $data['next_time']   = $now + mt_rand(60, max(60, $cfg['interval'] * 60));
+                $result['resumed'][] = (int)$task['id'];
+            }
+            if ($data) {
+                $data['update_time'] = $now;
+                Db::name('auto_bid')->where('id', $task['id'])->update($data);
+                $result['updated']++;
+            }
+        } catch (\Throwable $e) {
+            // 单件拍品出错不影响其它拍品
+            $result['errors'][] = '拍品#' . $goods['id'] . ' ' . $e->getMessage();
+        }
+    }
+    return $result;
+}
+
+/**
+ * 同步结果的一句话摘要（后台保存设置、脚本输出用）
+ */
+function platform_auto_bid_sync_summary(array $sync)
+{
+    if (!$sync['enabled']) {
+        return $sync['stopped'] ? '平台自营自动出价已关闭，停止了 ' . count($sync['stopped']) . ' 个脚本任务' : '平台自营自动出价已关闭';
+    }
+    $parts = [];
+    if ($sync['taken']) {
+        $parts[] = '接管手动任务 ' . count($sync['taken']) . ' 个';
+    }
+    if ($sync['created']) {
+        $parts[] = '新建任务 ' . count($sync['created']) . ' 个';
+    }
+    if ($sync['resumed']) {
+        $parts[] = '恢复任务 ' . count($sync['resumed']) . ' 个';
+    }
+    if ($sync['updated']) {
+        $parts[] = '同步参数 ' . $sync['updated'] . ' 个';
+    }
+    return '平台自营自动出价已开启' . ($parts ? '：' . implode('，', $parts) : '');
+}
+
+/**
  * 校验自动出价参数，返回错误文案；通过返回空串
  */
 function auto_bid_validate(array $goods, $intervalMin, $maxPrice, $stopHours)
@@ -437,7 +732,9 @@ function auto_bid_next_time($intervalMin, $from = null)
 }
 
 /**
- * 执行一轮自动出价（由 php think bid:auto 与 php think settle 调用）
+ * 执行一轮自动出价
+ *   php think bid:auto          → scope = 'manual'：只跑后台 / 代理后台手动添加的任务，不做平台同步
+ *   php think platform:auto-bid → scope = 'platform'：先同步平台自营任务，再只跑平台任务
  *
  * 每个运行中的任务：拍品不在拍卖中 → 结束；进入截拍前停止时段 → 结束；当前价已达上限 → 结束；
  * 未到下次出价时间 → 跳过；否则随机挑一个虚拟会员（排除卖家与当前最高价者）按一个加价幅度出价，
@@ -445,11 +742,24 @@ function auto_bid_next_time($intervalMin, $from = null)
  *
  * @return array ['tasks' => 检查的任务数, 'bids' => [出价记录ID...], 'logs' => [日志行...]]
  */
-function auto_bid_run($limit = 200)
+function auto_bid_run($limit = 200, $scope = 'all')
 {
     $now    = time();
     $result = ['tasks' => 0, 'bids' => [], 'logs' => []];
-    $tasks  = Db::name('auto_bid')->where('status', 1)->order('next_time', 'asc')->limit((int)$limit)->select()->toArray();
+    $query  = Db::name('auto_bid')->where('status', 1);
+    if ($scope === 'platform') {
+        // 平台自营：先同步任务（开关/参数/接管/新拍品），再只跑脚本自己的任务
+        $sync   = platform_auto_bid_sync();
+        $result['sync'] = $sync;
+        if ($sync['taken'] || $sync['created'] || $sync['resumed'] || $sync['stopped']) {
+            $result['logs'][] = platform_auto_bid_sync_summary($sync);
+        }
+        $query->where('creator_type', 'platform');
+    } elseif ($scope === 'manual') {
+        // 后台 / 代理后台手动添加的任务，不碰平台任务
+        $query->where('creator_type', '<>', 'platform');
+    }
+    $tasks  = $query->order('next_time', 'asc')->limit((int)$limit)->select()->toArray();
     $result['tasks'] = count($tasks);
     if (!$tasks) {
         return $result;
@@ -497,6 +807,10 @@ function auto_bid_run($limit = 200)
             continue;
         }
         $userId = (int)$candidates[array_rand($candidates)];
+        // 抢占任务：条件更新 next_time，两个进程同时跑时只有一个能拿到
+        if (Db::name('auto_bid')->where('id', $task['id'])->where('status', 1)->where('next_time', '<=', $now)->update(['next_time' => $now + 60]) !== 1) {
+            continue;
+        }
 
         Db::startTrans();
         try {
@@ -577,4 +891,44 @@ function generate_virtual_mobile()
         }
     }
     throw new \RuntimeException('生成虚拟会员账号失败，请重试');
+}
+
+/**
+ * 模板变量默认输出过滤（config/view.php default_filter）：转义 < > & " '
+ */
+function html_escape($value)
+{
+    if (is_array($value) || is_object($value)) {
+        return $value;
+    }
+    return htmlspecialchars((string)$value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+}
+
+/**
+ * 命令级文件锁：同名命令上一轮未结束时本轮直接跳过（返回 null 表示未拿到锁）
+ */
+function command_lock($name)
+{
+    $file = app()->getRuntimePath() . $name . '.lock';
+    $fp = @fopen($file, 'c');
+    if (!$fp) {
+        return false;
+    }
+    if (!flock($fp, LOCK_EX | LOCK_NB)) {
+        fclose($fp);
+        return null;
+    }
+    return $fp;
+}
+
+/**
+ * 手机号脱敏：保留前 3 位和后 4 位，中间用 **** 代替（不足 7 位的原样返回）
+ */
+function mask_mobile($mobile)
+{
+    $mobile = (string)$mobile;
+    if (strlen($mobile) < 7) {
+        return $mobile;
+    }
+    return substr($mobile, 0, 3) . '****' . substr($mobile, -4);
 }

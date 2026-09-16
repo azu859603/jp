@@ -5,7 +5,7 @@
 
 {block name="content"}
 <div class="search-bar">
-    <input type="text" class="form-control" id="keyword" placeholder="订单号/商品/买家手机号">
+    <input type="text" class="form-control" id="keyword" placeholder="订单号 / 商品名称 / 卖家手机号 / 买家手机号">
     <select class="form-control" id="pay_status">
         <option value="">全部支付状态</option>
         <option value="0">未支付</option>
@@ -64,9 +64,9 @@ function loadList(page){
                     html += '<tr>'
                         + '<td>' + o.id + '</td>'
                         + '<td>' + o.order_no + '</td>'
-                        + '<td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + o.goods_title + '">' + o.goods_title + '</td>'
-                        + '<td>' + (o.buyer_name || o.buyer_mobile || o.buyer_id) + '</td>'
-                        + '<td>' + (o.seller_name || o.seller_mobile || o.seller_id) + '</td>'
+                        + '<td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + esc(o.goods_title) + '">' + esc(o.goods_title) + '</td>'
+                        + '<td>' + esc(o.buyer_mobile || o.buyer_name || o.buyer_id) + '</td>'
+                        + '<td>' + esc(o.seller_mobile || o.seller_name || o.seller_id) + '</td>'
                         + '<td class="price">￥' + o.price + '</td>'
                         + '<td>￥' + o.commission + '</td>'
                         + '<td>' + payHtml + '</td>'

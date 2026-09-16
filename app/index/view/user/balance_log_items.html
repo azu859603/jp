@@ -1,0 +1,13 @@
+{foreach $logs as $l}
+<div class="log-item" data-type="{$l.type}">
+    <div class="l-ico">💰</div>
+    <div class="l-info">
+        <div class="l-name">{$l.remark}</div>
+        <div class="l-time">{$l.create_time|date='Y-m-d H:i'}</div>
+    </div>
+    <div style="text-align:right;">
+        <div class="l-amount {if $l.amount>0}in{else}out{/if}">{if $l.amount>0}+{/if}{$l.amount|number_format=2}</div>
+        <div class="l-balance">{:lang('余额')} {$l.balance|number_format=2}</div>
+    </div>
+</div>
+{/foreach}

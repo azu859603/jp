@@ -93,6 +93,14 @@ class Client {
     }
 }
 
+/* ---------- 清理本机 IP 的登录失败计数与注册频率计数（前面几轮测试会把它们打满） ---------- */
+(function () {
+    require_once ROOT . '/vendor/autoload.php';
+    $app = new think\App(); $app->initialize();
+    foreach (['127.0.0.1', '::1'] as $ip) {
+        foreach (['admin_login_fail_', 'agent_login_fail_', 'user_login_fail_', 'reg_ip_'] as $p) { think\facade\Cache::delete($p . md5($ip)); }
+    }
+})();
 /* ---------- 测试图片 ---------- */
 $img = "$TMP/test.png";
 $im = imagecreatetruecolor(400, 300); imagefill($im, 0, 0, imagecolorallocate($im, 220, 60, 60)); imagepng($im, $img); imagedestroy($im);
@@ -176,7 +184,7 @@ $virtMobile = '198' . str_pad($T, 8, '0', STR_PAD_LEFT);
 $r = $A->post('/admin1314/member/add', ['mobile' => $virtMobile, 'nickname' => 'QA虚拟', 'password' => $PWD, 'balance' => 100000, 'is_virtual' => 1]);
 ok('添加虚拟会员', ($r['code'] ?? 0) == 1, j($r));
 $virt = row('select * from user where mobile=?', [$virtMobile]); $CREATED_USERS[] = (int)$virt['id'];
-ok('虚拟会员余额 100000 且不写流水', $virt['balance'] == 100000 && val('select count(*) from balance_log where user_id=?', [$virt['id']]) == 0, j($virt));
+ok('虚拟会员余额 100000 且写入赠送流水', $virt['balance'] == 100000 && val('select count(*) from balance_log where user_id=? and remark=?', [$virt['id'], '后台添加会员赠送余额']) == 1, j($virt));
 
 /* ============================================================
  * 3. 前台注册 / 登录
@@ -331,6 +339,9 @@ $r = $B->post('/goods/bid', ['goods_id' => $gid, 'price' => 115]); ok('非加价
 $r = $B->post('/goods/bid', ['goods_id' => $gid, 'price' => 110]); ok('买家首次出价 110', ($r['code'] ?? 0) == 1, j($r));
 $u = row('select balance,freeze_balance from user where id=?', [$buyer['id']]);
 ok('首次出价冻结保证金 50', $u['balance'] == 950 && $u['freeze_balance'] == 50, j($u));
+$r = $B2->post('/goods/bid', ['goods_id' => $gid, 'price' => 120]); ok('未实名的买家2不能出价', ($r['code'] ?? 1) == -3, j($r));
+$B2->post('/user/auth', ['real_name' => '买家丙', 'id_card' => '110101199001011235', 'id_card_front' => $imgUrl, 'id_card_back' => $imgUrl]);
+$r = $A->post('/admin1314/member/authAudit', ['id' => $buyer2['id'], 'action' => 'pass']); ok('后台通过买家2实名', ($r['code'] ?? 0) == 1, j($r));
 $r = $B2->post('/goods/bid', ['goods_id' => $gid, 'price' => 110]); ok('等于当前价被拒绝', ($r['code'] ?? 1) != 1, j($r));
 $r = $B2->post('/goods/bid', ['goods_id' => $gid, 'price' => 120]); ok('买家2 出价 120', ($r['code'] ?? 0) == 1, j($r));
 ok('买家收到出局站内信', val('select count(*) from sys_message where user_id=? and title like ?', [$buyer['id'], '%出局%']) > 0, '');
@@ -411,7 +422,7 @@ if ($order) {
     $r = $B->post('/order/pay?id=' . $oid, ['address_id' => $addrId]); ok('买家付款', ($r['code'] ?? 0) == 1, j($r));
     $u = row('select balance,freeze_balance from user where id=?', [$buyer['id']]);
     ok('付款后余额 1000-170=830，冻结清零', $u['balance'] == 830 && $u['freeze_balance'] == 0, j($u));
-    ok('卖家入账 153', val('select balance from user where id=?', [$seller['id']]) == 153, 'balance=' . val('select balance from user where id=?', [$seller['id']]));
+    ok('付款后卖家尚未入账（确认收货后才到账）', val('select balance from user where id=?', [$seller['id']]) == 0 && val('select income_paid from `order` where id=?', [$oid]) == 0, 'balance=' . val('select balance from user where id=?', [$seller['id']]));
     $o = row('select * from `order` where id=?', [$oid]); ok('订单状态待发货', $o['order_status'] == 1 && $o['pay_status'] == 1, j(['os' => $o['order_status'], 'ps' => $o['pay_status']]));
     $r = $B->post('/order/pay?id=' . $oid, ['address_id' => $addrId]); ok('重复付款被拒绝', ($r['code'] ?? 1) != 1, j($r));
     $r = $B->post('/order/confirm', ['id' => $oid]); ok('未发货不能确认收货', ($r['code'] ?? 1) != 1, j($r));
@@ -423,6 +434,8 @@ if ($order) {
     $b = $B->get('/order/list?order_status=2'); ok('买家待收货列表显示快递单号', strpos($b, 'SF' . $T) !== false, '');
     $r = $B->post('/order/confirm', ['id' => $oid]); ok('买家确认收货', ($r['code'] ?? 0) == 1, j($r));
     ok('订单完成', val('select order_status from `order` where id=?', [$oid]) == 3, '');
+    ok('确认收货后卖家入账 153', val('select balance from user where id=?', [$seller['id']]) == 153 && val('select income_paid from `order` where id=?', [$oid]) == 1, 'balance=' . val('select balance from user where id=?', [$seller['id']]));
+    ok('入账流水与到账通知已写', val('select count(*) from balance_log where user_id=? and type=? and remark like ?', [$seller['id'], 'income', '拍卖成交收入：%']) == 1 && val('select count(*) from sys_message where user_id=? and title=?', [$seller['id'], '成交款到账通知']) == 1, '');
     $r = $B->post('/order/afterSaleApply', ['id' => $oid, 'reason' => '短']); ok('售后理由太短被拒绝', ($r['code'] ?? 1) != 1, j($r));
     $r = $B->post('/order/afterSaleApply', ['id' => $oid, 'reason' => '收到的商品与描述不符']); ok('申请售后', ($r['code'] ?? 0) == 1, j($r));
     $as = row('select * from after_sale where order_id=?', [$oid]);
@@ -521,7 +534,7 @@ $r = $A->post('/admin1314/recharge/audit', ['id' => $rc2['id'], 'action' => 'rej
 $b = $B->get('/user/recharge_log'); ok('充值记录显示拒绝理由', strpos($b, '未收到款') !== false, '');
 $r = $B->post('/user/withdraw', ['amount' => 200, 'pay_type' => 'bank']); ok('未绑定账户不能提现', ($r['code'] ?? 1) != 1, j($r));
 $r = $B->post('/user/pay_account', ['type' => 1, 'real_name' => '买家甲', 'account' => 'qa@example.com']); ok('支付宝不传收款码被拒绝', ($r['code'] ?? 1) != 1, j($r));
-$r = $B->post('/user/pay_account', ['type' => 3, 'real_name' => '买家甲', 'account' => '6222000011112222', 'bank_name' => '工商银行']); ok('绑定银行卡', ($r['code'] ?? 0) == 1, j($r));
+$r = $B->post('/user/pay_account', ['type' => 3, 'real_name' => '买家甲', 'account' => '6222000011112222', 'bank_name' => '工商银行', 'bank_branch' => '北京分行']); ok('绑定银行卡', ($r['code'] ?? 0) == 1, j($r));
 $r = $B->post('/user/withdraw', ['amount' => 50, 'pay_type' => 'bank']); ok('低于最低金额被拒绝', ($r['code'] ?? 1) != 1, j($r));
 $r = $B->post('/user/withdraw', ['amount' => 6000, 'pay_type' => 'bank']); ok('高于最高金额被拒绝', ($r['code'] ?? 1) != 1, j($r));
 $bal = (float)val('select balance from user where id=?', [$buyer['id']]);
@@ -543,8 +556,8 @@ $b = $B->get('/user/wallet'); ok('钱包页 200', $B->lastCode == 200, 'HTTP ' .
 $b = $B->get('/user/wallet?page=2', true); ok('钱包明细分页接口', $B->lastCode == 200 && strpos($b, '"code":1') !== false, 'HTTP ' . $B->lastCode);
 $b = $B->get('/user/withdraw_log'); ok('提现记录显示拒绝理由', strpos($b, '账户有误') !== false, '');
 $V = new Client('virt'); login_front($V, $virtMobile, $PWD);
-$r = $V->post('/user/recharge', ['amount' => 100]); ok('虚拟会员不能充值', ($r['code'] ?? 1) != 1, j($r));
-$r = $V->post('/user/withdraw', ['amount' => 100, 'pay_type' => 'bank']); ok('虚拟会员不能提现', ($r['code'] ?? 1) != 1, j($r));
+$r = $V->post('/user/recharge', ['amount' => 100]); ok('虚拟会员可以充值（与普通会员一致）', ($r['code'] ?? 0) == 1, j($r));
+$r = $V->post('/user/withdraw', ['amount' => 100, 'pay_type' => 'bank']); ok('虚拟会员未绑定账户不能提现', ($r['code'] ?? 1) != 1, j($r));
 
 /* ============================================================
  * 12. 后台其他管理功能
