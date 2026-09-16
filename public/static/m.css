@@ -240,12 +240,12 @@ ul,ol{list-style:none;}
 .bid-row .out-tag{display:inline-block;background:#ededed;color:#999;font-size:10px;padding:1px 6px;border-radius:3px;font-weight:400;flex-shrink:0;}
 .bid-row .fail-tag{display:inline-block;background:#f3f3f3;color:#888;font-size:10px;padding:1px 6px;border-radius:3px;font-weight:400;flex-shrink:0;}
 /* 我的出价记录：标题行 + 备注行 */
-.bid-list .bid-row{display:block;padding:12px 14px;border-bottom:1px solid #f7f7f7;}
-.bid-list .bid-row .b-main{display:flex;align-items:center;gap:6px;}
-.bid-list .bid-row .b-user{flex:1;min-width:0;color:#333;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.bid-list .bid-row .b-price{color:#E4393C;font-weight:600;flex-shrink:0;}
-.bid-list .bid-row .b-time{font-size:11px;color:#bbb;flex-shrink:0;}
-.bid-list .bid-row .b-note{margin-top:5px;font-size:12px;color:#E4393C;line-height:1.5;}
+.my-bids .bid-row{display:block;padding:12px 14px;border-bottom:1px solid #f7f7f7;}
+.my-bids .bid-row .b-main{display:flex;align-items:center;gap:6px;}
+.my-bids .bid-row .b-user{flex:1;min-width:0;color:#333;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.my-bids .bid-row .b-price{color:#E4393C;font-weight:600;flex-shrink:0;}
+.my-bids .bid-row .b-time{font-size:11px;color:#bbb;flex-shrink:0;}
+.my-bids .bid-row .b-note{margin-top:5px;font-size:12px;color:#E4393C;line-height:1.5;}
 .bid-row .my-tag{display:inline-block;background:#ff9f1a;color:#fff;font-size:10px;padding:1px 6px;border-radius:3px;font-weight:400;flex-shrink:0;}
 .bid-row.mine .u-name{color:#E4393C;}
 .bid-hide{display:none;}

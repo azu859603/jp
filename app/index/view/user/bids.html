@@ -1,6 +1,6 @@
 {extend name="layout" /}
 {block name="content"}
-<div class="bid-list">
+<div class="bid-list my-bids">
     <div class="b-head">{:lang('我的出价记录')}</div>
     {foreach $list as $b}
     <a class="bid-row{if $b.below_reserve} has-note{/if}" href="/goods/detail?id={$b.goods_id}">

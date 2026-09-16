@@ -13,7 +13,7 @@ location ^~ /uploads/ {
     }
 }
 
-# 测试脚本目录：网站根目录是 public/，正常情况下访问不到；这里兜底，即便根目录配错也不允许通过 URL 执行
+
 location ^~ /tests/ {
     deny all;
 }
