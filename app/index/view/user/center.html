@@ -33,7 +33,8 @@
         <div class="as-top">
             <a class="as-bal" href="/user/wallet">
                 <i>{:lang('可用余额')}</i>
-                <b><small>¥</small>{$user.balance|number_format=2}</b>
+                {php}$__bl = strlen(number_format((float)$user['balance'], 2)); $__bc = $__bl > 18 ? 'n5' : ($__bl > 15 ? 'n4' : ($__bl > 12 ? 'n3' : ($__bl > 9 ? 'n2' : '')));{/php}
+                <b class="{$__bc}"><small>¥</small>{$user.balance|number_format=2}</b>
             </a>
             <div class="as-btns">
                 <a class="as-btn primary" href="/user/recharge">{:lang('充值')}</a>

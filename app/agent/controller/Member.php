@@ -333,6 +333,9 @@ class Member extends Base
         if (strlen($password) < 6) {
             return json(['code' => 0, 'msg' => '密码至少 6 位']);
         }
+        if (money_over_max($balance)) {
+            return json(['code' => 0, 'msg' => '赠送余额超过系统上限（最大 ' . money_max_text() . '）']);
+        }
         if ($balance < 0) {
             return json(['code' => 0, 'msg' => '初始余额不能为负数']);
         }
@@ -427,8 +430,14 @@ class Member extends Base
         if ($amount == 0) {
             return json(['code' => 0, 'msg' => '调整金额不能为0']);
         }
+        if ($amount > ADJUST_MAX) {
+            return json(['code' => 0, 'msg' => '单次添加余额最多 ' . number_format(ADJUST_MAX) . '']);
+        }
         if ($amount < 0 && ($member['balance'] + $amount) < 0) {
             return json(['code' => 0, 'msg' => '扣减金额超过会员余额']);
+        }
+        if (money_over_max($member['balance'] + $amount)) {
+            return json(['code' => 0, 'msg' => '调整后余额超过系统上限（最大 ' . money_max_text() . '）']);
         }
         $remark = '代理调整' . ($remark !== '' ? '：' . mb_substr($remark, 0, 50) : '');
 
@@ -562,6 +571,9 @@ class Member extends Base
         }
         if (strlen($password) < 6) {
             return json(['code' => 0, 'msg' => '密码至少 6 位']);
+        }
+        if (money_over_max($balance)) {
+            return json(['code' => 0, 'msg' => '赠送余额超过系统上限（最大 ' . money_max_text() . '）']);
         }
         if ($balance < 0) {
             return json(['code' => 0, 'msg' => '初始余额不能为负数']);

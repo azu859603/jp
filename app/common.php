@@ -607,7 +607,7 @@ function platform_auto_bid_sync()
     $tasks = array_column($tasks, null, 'goods_id');
     foreach ($goodsList as $goods) {
         // 上限 = 起拍价 × 倍数，封顶到字段能存的最大值（decimal(10,2)）
-        $maxPrice  = min(round((float)$goods['start_price'] * $cfg['multiple'], 2), 99999999.99);
+        $maxPrice  = min(round((float)$goods['start_price'] * $cfg['multiple'], 2), MONEY_MAX);
         $task      = $tasks[(int)$goods['id']] ?? null;
         // 只有需要新建或恢复时才做完整校验（避免每分钟对几千件运行中的拍品重复查询）
         $qualifies = function () use ($goods, $cfg, $maxPrice) {
@@ -931,4 +931,19 @@ function mask_mobile($mobile)
         return $mobile;
     }
     return substr($mobile, 0, 3) . '****' . substr($mobile, -4);
+}
+
+/**
+ * 金额类字段（DECIMAL(10,2)）能存的最大值；写入前用 money_over_max() 校验，避免数据库抛 Out of range
+ * 后台 / 代理后台「余额调整」单次最多添加 ADJUST_MAX
+ */
+const MONEY_MAX = 99999999.99;
+const ADJUST_MAX = 10000000;
+function money_over_max($v)
+{
+    return (float)$v > MONEY_MAX;
+}
+function money_max_text()
+{
+    return number_format(MONEY_MAX, 2);
 }

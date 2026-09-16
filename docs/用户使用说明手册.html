@@ -33,6 +33,9 @@ pre { font-family: Consolas, "Courier New", monospace; background: #F3F4F6; bord
 .toc li { padding: 3px 0; border-bottom: 1px dashed #eee; }
 .toc li span { color: #B4201E; font-weight: 600; margin-right: 8px; }
 .toc li.sub { padding-left: 24px; font-size: 10.5pt; border: 0; }
+.toc a { color: #222; text-decoration: none; display: block; }
+.toc li.sub a { color: #444; }
+.toc a:hover { color: #E4393C; }
 .kv td:first-child { width: 28%; background: #FAFAFA; font-weight: 600; }
 .small { font-size: 10pt; color: #666; }
 </style>
@@ -42,30 +45,45 @@ pre { font-family: Consolas, "Courier New", monospace; background: #F3F4F6; bord
 <div class="cover">
     <img src="cover.png" alt="">
     <h1>竞拍平台 用户使用说明手册</h1>
-    <div class="sub">前台（买家 / 卖家） · 主后台 · 代理后台 · 定时脚本</div>
-    <div class="meta">版本 2.0 &nbsp;·&nbsp; 2026 年 9 月 17 日</div>
+    <div class="sub">前台（买家 / 卖家） · 主后台 · 代理后台</div>
+    <div class="meta">版本 2.1 &nbsp;·&nbsp; 2026 年 9 月 17 日</div>
 </div>
 
 <div class="toc">
     <h1>目录</h1>
+    <p class="small">点击条目可直接跳转到对应章节。</p>
     <ol>
-        <li><span>第一部分</span>前台使用说明（买家 / 卖家）</li>
-        <li class="sub">1.1 注册与登录 &nbsp; 1.2 首页与浏览拍品 &nbsp; 1.3 实名认证 &nbsp; 1.4 钱包、充值与提现</li>
-        <li class="sub">1.5 出价与竞拍规则 &nbsp; 1.6 买家订单 &nbsp; 1.7 卖家功能 &nbsp; 1.8 消息与客服 &nbsp; 1.9 个人中心其它功能</li>
-        <li><span>第二部分</span>主后台使用说明</li>
-        <li class="sub">2.1 登录与安全 &nbsp; 2.2 数据中心与数据报表 &nbsp; 2.3 会员管理 &nbsp; 2.4 商品管理 &nbsp; 2.5 竞拍管理</li>
-        <li class="sub">2.6 订单管理 &nbsp; 2.7 财务管理 &nbsp; 2.8 系统设置</li>
-        <li><span>第三部分</span>代理后台使用说明</li>
-        <li><span>第四部分</span>定时脚本与部署</li>
-        <li><span>附录</span>状态说明 · 常见问题</li>
+        <li><a href="#p1"><span>第一部分</span>前台使用说明（买家 / 卖家）</a></li>
+        <li class="sub"><a href="#p1-1">1.1 注册与登录</a></li>
+        <li class="sub"><a href="#p1-2">1.2 首页与浏览拍品</a></li>
+        <li class="sub"><a href="#p1-3">1.3 实名认证</a></li>
+        <li class="sub"><a href="#p1-4">1.4 钱包、充值与提现</a></li>
+        <li class="sub"><a href="#p1-5">1.5 出价与竞拍规则</a></li>
+        <li class="sub"><a href="#p1-6">1.6 买家订单</a></li>
+        <li class="sub"><a href="#p1-7">1.7 卖家功能</a></li>
+        <li class="sub"><a href="#p1-8">1.8 消息与客服</a></li>
+        <li class="sub"><a href="#p1-9">1.9 个人中心其它功能</a></li>
+        <li><a href="#p2"><span>第二部分</span>主后台使用说明</a></li>
+        <li class="sub"><a href="#p2-1">2.1 登录与安全</a></li>
+        <li class="sub"><a href="#p2-2">2.2 数据中心与数据报表</a></li>
+        <li class="sub"><a href="#p2-3">2.3 会员管理</a></li>
+        <li class="sub"><a href="#p2-4">2.4 商品管理</a></li>
+        <li class="sub"><a href="#p2-5">2.5 竞拍管理</a></li>
+        <li class="sub"><a href="#p2-6">2.6 订单管理</a></li>
+        <li class="sub"><a href="#p2-7">2.7 财务管理</a></li>
+        <li class="sub"><a href="#p2-8">2.8 系统设置</a></li>
+        <li><a href="#p3"><span>第三部分</span>代理后台使用说明</a></li>
+        <li><a href="#p4"><span>附录</span>状态说明 · 常见问题</a></li>
+        <li class="sub"><a href="#p4-a">A. 状态说明</a></li>
+        <li class="sub"><a href="#p4-b">B. 常见问题</a></li>
     </ol>
 </div>
 
 <!-- ======================================================================= -->
-<h1>第一部分 前台使用说明（买家 / 卖家）</h1>
+<h1 id="p1">第一部分 前台使用说明（买家 / 卖家）</h1>
 <p>前台为手机端页面，电脑浏览器访问时会自动居中显示为手机宽度。底部导航固定为「首页 / 分类 / 发布 / 我的」，中间红色「+」为卖家发布拍品入口。全站支持简体中文、繁體中文、English 三种语言，可在登录页右上角或个人中心的「语言」按钮切换。</p>
 
-<h2>1.1 注册与登录</h2>
+<h2 id="p1-1">1.1 注册与登录</h2>
 <h3>注册</h3>
 <ul>
     <li>入口：登录页底部「立即注册」。</li>
@@ -82,7 +100,7 @@ pre { font-family: Consolas, "Courier New", monospace; background: #F3F4F6; bord
     <li>忘记密码请联系客服，由平台在后台重置。</li>
 </ul>
 
-<h2>1.2 首页与浏览拍品</h2>
+<h2 id="p1-2">1.2 首页与浏览拍品</h2>
 <table>
     <tr><th style="width:22%">区域</th><th>说明</th></tr>
     <tr><td>轮播图</td><td>后台「轮播管理」配置，可跳转到指定链接。</td></tr>
@@ -101,7 +119,7 @@ pre { font-family: Consolas, "Courier New", monospace; background: #F3F4F6; bord
     <li>保留价只有卖家本人在详情页能看到，买家不可见。</li>
 </ul>
 
-<h2>1.3 实名认证</h2>
+<h2 id="p1-3">1.3 实名认证</h2>
 <ul>
     <li>入口：个人中心 → 我的服务 → 实名认证；头部未实名时显示黄色「未实名 ›」标签，点击可直接进入。</li>
     <li>填写真实姓名、18 位身份证号，上传身份证正反面照片后提交，状态变为「审核中」。</li>
@@ -109,7 +127,7 @@ pre { font-family: Consolas, "Courier New", monospace; background: #F3F4F6; bord
     <li><b>出价、申请成为卖家、提现之前都必须完成实名认证</b>（后台创建的虚拟会员除外）。</li>
 </ul>
 
-<h2>1.4 钱包、充值与提现</h2>
+<h2 id="p1-4">1.4 钱包、充值与提现</h2>
 <h3>我的钱包</h3>
 <ul>
     <li>顶部卡片显示总资产、可用余额、冻结保证金、总收入 / 总支出，下方是「申请提现」「充值」按钮。</li>
@@ -130,7 +148,7 @@ pre { font-family: Consolas, "Courier New", monospace; background: #F3F4F6; bord
     <li>「提现记录」查看历次申请及状态。</li>
 </ul>
 
-<h2>1.5 出价与竞拍规则</h2>
+<h2 id="p1-5">1.5 出价与竞拍规则</h2>
 <table>
     <tr><th style="width:22%">规则</th><th>说明</th></tr>
     <tr><td>出价条件</td><td>已登录且已实名；拍品处于拍卖中且在开拍时间之后、截拍时间之前；不能给自己发布的拍品出价。</td></tr>
@@ -145,7 +163,7 @@ pre { font-family: Consolas, "Courier New", monospace; background: #F3F4F6; bord
 <h3>我的出价记录</h3>
 <p>入口：个人中心 → 我的服务 → 出价记录。每条显示拍品、我的出价、状态标签（领先 / 出局 / 流拍）和时间；拍品因未达保留价流拍时，该条下方会有红字「尚未达到卖家预期价格」。点击可进入拍品详情。</p>
 
-<h2>1.6 买家订单</h2>
+<h2 id="p1-6">1.6 买家订单</h2>
 <p>入口：个人中心「买家订单」区块（待付款 / 待发货 / 待收货 / 已完成，带数字角标）或「查看全部」。</p>
 <table>
     <tr><th style="width:18%">状态</th><th>说明与可做的操作</th></tr>
@@ -157,7 +175,7 @@ pre { font-family: Consolas, "Courier New", monospace; background: #F3F4F6; bord
     <tr><td>已取消</td><td>买家取消或超时未付款。保证金按后台「未付款订单的保证金处理」设置处理：没收归平台 / 赔付给卖家 / 退还给买家，并发送站内信说明。</td></tr>
 </table>
 
-<h2>1.7 卖家功能</h2>
+<h2 id="p1-7">1.7 卖家功能</h2>
 <h3>申请成为卖家</h3>
 <ul>
     <li>入口：个人中心「申请成为卖家」卡片。必须先完成实名认证。</li>
@@ -184,7 +202,7 @@ pre { font-family: Consolas, "Courier New", monospace; background: #F3F4F6; bord
     <li>「店铺首页」展示店铺信息、星级、信誉分与在拍拍品，买家可关注。</li>
 </ul>
 
-<h2>1.8 消息与客服</h2>
+<h2 id="p1-8">1.8 消息与客服</h2>
 <table>
     <tr><th style="width:20%">功能</th><th>说明</th></tr>
     <tr><td>站内信</td><td>系统通知：竞拍出局、拍品下架、成交款到账、订单取消、买家未付款、自动确认收货、发货提醒，以及平台人工发送的消息。列表按时间倒序，未读加粗，点击查看详情。内容随界面语言自动翻译。</td></tr>
@@ -193,7 +211,7 @@ pre { font-family: Consolas, "Courier New", monospace; background: #F3F4F6; bord
 </table>
 <p>个人中心「我的服务」中的站内信 / 消息 / 联系客服图标有未读时显示红色角标并抖动提醒，每 60 秒自动刷新。</p>
 
-<h2>1.9 个人中心其它功能</h2>
+<h2 id="p1-9">1.9 个人中心其它功能</h2>
 <table class="kv">
     <tr><td>头部</td><td>头像、昵称（点击可修改资料）、脱敏账号、身份标签（已实名 / 未实名、卖家、代理）、语言切换。</td></tr>
     <tr><td>资产卡</td><td>可用余额、充值 / 提现按钮，以及关注拍品、关注店铺、我的足迹三个入口。</td></tr>
@@ -207,23 +225,23 @@ pre { font-family: Consolas, "Courier New", monospace; background: #F3F4F6; bord
 </table>
 
 <!-- ======================================================================= -->
-<h1>第二部分 主后台使用说明</h1>
+<h1 id="p2">第二部分 主后台使用说明</h1>
 <p>地址：<code>https://你的域名/admin1314/</code>。菜单：数据中心、数据报表、会员管理、商品管理、竞拍管理、订单管理、财务管理、系统设置。所有列表页支持关键词搜索、状态筛选和每页条数选择（15 / 30 / 50 / 100）。</p>
 
-<h2>2.1 登录与安全</h2>
+<h2 id="p2-1">2.1 登录与安全</h2>
 <ul>
     <li>用户名 + 密码 + 4 位数字验证码；同一 IP 连续输错 5 次锁定 10 分钟。</li>
     <li>「后台登录谷歌验证码」开启后，登录还需输入 Google Authenticator 等验证器的 6 位动态码。未绑定的管理员首次登录会被引导到「谷歌验证」页扫码绑定；超级管理员可在「管理员管理」中重置他人绑定。</li>
     <li>所有改动状态的操作都会写入「操作日志」，记录管理员、动作、IP 和时间。</li>
 </ul>
 
-<h2>2.2 数据中心与数据报表</h2>
+<h2 id="p2-2">2.2 数据中心与数据报表</h2>
 <ul>
     <li><b>系统概览</b>：会员、卖家、拍品、订单、待审核事项、资金等实时统计与快捷入口。</li>
     <li><b>交易报表</b>：选择日期范围与维度（日 / 周 / 月）查看成交单数、成交额、佣金、买家数趋势，以及新增拍品、成交、注册等汇总。</li>
 </ul>
 
-<h2>2.3 会员管理</h2>
+<h2 id="p2-3">2.3 会员管理</h2>
 <h3>会员列表</h3>
 <ul>
     <li>搜索：手机号 / 昵称 / ID；筛选：卖家、代理、虚拟会员、状态。列表显示余额、冻结、上级、身份等。</li>
@@ -240,7 +258,7 @@ pre { font-family: Consolas, "Courier New", monospace; background: #F3F4F6; bord
     <li><b>在线客服</b>：左侧为会话列表（会员或游客，未读优先），右侧聊天窗口回复文字 / 图片；菜单上显示未读数角标。</li>
 </ul>
 
-<h2>2.4 商品管理</h2>
+<h2 id="p2-4">2.4 商品管理</h2>
 <h3>商品列表</h3>
 <ul>
     <li>搜索拍品标题 / 卖家手机号；按状态、分类筛选；列表显示卖家手机号、当前价、出价数、截拍时间等。</li>
@@ -254,7 +272,7 @@ pre { font-family: Consolas, "Courier New", monospace; background: #F3F4F6; bord
     <li><b>分类管理</b>：新增 / 编辑 / 删除分类，上传分类图标，设置排序与启用状态；改动后前台立即生效。</li>
 </ul>
 
-<h2>2.5 竞拍管理</h2>
+<h2 id="p2-5">2.5 竞拍管理</h2>
 <h3>出价记录</h3>
 <ul>
     <li>搜索拍品标题 / 买家手机号 / 昵称，列表显示出价人手机号、出价、保证金、状态。</li>
@@ -265,11 +283,11 @@ pre { font-family: Consolas, "Courier New", monospace; background: #F3F4F6; bord
 <ul>
     <li>为指定拍品设置由虚拟会员自动出价的计划：出价间隔（分钟，实际在 70%～130% 间随机）、最高出价金额、截拍前停止小时数。</li>
     <li>列表按拍品标题 / 卖家手机号搜索，显示卖家手机号、拍品状态、已出价次数、下次出价时间；可暂停、恢复、删除。</li>
-    <li>后台「平台自营自动出价」开关<b>开启</b>时，会员 ID 1（平台自营账号）的拍品不能在这里手动添加计划，由脚本统一接管（见 2.8）。</li>
-    <li>计划由定时脚本 <code>php think bid:auto</code> 执行；虚拟会员出价不冻结保证金，出价被真实买家超过时正常发出局通知。</li>
+    <li>后台「平台自营自动出价」开关<b>开启</b>时，会员 ID 1（平台自营账号）的拍品不能在这里手动添加计划，由系统统一接管（见 2.8）。</li>
+    <li>计划由系统按设定间隔自动执行；虚拟会员出价不冻结保证金，出价被真实买家超过时正常发出局通知。</li>
 </ul>
 
-<h2>2.6 订单管理</h2>
+<h2 id="p2-6">2.6 订单管理</h2>
 <ul>
     <li><b>订单列表</b>：搜索订单号 / 商品名称 / 卖家手机号 / 买家手机号，按状态筛选。</li>
     <li>详情页显示买卖双方、收货信息、金额（成交价、佣金、卖家实收）、物流信息。</li>
@@ -277,14 +295,14 @@ pre { font-family: Consolas, "Courier New", monospace; background: #F3F4F6; bord
     <li><b>售后管理</b>：处理买家的售后申请，同意退款（退回买家、扣回卖家）或驳回，可填写处理备注。</li>
 </ul>
 
-<h2>2.7 财务管理</h2>
+<h2 id="p2-7">2.7 财务管理</h2>
 <ul>
     <li><b>充值审核</b>：搜索手机号 / 昵称。通过后余额入账并写流水；拒绝需填写原因。每笔申请只能处理一次。</li>
     <li><b>提现审核</b>：搜索手机号 / 昵称。通过表示已线下打款，冻结金额清零；拒绝则退回可用余额。虚拟会员的申请在手机号下方标注「（虚拟会员）」，请自行判断。</li>
     <li><b>余额流水</b>：搜索手机号 / 昵称，按类型筛选，查看全站资金变动。</li>
 </ul>
 
-<h2>2.8 系统设置</h2>
+<h2 id="p2-8">2.8 系统设置</h2>
 <h3>基础设置</h3>
 <table>
     <tr><th style="width:22%">卡片</th><th>设置项</th></tr>
@@ -293,9 +311,9 @@ pre { font-family: Consolas, "Courier New", monospace; background: #F3F4F6; bord
     <tr><td>客服联系方式</td><td>客服电话、客服 QQ、客服链接（充值页「联系客服」按钮跳转的外部链接）。</td></tr>
     <tr><td>注册与审核</td><td>注册必须填写邀请码；卖家开通审核（需要审核 / 无需审核，无需审核时一键开通）；发布商品审核。</td></tr>
     <tr><td>竞拍规则</td><td>平台佣金比例（成交后按比例扣除，0 为不收）；竞拍默认延时（秒，0 为不延时）。</td></tr>
-    <tr><td>流拍自动上架</td><td>自动上架的卖家 ID（默认 1）与重新上架后的拍卖时长（小时，0 为关闭）；截拍时间在此基础上每件随机延后 0～6 小时。由 <code>goods:auto-relist</code> 脚本执行。</td></tr>
-    <tr><td>平台自营自动出价</td><td>开关、出价间隔（分钟）、最高出价（起拍价的倍数）、截拍前停止出价（小时）。开启后会员 ID 1 的所有拍卖中拍品由脚本安排虚拟会员出价，之前手动添加的计划被接管；关闭后脚本任务停止。由 <code>platform:auto-bid</code> 脚本执行。</td></tr>
-    <tr><td>订单自动处理</td><td>待付款超时（小时）、未付款订单的保证金处理（没收归平台 / 赔付给卖家 / 退还给买家）、自动确认收货（天）、未发货提醒（天）；填 0 表示关闭。分别由 <code>order:timeout</code>、<code>order:confirm</code>、<code>order:remind</code> 脚本执行。</td></tr>
+    <tr><td>流拍自动上架</td><td>自动上架的卖家 ID（默认 1）与重新上架后的拍卖时长（小时，0 为关闭）；截拍时间在此基础上每件随机延后 0～6 小时，由系统自动处理。</td></tr>
+    <tr><td>平台自营自动出价</td><td>开关、出价间隔（分钟）、最高出价（起拍价的倍数）、截拍前停止出价（小时）。开启后会员 ID 1 的所有拍卖中拍品由脚本安排虚拟会员出价，之前手动添加的计划被接管；关闭后自动出价停止。</td></tr>
+    <tr><td>订单自动处理</td><td>待付款超时（小时）、未付款订单的保证金处理（没收归平台 / 赔付给卖家 / 退还给买家）、自动确认收货（天）、未发货提醒（天）；填 0 表示关闭对应功能，由系统自动处理。</td></tr>
     <tr><td>提现规则</td><td>提现手续费（%）、单笔最低 / 最高金额。</td></tr>
     <tr><td>关于我们 / 业务部门</td><td>首页与「关于我们」页面的图文内容。</td></tr>
     <tr><td>用户协议 / 隐私政策 / 发布协议</td><td>前台对应弹窗与页面展示的文本，支持按语言分别填写。</td></tr>
@@ -310,7 +328,7 @@ pre { font-family: Consolas, "Courier New", monospace; background: #F3F4F6; bord
 </ul>
 
 <!-- ======================================================================= -->
-<h1>第三部分 代理后台使用说明</h1>
+<h1 id="p3">第三部分 代理后台使用说明</h1>
 <p>地址：<code>https://你的域名/agent/</code>，也可从前台个人中心「代理中心」直接进入。使用<b>前台代理会员的手机号和密码</b>登录（需在主后台「会员列表 → 编辑」中设为代理）。登录失败 5 次锁定 10 分钟。</p>
 <div class="warn">代理只能看到并处理<b>自己直接下级会员</b>的数据（团队范围），看不到其他会员；订单与售后只包含团队内<b>卖家</b>的订单。</div>
 <table>
@@ -332,45 +350,8 @@ pre { font-family: Consolas, "Courier New", monospace; background: #F3F4F6; bord
 </table>
 
 <!-- ======================================================================= -->
-<h1>第四部分 定时脚本与部署</h1>
-<h2>4.1 定时脚本</h2>
-<p>所有脚本在项目根目录用 <code>php think 命令名</code> 执行，可以手动运行，也可以加入 Linux crontab。<b>每条命令只做自己的事，互不串联</b>，每条内部带并发锁（上一轮未结束时本轮自动跳过）。</p>
-<table>
-    <tr><th style="width:26%">命令</th><th style="width:16%">建议频率</th><th>作用</th></tr>
-    <tr><td><code>php think settle</code></td><td>每分钟</td><td>结算到期拍品：成交生成订单 / 流拍退保证金。</td></tr>
-    <tr><td><code>php think bid:auto</code></td><td>每分钟</td><td>执行后台 / 代理后台手动添加的自动出价计划。</td></tr>
-    <tr><td><code>php think platform:auto-bid</code></td><td>每分钟</td><td>同步并执行平台自营（会员 ID 1）拍品的自动出价。</td></tr>
-    <tr><td><code>php think goods:auto-relist</code></td><td>每分钟</td><td>指定卖家的流拍拍品自动重新上架。</td></tr>
-    <tr><td><code>php think order:timeout</code></td><td>每 5 分钟</td><td>待付款超时自动取消并按设置处理保证金。</td></tr>
-    <tr><td><code>php think order:confirm</code></td><td>每小时</td><td>发货后超时未确认的订单自动确认并结算给卖家。</td></tr>
-    <tr><td><code>php think order:remind</code></td><td>每天</td><td>付款后超时未发货的订单给卖家发催发货站内信并扣信誉分。</td></tr>
-    <tr><td><code>php think schema:clear</code></td><td>手动</td><td>数据库加字段 / 加索引后执行一次，刷新表结构缓存。</td></tr>
-</table>
-<h3>crontab 示例（把路径换成实际路径）</h3>
-<pre>PATH=/usr/local/bin:/usr/bin:/bin
-* * * * *   cd /www/wwwroot/jp && /usr/bin/php think settle            >> runtime/log/cron_settle.log 2>&1
-* * * * *   cd /www/wwwroot/jp && /usr/bin/php think bid:auto          >> runtime/log/cron_bid_auto.log 2>&1
-* * * * *   cd /www/wwwroot/jp && /usr/bin/php think platform:auto-bid >> runtime/log/cron_platform_auto_bid.log 2>&1
-* * * * *   cd /www/wwwroot/jp && /usr/bin/php think goods:auto-relist >> runtime/log/cron_auto_relist.log 2>&1
-*/5 * * * * cd /www/wwwroot/jp && /usr/bin/php think order:timeout     >> runtime/log/cron_order_timeout.log 2>&1
-0 * * * *   cd /www/wwwroot/jp && /usr/bin/php think order:confirm     >> runtime/log/cron_order_confirm.log 2>&1
-0 9 * * *   cd /www/wwwroot/jp && /usr/bin/php think order:remind      >> runtime/log/cron_order_remind.log 2>&1</pre>
-<ul>
-    <li>每条命令运行后会刷新 <code>runtime/命令名.heartbeat</code>，用 <code>ls -l runtime/*.heartbeat</code> 可检查任务是否都在跑。</li>
-    <li>有实际动作或出错时写入 <code>runtime/log/</code> 下对应日志（settle.log、auto_bid.log、auto_relist.log 等）。</li>
-</ul>
-
-<h2>4.2 部署要点</h2>
-<ul>
-    <li>网站根目录必须指向 <code>public/</code>；vhost 中 <code>include public/nginx.htaccess</code>（含伪静态、上传目录只允许图片、禁止访问 tests 目录）。</li>
-    <li><code>.env</code>：数据库、Redis（<code>[REDIS] PREFIX</code> 用于同一台服务器部署多套时区分缓存）、<code>APP_DEBUG = false</code>。</li>
-    <li>上线或升级后执行 <code>php think schema:clear</code>；HTTPS 站点把 <code>config/cookie.php</code> 的 <code>secure</code> 改为 <code>true</code>。</li>
-    <li>不要把 <code>tests/</code> 目录部署到线上。</li>
-</ul>
-
-<!-- ======================================================================= -->
-<h1>附录</h1>
-<h2>A. 状态说明</h2>
+<h1 id="p4">附录</h1>
+<h2 id="p4-a">A. 状态说明</h2>
 <table>
     <tr><th style="width:18%">对象</th><th>状态</th></tr>
     <tr><td>拍品</td><td>待审核 → 拍卖中 → 已成交 / 流拍；另有 已下架、审核拒绝。流拍可重新上架。</td></tr>
@@ -379,7 +360,7 @@ pre { font-family: Consolas, "Courier New", monospace; background: #F3F4F6; bord
     <tr><td>实名认证</td><td>未认证 → 审核中 → 已认证 / 未通过。</td></tr>
     <tr><td>自动出价计划</td><td>运行中 / 已暂停 / 已结束（达到上限、进入停止时段、拍品结束或下架）。</td></tr>
 </table>
-<h2>B. 常见问题</h2>
+<h2 id="p4-b">B. 常见问题</h2>
 <table>
     <tr><th style="width:36%">问题</th><th>说明</th></tr>
     <tr><td>买家出价了，截拍后却流拍</td><td>最高出价低于卖家设置的保留价。买家的出价记录会标「流拍」并提示「尚未达到卖家预期价格」。</td></tr>
@@ -388,7 +369,6 @@ pre { font-family: Consolas, "Courier New", monospace; background: #F3F4F6; bord
     <tr><td>平台自营拍品不能添加自动出价</td><td>「平台自营自动出价」开关开启时由脚本接管，关闭后可手动添加。</td></tr>
     <tr><td>提现时提示已有一笔在审核中</td><td>同一时间只允许一笔提现申请，等待审核完成后再提交。</td></tr>
     <tr><td>后台改了设置前台没变</td><td>设置、分类、轮播缓存会在保存时自动刷新；若仍未生效，检查 Redis 是否正常运行。</td></tr>
-    <tr><td>定时任务没有执行</td><td>检查 crontab 是否配置、<code>runtime/*.heartbeat</code> 是否更新、<code>runtime/log/</code> 中是否有 ERROR。</td></tr>
 </table>
 <p class="small">本手册对应平台 2026 年 9 月 17 日版本，功能以实际系统为准。</p>
 
