@@ -528,7 +528,7 @@ class Goods extends Base
     /**
      * 编辑商品：GET 返回商品数据，POST 保存
      * - 已成交的商品不能编辑
-     * - 拍卖中且已有出价的商品，起拍价 / 加价幅度 / 保证金锁定不可改
+     * - 拍卖中且已有出价的商品，起拍价 / 保证金 / 保留价锁定不可改（加价幅度允许调整，只影响后续出价）
      * - 待审核 / 拍卖中的商品截拍时间必须晚于当前时间
      */
     public function edit()
@@ -566,9 +566,8 @@ class Goods extends Base
         }
         $locked = $goods['status'] == 1 && $goods['bid_count'] > 0;
         if ($locked) {
-            // 已有出价：价格相关字段以库中为准，忽略提交值；保留价同样不可再改（否则可人为制造流拍）
+            // 已有出价：起拍价 / 保证金以库中为准，忽略提交值；保留价同样不可再改（否则可人为制造流拍）。加价幅度可改，只影响之后的出价
             $startPrice   = (float)$goods['start_price'];
-            $raisePrice   = (float)$goods['raise_price'];
             $deposit      = (float)$goods['deposit'];
             $reservePrice = (float)$goods['reserve_price'];
         }
@@ -625,6 +624,6 @@ class Goods extends Base
             'update_time'     => time(),
         ]);
         admin_log('编辑商品：' . $title . '（ID:' . $id . '）' . ($rawViews !== '' && (int)$rawViews !== (int)$goods['view_count'] ? '，浏览量 ' . (int)$goods['view_count'] . ' → ' . (int)$rawViews : ''));
-        return json(['code' => 1, 'msg' => '保存成功' . ($locked ? '（已有出价，起拍价 / 加价幅度 / 保证金 / 保留价未变更）' : '')]);
+        return json(['code' => 1, 'msg' => '保存成功' . ($locked ? '（已有出价，起拍价 / 保证金 / 保留价未变更）' : '')]);
     }
 }

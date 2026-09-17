@@ -59,7 +59,8 @@
         <tr><td>注册时间</td><td>{$user.reg_time_text}</td></tr>
         <tr><td>最后登录</td><td>{$user.last_login_text}</td></tr>
         <tr><td>注册IP</td><td>{$user.reg_ip ?: '-'}</td></tr>
-        <tr><td>会员状态</td><td>{if $user.status == 1}<span class="tag tag-green">正常</span>{else /}<span class="tag tag-red">禁用</span>{/if}</td></tr>
+        <tr><td>会员状态</td><td>{if $user.status == 1}<span class="tag tag-green">正常</span>{else /}<span class="tag tag-red">禁用</span>{if $user.status_remark}<span class="gray" style="margin-left:8px;font-size:12px;">备注：{$user.status_remark}</span>{/if}{/if}</td></tr>
+        <tr><td>提现开关</td><td>{if $user.can_withdraw == 0}<span class="tag tag-red">已关闭</span><span class="gray" style="margin-left:8px;font-size:12px;">该会员不能提交提现申请，可在会员列表「编辑」中开启</span>{else /}<span class="tag tag-green">开启</span>{/if}</td></tr>
         <tr><td>统计</td><td>卖出 {$user.sell_count} 单 / 买入 {$user.buy_count} 单 / 出价 {$user.bid_count} 次</td></tr>
     </table>
 </div>

@@ -79,7 +79,7 @@ class Member extends Base
         $total = $query->count();
         $list  = $query->order('id', 'desc')
             ->page($page, $limit)
-            ->field('id,nickname,avatar,mobile,invite_code,is_seller,seller_check,is_agent,is_virtual,status,balance,freeze_balance,total_buy,total_sell,reg_time,last_login_time,shop_name,seller_intro,deposit,shop_score,credit_score,fans_count')
+            ->field('id,nickname,avatar,mobile,invite_code,is_seller,seller_check,is_agent,is_virtual,status,status_remark,can_withdraw,balance,freeze_balance,total_buy,total_sell,reg_time,last_login_time,shop_name,seller_intro,deposit,shop_score,credit_score,fans_count')
             ->select()
             ->toArray();
 
@@ -419,6 +419,28 @@ class Member extends Base
      * 调整下级会员余额（正数增加，负数扣减），规则与主后台一致
      * 写流水，备注前缀「代理调整」（虚拟会员与普通会员一致）
      */
+    /**
+     * 禁用 / 启用下级会员（禁用必须填写备注，启用时清空备注）
+     */
+    public function setStatus()
+    {
+        if (!$this->request->isPost()) {
+            return json(['code' => 0, 'msg' => '请求方式错误']);
+        }
+        $member = $this->assertMyMember($this->request->post('id', 0));
+        $status = (int)$this->request->post('status', 0) ? 1 : 0;
+        $remark = mb_substr(trim((string)$this->request->post('remark', '')), 0, 200);
+        if ($status === 0 && $remark === '') {
+            return json(['code' => 0, 'msg' => '请填写禁用备注']);
+        }
+        Db::name('user')->where('id', $member['id'])->update([
+            'status'        => $status,
+            'status_remark' => $status === 0 ? $remark : '',
+            'update_time'   => time(),
+        ]);
+        return json(['code' => 1, 'msg' => $status ? '已启用' : '已禁用']);
+    }
+
     public function adjustBalance()
     {
         if (!$this->request->isPost()) {
@@ -787,6 +809,7 @@ class Member extends Base
         $isSeller  = $this->request->has('is_seller', 'post') ? ((int)$this->request->post('is_seller') === 1 ? 1 : 0) : (int)$user['is_seller'];
         $isAgent   = $this->request->has('is_agent', 'post') ? ((int)$this->request->post('is_agent') === 1 ? 1 : 0) : (int)$user['is_agent'];
         $isVirtual = $this->request->has('is_virtual', 'post') ? ((int)$this->request->post('is_virtual') === 1 ? 1 : 0) : (int)$user['is_virtual'];
+        $canWithdraw = $this->request->has('can_withdraw', 'post') ? ((int)$this->request->post('can_withdraw') === 1 ? 1 : 0) : (int)$user['can_withdraw'];
         if ($password !== '' && strlen($password) < 6) {
             return json(['code' => 0, 'msg' => '密码至少6位']);
         }
@@ -809,6 +832,10 @@ class Member extends Base
         if ($isVirtual !== (int)$user['is_virtual']) {
             $data['is_virtual'] = $isVirtual;
             $logs[] = $isVirtual ? '设为虚拟会员' : '取消虚拟会员';
+        }
+        if ($canWithdraw !== (int)$user['can_withdraw']) {
+            $data['can_withdraw'] = $canWithdraw;
+            $logs[] = $canWithdraw ? '开启提现' : '关闭提现';
         }
         if (!$data) {
             return json(['code' => 1, 'msg' => '没有需要修改的内容']);

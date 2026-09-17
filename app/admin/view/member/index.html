@@ -157,6 +157,22 @@
 </div>
 
 <!-- 余额调整弹层 -->
+<div class="mask" id="statusMask">
+    <div class="dialog">
+        <div class="dialog-title">禁用会员</div>
+        <div class="dialog-body">
+            <div class="form-group">
+                <label>禁用备注（必填，会员详情和列表中可查看）</label>
+                <textarea class="form-control" id="statusRemark" rows="3" maxlength="200" placeholder="例如：恶意出价、涉嫌违规交易……"></textarea>
+            </div>
+        </div>
+        <div class="dialog-footer">
+            <button class="btn" onclick="document.getElementById('statusMask').classList.remove('show')">取消</button>
+            <button class="btn btn-danger" onclick="doDisable()">确定禁用</button>
+        </div>
+    </div>
+</div>
+
 <div class="mask" id="balanceMask">
     <div class="dialog">
         <div class="dialog-title">调整余额</div>
@@ -204,10 +220,15 @@
                 <div class="edit-seg"><label><input type="radio" name="editAgent" value="1"> 是</label><label><input type="radio" name="editAgent" value="0"> 否</label></div>
                 <div class="tip">代理可用前台账号登录 /agent 代理中心，管理注册时填写其邀请码的一级会员</div>
             </div>
-            <div class="form-group" style="margin-bottom:0;">
+            <div class="form-group">
                 <label>虚拟会员</label>
                 <div class="edit-seg"><label><input type="radio" name="editVirtual" value="1"> 是</label><label><input type="radio" name="editVirtual" value="0"> 否</label></div>
                 <div class="tip">虚拟会员可被自动出价脚本选中、出价时免实名且不冻结保证金；其提现申请会在提现审核里标注</div>
+            </div>
+            <div class="form-group" style="margin-bottom:0;">
+                <label>提现开关</label>
+                <div class="edit-seg"><label><input type="radio" name="editWithdraw" value="1"> 开启</label><label><input type="radio" name="editWithdraw" value="0"> 关闭</label></div>
+                <div class="tip">默认开启。关闭后该会员在前台不能提交提现申请（已提交的申请不受影响），可随时再开启</div>
             </div>
         </div>
         <div class="dialog-footer">
@@ -270,7 +291,7 @@ function loadList(page){
                     memberRows[u.id] = u;
                     var typeHtml = u.is_seller == 1 ? '<span class="tag tag-orange">卖家</span>' : '<span class="tag tag-blue">买家</span>';
                     if(u.is_virtual == 1) typeHtml += '<div style="font-size:12px;color:#8b5cf6;margin-top:3px;">（虚拟会员）</div>';
-                    var statusHtml = u.status == 1 ? '<span class="tag tag-green">正常</span>' : '<span class="tag tag-red">禁用</span>';
+                    var statusHtml = u.status == 1 ? '<span class="tag tag-green">正常</span>' : '<span class="tag tag-red">禁用</span>' + (u.status_remark ? '<div class="gray" style="font-size:12px;max-width:160px;white-space:normal;" title="' + esc(u.status_remark) + '">备注：' + esc(u.status_remark) + '</div>' : '');
                     html += '<tr>'
                         + '<td>' + u.id + '</td>'
                         + '<td>' + esc(u.nickname || '-') + '</td>'
@@ -282,7 +303,7 @@ function loadList(page){
                         + '<td class="price">￥' + u.balance + '</td>'
                         + '<td>￥' + u.freeze_balance + '</td>'
                         + '<td>' + u.total_buy + ' / ' + u.total_sell + '</td>'
-                        + '<td>' + statusHtml + '</td>'
+                        + '<td>' + statusHtml + (u.can_withdraw == 0 ? '<div style="font-size:12px;color:#dc2626;margin-top:3px;">提现已关闭</div>' : '') + '</td>'
                         + '<td>' + (u.reg_time ? fmtTime(u.reg_time) : '-') + '</td>'
                         + '<td style="white-space:nowrap;">'
                         + '<a class="btn btn-sm" href="/admin1314/member/detail?id=' + u.id + '">详情</a> '
@@ -407,11 +428,28 @@ function doAddMember(){
     });
 }
 
+var statusId = 0;
 function toggleStatus(id, status){
-    confirmDialog('确定要' + (status == 1 ? '启用' : '禁用') + '该会员吗？', function(){
-        ajaxPost('/admin1314/member/setStatus', {id:id, status:status}, function(res){
+    if (status == 0) {
+        // 禁用必须填写备注
+        statusId = id;
+        document.getElementById('statusRemark').value = '';
+        document.getElementById('statusMask').classList.add('show');
+        setTimeout(function(){ document.getElementById('statusRemark').focus(); }, 50);
+        return;
+    }
+    confirmDialog('确定要启用该会员吗？启用后禁用备注将被清除。', function(){
+        ajaxPost('/admin1314/member/setStatus', {id:id, status:1}, function(res){
             alert(res.msg); if(res.code == 1) loadList(currentPage);
         });
+    });
+}
+function doDisable(){
+    var remark = document.getElementById('statusRemark').value.trim();
+    if (!remark) { alert('请填写禁用备注'); return; }
+    ajaxPost('/admin1314/member/setStatus', {id:statusId, status:0, remark:remark}, function(res){
+        alert(res.msg);
+        if(res.code == 1){ document.getElementById('statusMask').classList.remove('show'); loadList(currentPage); }
     });
 }
 
@@ -449,6 +487,7 @@ function openEdit(id){
     setRadio('editSeller', u.is_seller == 1 ? 1 : 0);
     setRadio('editAgent', u.is_agent == 1 ? 1 : 0);
     setRadio('editVirtual', u.is_virtual == 1 ? 1 : 0);
+    setRadio('editWithdraw', u.can_withdraw == 0 ? 0 : 1);
     document.getElementById('editMask').classList.add('show');
 }
 
@@ -492,7 +531,7 @@ function doEditSave(){
     var pwd = document.getElementById('editPwd').value.trim();
     if(pwd !== '' && pwd.length < 6){ alert('密码至少6位'); return; }
     var data = {id: currentId, password: pwd, parent: document.getElementById('editParent').value.trim(),
-        is_seller: getRadio('editSeller'), is_agent: getRadio('editAgent'), is_virtual: getRadio('editVirtual')};
+        is_seller: getRadio('editSeller'), is_agent: getRadio('editAgent'), is_virtual: getRadio('editVirtual'), can_withdraw: getRadio('editWithdraw')};
     ajaxPost('/admin1314/member/editSave', data, function(res){
         alert(res.msg);
         if(res.code == 1){

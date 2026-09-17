@@ -96,6 +96,8 @@ var LANG = (metaLang ? metaLang.getAttribute('content') : '') || getCookie(COOKI
         '网络：': ['網路：', 'Network: '],
         '提交提现申请': ['提交提現申請', 'Submit Withdrawal'],
         '审核中，暂不可申请': ['審核中，暫不可申請', 'Reviewing, not submittable'],
+        '您的提现功能已关闭，请联系客服': ['您的提現功能已關閉，請聯繫客服', 'Withdrawals are disabled for your account, please contact support'],
+        '提现功能已关闭': ['提現功能已關閉', 'Withdrawals disabled'],
         '去绑定': ['去綁定', 'Bind'],
         '修改绑定': ['修改綁定', 'Edit binding'],
         '绑定': ['綁定', 'Bind '],

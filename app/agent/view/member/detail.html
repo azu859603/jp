@@ -26,7 +26,7 @@
                     {else /}<span class="tag tag-gray">普通会员</span>{/if}
                 </td>
                 <th>账号状态</th>
-                <td>{if $member.status==1}<span class="tag tag-green">正常</span>{else /}<span class="tag tag-red">禁用</span>{/if}</td>
+                <td>{if $member.status==1}<span class="tag tag-green">正常</span>{else /}<span class="tag tag-red">禁用</span>{if $member.status_remark}<span class="gray" style="margin-left:8px;font-size:12px;">备注：{$member.status_remark}</span>{/if}{/if}{if $member.can_withdraw == 0} <span class="tag tag-red">提现已关闭</span>{/if}</td>
             </tr>
             <tr>
                 <th>实名认证</th>

@@ -1002,6 +1002,10 @@ class User extends Base
             $typeMap = ['alipay' => 1, 'wechat' => 2, 'bank' => 3, 'usdt' => 4];
             $type = isset($typeMap[$payType]) ? $typeMap[$payType] : 0;
 
+            // 后台 / 代理后台可关闭单个会员的提现功能
+            if ((int)Db::name('user')->where('id', $this->user['id'])->value('can_withdraw') === 0) {
+                return json(['code' => 0, 'msg' => lang('您的提现功能已关闭，请联系客服')]);
+            }
             if ($amount <= 0) {
                 return json(['code' => 0, 'msg' => lang('请输入提现金额')]);
             }
@@ -1083,7 +1087,7 @@ class User extends Base
         // 是否有待审核提现（审核通过后才能提交下一笔）
         $pending = Db::name('withdraw')->where('user_id', $this->user['id'])->where('status', 0)->find();
         // 可提现金额用库里的最新余额（会话里的是登录时的旧值）
-        $freshUser = Db::name('user')->where('id', $this->user['id'])->field('id,balance,freeze_balance')->find();
+        $freshUser = Db::name('user')->where('id', $this->user['id'])->field('id,balance,freeze_balance,can_withdraw')->find();
         View::assign([
             'user'         => array_merge($this->user, $freshUser ?: []),
             'records'      => $records,
@@ -1091,6 +1095,7 @@ class User extends Base
             'pay_accounts' => $paMap,
             'pa_json'      => json_encode($paMap, JSON_UNESCAPED_UNICODE),
             'pending'      => $pending ? 1 : 0,
+            'withdraw_off' => ($freshUser && (int)$freshUser['can_withdraw'] === 0) ? 1 : 0,
             'withdraw_min' => (float)get_setting('withdraw_min', 0),
             'withdraw_max' => (float)get_setting('withdraw_max', 0),
             'page_title'   => lang('申请提现'),

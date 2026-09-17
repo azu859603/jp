@@ -886,5 +886,7 @@ return [
     '代理' => 'Agent',
     '邀请好友' => 'Invite Friends',
     '到账时间：' => 'Arrival: ',
+    '您的提现功能已关闭，请联系客服' => 'Withdrawals are disabled for your account, please contact support',
+    '提现功能已关闭' => 'Withdrawals disabled',
     '1-3个工作日' => '1-3 business days',
 ];

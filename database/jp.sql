@@ -3741,5 +3741,8 @@ CREATE TABLE `withdraw`  (
 -- ----------------------------
 -- Records of withdraw
 -- ----------------------------
+ALTER TABLE `user` ADD COLUMN `status_remark` VARCHAR(255) NOT NULL DEFAULT '' COMMENT '禁用备注' AFTER `status`;
+
+ALTER TABLE `user` ADD COLUMN `can_withdraw` TINYINT(1) NOT NULL DEFAULT 1 COMMENT '提现开关 1开启 0关闭' AFTER `status_remark`;
 
 SET FOREIGN_KEY_CHECKS = 1;

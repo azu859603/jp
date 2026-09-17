@@ -33,7 +33,7 @@ try {
     ok('  后台日志已记录', (int)$pdo->query("select count(*) from admin_log where action like '%编辑商品：QA无出价-改%'")->fetchColumn() == 1);
     [, , $j] = req($asid, 'POST', '/admin1314/goods/edit', ['id' => $gFree, 'title' => 'QA无出价-改2', 'cover' => '/zzz.jpg'] + $base); $x = g($gFree); ok('封面不在图集中时回落到第一张', ($j['code'] ?? 0) == 1 && $x['cover'] == '/b.jpg', json_encode([$j, $x['cover']], JSON_UNESCAPED_UNICODE));
     [, , $j] = req($asid, 'POST', '/admin1314/goods/edit', ['id' => $gLock, 'title' => 'QA有出价-改'] + $base); $x = g($gLock);
-    ok('有出价商品：价格与保留价锁定，其它字段保存', ($j['code'] ?? 0) == 1 && strpos($j['msg'], '未变更') !== false && $x['title'] == 'QA有出价-改' && $x['start_price'] == 100 && $x['raise_price'] == 10 && $x['deposit'] == 5 && $x['reserve_price'] == 0 && $x['category_id'] == $cat2, json_encode([$j, $x], JSON_UNESCAPED_UNICODE));
+    ok('有出价商品：起拍价、保证金、保留价锁定，加价幅度可改，其它字段保存', ($j['code'] ?? 0) == 1 && strpos($j['msg'], '未变更') !== false && $x['title'] == 'QA有出价-改' && $x['start_price'] == 100 && $x['raise_price'] == 20 && $x['deposit'] == 5 && $x['reserve_price'] == 0 && $x['category_id'] == $cat2, json_encode([$j, $x], JSON_UNESCAPED_UNICODE));
     ok('  出价记录未受影响', (int)$pdo->query("select count(*) from bid_record where goods_id=$gLock and status=1")->fetchColumn() == 1);
     echo "== 代理端 ==\n";
     [$c, $b] = req($gsid, 'GET', '/agent/goods/index', null, false); ok('代理列表页含编辑按钮', $c == 200 && strpos($b, 'openEditGoods(') !== false && strpos($b, '/agent/goods/edit') !== false, "HTTP $c");

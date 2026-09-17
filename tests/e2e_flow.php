@@ -570,7 +570,7 @@ ok('不能把上级设为自己的下级（成环）', ($r['code'] ?? 1) != 1, j
 $r = $A->post('/admin1314/member/setParent', ['id' => $buyer2['id'], 'parent' => '']);
 ok('清空上级', ($r['code'] ?? 0) == 1 && val('select pid from user where id=?', [$buyer2['id']]) == 0, j($r));
 $b = $G->get('/agent/member/index?page=1&limit=50', true); ok('改上级后代理端列表同步', strpos(json_encode(json_decode($b,true),JSON_UNESCAPED_UNICODE), 'QA买家2') === false, '');
-$r = $A->post('/admin1314/member/setStatus', ['id' => $buyer2['id'], 'status' => 0]); ok('禁用会员', ($r['code'] ?? 0) == 1, j($r));
+$r = $A->post('/admin1314/member/setStatus', ['id' => $buyer2['id'], 'status' => 0, 'remark' => 'e2e禁用备注']); ok('禁用会员（带备注）', ($r['code'] ?? 0) == 1 && val('select status_remark from user where id=?', [$buyer2['id']]) === 'e2e禁用备注', j($r));
 $B2->get('/user/logout'); $r = login_front($B2, $buyer2Mobile, $PWD); ok('禁用后不能登录', ($r['code'] ?? 1) != 1, j($r));
 $A->post('/admin1314/member/setStatus', ['id' => $buyer2['id'], 'status' => 1]);
 $r = $A->post('/admin1314/member/resetPassword', ['id' => $buyer2['id'], 'password' => 'Reset123456']); ok('后台重置密码', ($r['code'] ?? 0) == 1, j($r));

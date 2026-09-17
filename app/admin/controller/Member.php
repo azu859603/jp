@@ -56,7 +56,7 @@ class Member extends Base
             }
 
             $total = $query->count();
-            $list = $query->order('id', 'desc')->page($page, $limit)->field('id,mobile,nickname,avatar,invite_code,pid,is_seller,is_agent,is_virtual,seller_check,balance,freeze_balance,points,commission_rate,total_buy,total_sell,status,reg_ip,reg_time,last_login_time,create_time')->select()->toArray();
+            $list = $query->order('id', 'desc')->page($page, $limit)->field('id,mobile,nickname,avatar,invite_code,pid,is_seller,is_agent,is_virtual,seller_check,balance,freeze_balance,points,commission_rate,total_buy,total_sell,status,status_remark,can_withdraw,reg_ip,reg_time,last_login_time,create_time')->select()->toArray();
 
             // 上级会员信息（列表展示用）
             $pids = array_values(array_unique(array_filter(array_column($list, 'pid'))));
@@ -426,16 +426,25 @@ class Member extends Base
             return json(['code' => 0, 'msg' => '请求方式错误']);
         }
         $id = (int)$this->request->post('id');
-        $status = (int)$this->request->post('status', 0);
+        $status = (int)$this->request->post('status', 0) ? 1 : 0;
+        $remark = mb_substr(trim((string)$this->request->post('remark', '')), 0, 200);
 
         $user = Db::name('user')->find($id);
         if (!$user) {
             return json(['code' => 0, 'msg' => '会员不存在']);
         }
+        if ($status === 0 && $remark === '') {
+            return json(['code' => 0, 'msg' => '请填写禁用备注']);
+        }
 
-        Db::name('user')->where('id', $id)->update(['status' => $status ? 1 : 0]);
-        admin_log(($status ? '启用' : '禁用') . '会员：' . $user['mobile']);
-        return json(['code' => 1, 'msg' => '操作成功']);
+        // 禁用：保存备注；启用：清空备注
+        Db::name('user')->where('id', $id)->update([
+            'status'        => $status,
+            'status_remark' => $status === 0 ? $remark : '',
+            'update_time'   => time(),
+        ]);
+        admin_log(($status ? '启用' : '禁用') . '会员：' . $user['mobile'] . ($status === 0 ? '，备注：' . $remark : ''));
+        return json(['code' => 1, 'msg' => $status ? '已启用' : '已禁用']);
     }
 
     /**
@@ -664,6 +673,7 @@ class Member extends Base
         $isSeller  = $this->request->has('is_seller', 'post') ? ((int)$this->request->post('is_seller') === 1 ? 1 : 0) : (int)$user['is_seller'];
         $isAgent   = $this->request->has('is_agent', 'post') ? ((int)$this->request->post('is_agent') === 1 ? 1 : 0) : (int)$user['is_agent'];
         $isVirtual = $this->request->has('is_virtual', 'post') ? ((int)$this->request->post('is_virtual') === 1 ? 1 : 0) : (int)$user['is_virtual'];
+        $canWithdraw = $this->request->has('can_withdraw', 'post') ? ((int)$this->request->post('can_withdraw') === 1 ? 1 : 0) : (int)$user['can_withdraw'];
         if ($password !== '' && strlen($password) < 6) {
             return json(['code' => 0, 'msg' => '密码至少6位']);
         }
@@ -721,6 +731,10 @@ class Member extends Base
         if ($isVirtual !== (int)$user['is_virtual']) {
             $data['is_virtual'] = $isVirtual;
             $logs[] = $isVirtual ? '设为虚拟会员' : '取消虚拟会员';
+        }
+        if ($canWithdraw !== (int)$user['can_withdraw']) {
+            $data['can_withdraw'] = $canWithdraw;
+            $logs[] = $canWithdraw ? '开启提现' : '关闭提现';
         }
         if (!$data) {
             return json(['code' => 1, 'msg' => '没有需要修改的内容']);
