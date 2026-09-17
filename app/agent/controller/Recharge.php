@@ -94,6 +94,7 @@ class Recharge extends Base
             Db::rollback();
             return json(['code' => 0, 'msg' => '操作失败：' . $e->getMessage()]);
         }
+        agent_log($action === 'pass' ? ('充值到账：会员 ' . $user['mobile'] . ' ' . $recharge['amount'] . '元') : ('拒绝充值：会员 ' . $user['mobile'] . '，原因：' . $reason));
         return json(['code' => 1, 'msg' => $action === 'pass' ? '已到账' : '已拒绝']);
     }
 }

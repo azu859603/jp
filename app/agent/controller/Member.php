@@ -216,6 +216,7 @@ class Member extends Base
                 'auth_time'   => time(),
                 'update_time' => time(),
             ]);
+            agent_log('通过实名认证：' . $user['mobile']);
             return json(['code' => 1, 'msg' => '已通过，该会员可申请成为卖家']);
         }
 
@@ -227,6 +228,7 @@ class Member extends Base
             'auth_reason' => mb_substr($reason, 0, 200),
             'update_time' => time(),
         ]);
+        agent_log('拒绝实名认证：' . $user['mobile'] . '，原因：' . $reason);
         return json(['code' => 1, 'msg' => '已拒绝']);
     }
 
@@ -290,6 +292,7 @@ class Member extends Base
                 'is_seller'    => 1,
                 'update_time'  => time(),
             ]);
+            agent_log('通过卖家审核：' . $user['mobile']);
             return json(['code' => 1, 'msg' => '已通过，该会员已开通卖家权限']);
         }
 
@@ -297,6 +300,7 @@ class Member extends Base
             'seller_check' => 2,
             'update_time'  => time(),
         ]);
+        agent_log('拒绝卖家审核：' . $user['mobile']);
         return json(['code' => 1, 'msg' => '已拒绝']);
     }
 
@@ -382,6 +386,7 @@ class Member extends Base
             Db::rollback();
             return json(['code' => 0, 'msg' => '添加失败：' . $e->getMessage()]);
         }
+        agent_log('添加会员：' . $mobile . ($isSeller ? '（卖家）' : '') . ($isVirtual ? '（虚拟会员）' : '') . ($balance > 0 ? '，初始余额 ' . number_format($balance, 2) : ''));
         return json(['code' => 1, 'msg' => '添加成功，该会员已归入您的团队', 'id' => $userId]);
     }    /**
      * 编辑店铺资料（仅限我的下级中已开通的卖家），字段与主后台一致
@@ -414,6 +419,7 @@ class Member extends Base
             'fans_count'   => $fans,
             'update_time'  => time(),
         ]);
+        agent_log('修改店铺资料：会员 ' . ($member['mobile'] ?: $member['id']));
         return json(['code' => 1, 'msg' => '已保存']);
     }    /**
      * 调整下级会员余额（正数增加，负数扣减），规则与主后台一致
@@ -438,6 +444,7 @@ class Member extends Base
             'status_remark' => $status === 0 ? $remark : '',
             'update_time'   => time(),
         ]);
+        agent_log(($status ? '启用' : '禁用') . '会员：' . $member['mobile'] . ($status === 0 ? '，备注：' . $remark : ''));
         return json(['code' => 1, 'msg' => $status ? '已启用' : '已禁用']);
     }
 
@@ -445,6 +452,9 @@ class Member extends Base
     {
         if (!$this->request->isPost()) {
             return json(['code' => 0, 'msg' => '请求方式错误']);
+        }
+        if (!agent_balance_adjust_enabled()) {
+            return json(['code' => 0, 'msg' => '平台已关闭代理调整余额功能']);
         }
         $member = $this->assertMyMember($this->request->post('id', 0));
         $amount = round((float)$this->request->post('amount', 0), 2);
@@ -480,6 +490,7 @@ class Member extends Base
             Db::rollback();
             return json(['code' => 0, 'msg' => '操作失败：' . $e->getMessage()]);
         }
+        agent_log('调整会员余额 ' . $member['mobile'] . '：' . ($amount > 0 ? '+' : '') . number_format($amount, 2) . '，调整后 ' . number_format($newBalance, 2) . '（' . $remark . '）');
         return json(['code' => 1, 'msg' => '余额已调整，当前 ¥' . number_format($newBalance, 2)]);
     }    /**
      * 新增 / 修改下级会员的提现账户（每种方式一条），校验规则与前台绑定一致
@@ -552,6 +563,7 @@ class Member extends Base
             $data['create_time'] = $now;
             Db::name('pay_account')->insert($data);
         }
+        agent_log('修改会员提现账户：' . ($member['mobile'] ?: $userId) . ' ' . ([1 => '支付宝', 2 => '微信', 3 => '银行卡', 4 => 'USDT'][$type] ?? $type));
         return json(['code' => 1, 'msg' => '已保存']);
     }
 
@@ -570,6 +582,7 @@ class Member extends Base
             return json(['code' => 0, 'msg' => '该绑定不存在']);
         }
         Db::name('pay_account')->where('id', $row['id'])->delete();
+        agent_log('删除会员提现账户：' . ($member['mobile'] ?: $member['id']) . ' ' . ([1 => '支付宝', 2 => '微信', 3 => '银行卡', 4 => 'USDT'][$type] ?? $type));
         return json(['code' => 1, 'msg' => '已删除']);
     }
     /**
@@ -643,6 +656,7 @@ class Member extends Base
             Db::rollback();
             return json(['code' => 0, 'msg' => '添加失败：' . $e->getMessage()]);
         }
+        agent_log('批量添加虚拟会员 ' . count($created) . ' 个，初始余额 ' . number_format($balance, 2) . '：' . implode(',', array_column($created, 'mobile')));
         return json(['code' => 1, 'msg' => '已添加 ' . count($created) . ' 个虚拟会员，已归入您的团队，登录密码 ' . $password, 'data' => $created, 'password' => $password]);
     }
     /**
@@ -743,6 +757,7 @@ class Member extends Base
             'update_time'   => time(),
         ]);
         $stText = [1 => '待审核', 2 => '已通过', 3 => '已拒绝'][$status];
+        agent_log(($isNew ? '录入' : '修改') . '实名认证：' . $user['mobile'] . '，姓名 ' . $realName . '，状态 ' . $stText);
         return json(['code' => 1, 'msg' => ($isNew ? '实名资料已录入' : '实名资料已更新') . '（' . $stText . '）']);
     }
 
@@ -792,6 +807,7 @@ class Member extends Base
             'update_time'  => time(),
         ]);
         $stText = [0 => '待审核', 1 => '已通过', 2 => '已拒绝'][$status];
+        agent_log(($isNew ? '录入' : '修改') . '卖家资料：' . $user['mobile'] . '，店铺 ' . $shopName . '，状态 ' . $stText);
         return json(['code' => 1, 'msg' => ($isNew ? '卖家资料已录入' : '卖家资料已更新') . '（' . $stText . ($status === 1 ? '，已开通卖家权限' : '') . '）']);
     }
     /**
@@ -842,6 +858,7 @@ class Member extends Base
         }
         $data['update_time'] = time();
         Db::name('user')->where('id', $id)->update($data);
+        agent_log('编辑会员 ' . $user['mobile'] . '：' . implode('，', $logs));
         return json(['code' => 1, 'msg' => '已保存：' . implode('，', $logs)]);
     }
 }

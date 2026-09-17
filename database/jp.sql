@@ -3745,4 +3745,15 @@ ALTER TABLE `user` ADD COLUMN `status_remark` VARCHAR(255) NOT NULL DEFAULT '' C
 
 ALTER TABLE `user` ADD COLUMN `can_withdraw` TINYINT(1) NOT NULL DEFAULT 1 COMMENT '提现开关 1开启 0关闭' AFTER `status_remark`;
 
+CREATE TABLE IF NOT EXISTS `agent_log` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `agent_id` int(10) unsigned NOT NULL DEFAULT '0' COMMENT '代理会员ID',
+  `action` varchar(255) NOT NULL DEFAULT '' COMMENT '操作内容',
+  `ip` varchar(50) NOT NULL DEFAULT '' COMMENT 'IP',
+  `create_time` int(10) unsigned NOT NULL DEFAULT '0',
+  PRIMARY KEY (`id`) USING BTREE,
+  KEY `idx_agent` (`agent_id`) USING BTREE,
+  KEY `idx_create_time` (`create_time`) USING BTREE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ROW_FORMAT=DYNAMIC COMMENT='代理操作日志';
+
 SET FOREIGN_KEY_CHECKS = 1;

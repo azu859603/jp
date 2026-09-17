@@ -44,6 +44,7 @@ try {
     ok('个人中心完整显示 ¥99,000,000.00（缩小字号，不截断）', $c == 200 && strpos($h, '<b class="n3"><small>¥</small>99,000,000.00</b>') !== false, "HTTP $c");
 } finally {
     $pdo->exec("delete from balance_log where user_id=$U");
+    $pdo->exec("delete from agent_log where agent_id=$AG");
     $pdo->exec("delete from user where id in ($U,$AG)");
     foreach ([$sa, $sg, $su ?? ''] as $s) if ($s) @unlink("$root/runtime/session/sess_$s");
     echo "[cleanup] done\n";

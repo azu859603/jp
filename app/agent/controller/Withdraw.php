@@ -95,6 +95,7 @@ class Withdraw extends Base
             Db::rollback();
             return json(['code' => 0, 'msg' => '操作失败：' . $e->getMessage()]);
         }
+        agent_log($action === 'pass' ? ('提现打款：会员 ' . $user['mobile'] . ' ' . $withdraw['amount'] . '元') : ('拒绝提现：会员 ' . $user['mobile'] . '，原因：' . $reason));
         return json(['code' => 1, 'msg' => $action === 'pass' ? '已打款' : '已拒绝']);
     }
 }

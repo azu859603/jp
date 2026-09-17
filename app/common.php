@@ -139,6 +139,24 @@ function admin_log($action, $adminId = 0)
     }
 }
 
+/**
+ * 代理后台操作日志（代理用前台账号登录，session('user') 即当前代理）
+ * @param string $action 操作描述
+ * @param int $agentId
+ */
+function agent_log($action, $agentId = 0)
+{
+    try {
+        Db::name('agent_log')->insert([
+            'agent_id'    => $agentId ?: (int)((session('user') ?: [])['id'] ?? 0),
+            'action'      => mb_substr((string)$action, 0, 255),
+            'ip'          => request()->ip(),
+            'create_time' => time(),
+        ]);
+    } catch (\Throwable $e) {
+    }
+}
+
 function arraySort($arr, $keys, $type = 'asc')
 {
     if (count($arr) <= 1) {
@@ -256,6 +274,14 @@ function get_setting($name, $default = '')
 {
     $settings = site_settings();
     return isset($settings[$name]) && $settings[$name] !== '' ? $settings[$name] : $default;
+}
+
+/**
+ * 主后台开关：是否允许代理后台调整会员余额（默认开启）
+ */
+function agent_balance_adjust_enabled()
+{
+    return (string)get_setting('agent_balance_adjust', '1') === '1';
 }
 
 /* ==================== 谷歌验证器（TOTP，RFC 6238） ==================== */

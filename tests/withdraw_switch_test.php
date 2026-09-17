@@ -78,6 +78,7 @@ try {
     $pdo->exec("delete from balance_log where user_id=$U");
     $pdo->exec("delete from pay_account where user_id=$U");
     $pdo->exec("delete from admin_log where action like '%19999990621%'");
+    $pdo->exec("delete from agent_log where agent_id=$AG");
     $pdo->exec("delete from user where id in ($U,$AG)");
     foreach ([$sa, $sg, $su] as $s) if ($s) @unlink("$root/runtime/session/sess_$s");
     echo "[cleanup] done\n";

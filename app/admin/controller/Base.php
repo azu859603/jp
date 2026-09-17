@@ -90,6 +90,7 @@ class Base extends BaseController
                 ['title' => '管理员管理', 'url' => '/admin1314/admin_user/index'],
                 ['title' => '谷歌验证', 'url' => '/admin1314/admin_user/google'],
                 ['title' => '操作日志', 'url' => '/admin1314/log/index'],
+                ['title' => '代理日志', 'url' => '/admin1314/log/agent'],
             ],
         ],
     ];

@@ -115,6 +115,7 @@ class Login extends BaseController
         \think\facade\Session::regenerate(true);
         session('user', $user);
 
+        agent_log('登录代理后台', (int)$user['id']);
         return json(['code' => 1, 'msg' => '登录成功', 'url' => '/agent/index/index']);
     }
 

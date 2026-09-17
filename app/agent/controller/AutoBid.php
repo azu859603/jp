@@ -82,6 +82,7 @@ class AutoBid extends Base
             'create_time'  => $now,
             'update_time'  => $now,
         ]);
+        agent_log('创建自动出价任务：拍品「' . $goods['title'] . '」，间隔 ' . $interval . ' 分钟，最高价 ' . number_format($maxPrice, 2));
         return json(['code' => 1, 'msg' => '任务已创建，首次出价将在 ' . $interval . ' 分钟内随机进行', 'id' => $id]);
     }
 
@@ -117,6 +118,7 @@ class AutoBid extends Base
             $data['next_time']   = $now + mt_rand(60, max(60, $interval * 60));
         }
         Db::name('auto_bid')->where('id', $task['id'])->update($data);
+        agent_log('修改自动出价任务 #' . $task['id'] . '：拍品「' . $goods['title'] . '」，间隔 ' . $interval . ' 分钟，最高价 ' . number_format($maxPrice, 2));
         return json(['code' => 1, 'msg' => '已保存' . (isset($data['status']) ? '，任务已重新运行' : '')]);
     }
 
@@ -150,6 +152,7 @@ class AutoBid extends Base
             $data['stop_reason'] = '手动停用';
         }
         Db::name('auto_bid')->where('id', $task['id'])->update($data);
+        agent_log(($status === 1 ? '启用' : '停用') . '自动出价任务 #' . $task['id']);
         return json(['code' => 1, 'msg' => $status === 1 ? '任务已启用' : '任务已停用']);
     }
 
@@ -166,6 +169,7 @@ class AutoBid extends Base
             return json(['code' => 0, 'msg' => '该任务由「平台自营自动出价」脚本管理，请在系统设置中调整参数或关闭该功能']);
         }
         Db::name('auto_bid')->where('id', $task['id'])->delete();
+        agent_log('删除自动出价任务 #' . $task['id']);
         return json(['code' => 1, 'msg' => '任务已删除，已产生的出价记录保留']);
     }
 

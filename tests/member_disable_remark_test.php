@@ -73,6 +73,7 @@ try {
     ok('代理启用后备注清空', ($j['code'] ?? 0) == 1 && $r['status'] == 1 && $r['status_remark'] === '', json_encode($r, JSON_UNESCAPED_UNICODE));
 } finally {
     $pdo->exec("delete from admin_log where action like '%19999990601%'");
+    $pdo->exec("delete from agent_log where agent_id=$AG");
     $pdo->exec("delete from user where id in ($U,$AG,$X)");
     foreach ([$sa, $sg, $su ?? ''] as $s) if ($s) @unlink("$root/runtime/session/sess_$s");
     echo "[cleanup] done\n";

@@ -170,6 +170,7 @@ class Goods extends Base
             'update_time'      => $now,
         ]);
 
+        agent_log('代发布产品：' . $title . '（卖家 ' . ($seller['mobile'] ?: $sellerId) . '）');
         return json(['code' => 1, 'msg' => '发布成功，产品已上架到 ' . $seller['nickname'] . ' 店铺']);
     }
 
@@ -269,6 +270,7 @@ class Goods extends Base
                 'refuse_reason' => '',
                 'update_time'   => time(),
             ]);
+            agent_log('通过产品审核：' . $goods['title']);
             return json(['code' => 1, 'msg' => '已通过审核，产品进入拍卖中']);
         }
 
@@ -280,6 +282,7 @@ class Goods extends Base
             'refuse_reason' => mb_substr($reason, 0, 200),
             'update_time'   => time(),
         ]);
+        agent_log('拒绝产品审核：' . $goods['title'] . '，原因：' . $reason);
         return json(['code' => 1, 'msg' => '已拒绝']);
     }
 
@@ -311,6 +314,7 @@ class Goods extends Base
             Db::name('goods')->where('id', $id)->update(['bid_count' => 0, 'winner_id' => 0, 'final_price' => 0]);
         }
         Db::name('goods')->where('id', $id)->update(['status' => $status, 'update_time' => time()]);
+        agent_log(($status == 1 ? '上架' : '下架') . '产品：' . $goods['title'] . ($refunded > 0 ? '，退回保证金 ' . $refunded . ' 笔' : ''));
         if ($refunded > 0) {
             return json(['code' => 1, 'msg' => '已下架，已退回 ' . $refunded . ' 笔买家保证金']);
         }
@@ -353,6 +357,9 @@ class Goods extends Base
                 Db::name('goods')->whereIn('id', $delIds)->delete();
             }
             $msg = '删除成功 ' . count($delIds) . ' 个产品';
+            if ($delIds) {
+                agent_log('批量删除产品：' . implode(',', $delIds));
+            }
             if ($skipDeal > 0) {
                 $msg .= '，已成交产品 ' . $skipDeal . ' 个自动跳过';
             }
@@ -371,6 +378,7 @@ class Goods extends Base
         release_goods_bids($id, '平台删除');
         Db::name('bid_record')->where('goods_id', $id)->delete();
         Db::name('goods')->where('id', $id)->delete();
+        agent_log('删除产品：' . $goods['title']);
         return json(['code' => 1, 'msg' => '删除成功']);
     }
 
@@ -417,6 +425,7 @@ class Goods extends Base
             'end_time'    => $et,
             'update_time' => time(),
         ]);
+        agent_log('修改产品拍卖时间：' . $goods['title'] . ' → ' . date('Y-m-d H:i', $st) . ' ~ ' . date('Y-m-d H:i', $et));
         return json(['code' => 1, 'msg' => '拍卖时间已更新：' . date('m-d H:i', $st) . ' ~ ' . date('m-d H:i', $et)]);
     }
 
@@ -512,6 +521,7 @@ class Goods extends Base
             Db::rollback();
             return json(['code' => 0, 'msg' => '操作失败：' . $e->getMessage()]);
         }
+        agent_log('批量重新上架流拍产品：卖家 ' . ($seller['mobile'] ?: $sellerId) . '，' . count($ids) . ' 件');
         return json(['code' => 1, 'msg' => '已重新上架 ' . count($ids) . ' 件商品', 'count' => count($ids)]);
     }
     /**
@@ -530,6 +540,7 @@ class Goods extends Base
         }
         $goods = $this->assertMyGoods($id);
         Db::name('goods')->where('id', $id)->update(['view_count' => $views, 'update_time' => time()]);
+        agent_log('修改产品浏览量：' . $goods['title'] . ' ' . (int)$goods['view_count'] . ' → ' . $views);
         return json(['code' => 1, 'msg' => '浏览量已更新为 ' . $views]);
     }
     /**
@@ -627,6 +638,7 @@ class Goods extends Base
             'view_count'      => $rawViews !== '' ? (int)$rawViews : (int)$goods['view_count'],
             'update_time'     => time(),
         ]);
+        agent_log('编辑产品：' . $title . '（ID:' . $id . '）' . ($locked ? '，已有出价' : ''));
         return json(['code' => 1, 'msg' => '保存成功' . ($locked ? '（已有出价，起拍价 / 保证金 / 保留价未变更）' : '')]);
     }
 }

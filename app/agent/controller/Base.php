@@ -111,9 +111,10 @@ class Base extends BaseController
         $this->uid   = (int)$user['id'];
 
         View::assign([
-            'agent'     => $user,
-            'menus'     => $this->menus,
-            'site_name' => $this->siteName(),
+            'agent'                => $user,
+            'menus'                => $this->menus,
+            'site_name'            => $this->siteName(),
+            'agent_balance_adjust' => agent_balance_adjust_enabled() ? 1 : 0,
         ]);
     }
 

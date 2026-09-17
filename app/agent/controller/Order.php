@@ -101,7 +101,7 @@ class Order extends Base
         if (!$r['ok']) {
             return json(['code' => 0, 'msg' => $r['msg']]);
         }
-        admin_log('代理完成支付（代买家余额支付）：订单 ' . $order['order_no'] . '，买家 ID ' . $order['buyer_id'] . '，成交价 ' . $order['price'], $this->uid);
+        agent_log('完成支付（代买家余额支付）：订单 ' . $order['order_no'] . '，买家 ID ' . $order['buyer_id'] . '，成交价 ' . $order['price']);
         return json(['code' => 1, 'msg' => $r['msg']]);
     }
 
@@ -134,6 +134,7 @@ class Order extends Base
         if ($n !== 1) {
             return json(['code' => 0, 'msg' => '订单状态已变化，请刷新']);
         }
+        agent_log('订单发货：' . $order['order_no'] . '（' . $company . ' ' . $shipNo . '）');
         return json(['code' => 1, 'msg' => '发货成功']);
     }
 
@@ -167,6 +168,7 @@ class Order extends Base
             Db::rollback();
             return json(['code' => 0, 'msg' => $e->getMessage()]);
         }
+        agent_log('订单完成：' . $order['order_no']);
         return json(['code' => 1, 'msg' => '订单已完成']);
     }
 

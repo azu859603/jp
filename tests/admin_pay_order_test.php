@@ -63,7 +63,7 @@ try {
     ok('买家余额 100→30、冻结 50→0、total_buy +1', $u['balance'] == 30 && $u['freeze_balance'] == 0 && $u['total_buy'] == 1, json_encode($u));
     $log = $pdo->query("select type,amount,balance,remark from balance_log where user_id=$B order by id desc limit 1")->fetch(PDO::FETCH_ASSOC);
     ok('流水：pay -70，余额 30，备注含订单号与「代理代付」', $log && $log['type'] === 'pay' && (float)$log['amount'] == -70 && (float)$log['balance'] == 30 && strpos($log['remark'], 'QAPAY0002') !== false && strpos($log['remark'], '代理代付') !== false, json_encode($log, JSON_UNESCAPED_UNICODE));
-    ok('操作日志已记录', (int)$pdo->query("select count(*) from admin_log where action like '%代理完成支付%QAPAY0002%'")->fetchColumn() === 1);
+    ok('代理操作日志已记录（agent_log）', (int)$pdo->query("select count(*) from agent_log where action like '%完成支付%QAPAY0002%'")->fetchColumn() === 1);
     [, , $j] = req($sa, 'POST', '/admin1314/order/pay', ['id' => $O2, 'ship_name' => '张三', 'ship_mobile' => '13900001111', 'ship_address' => 'X']);
     ok('已支付的订单再点完成支付被拒', ($j['code'] ?? 1) == 0 && strpos($j['msg'] ?? '', '待付款') !== false, json_encode($j, JSON_UNESCAPED_UNICODE));
 
@@ -92,6 +92,7 @@ try {
     $pdo->exec("delete from `order` where id in ($O1,$O2,$O3,$O4)");
     $pdo->exec("delete from balance_log where user_id in ($B,$V)");
     $pdo->exec("delete from admin_log where action like '%QAPAY000%'");
+    $pdo->exec("delete from agent_log where action like '%QAPAY000%'");
     $pdo->exec("delete from user_address where user_id=$B");
     $pdo->exec("delete from goods where id=$G");
     $pdo->exec("delete from user where id in ($AG,$S,$S2,$B,$V)");

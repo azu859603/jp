@@ -61,6 +61,7 @@ try {
 } finally {
     $pdo->exec("delete from bid_record where goods_id=$G");
     $pdo->exec("delete from goods where id=$G");
+    $pdo->exec("delete from agent_log where agent_id=$AG");
     $pdo->exec("delete from user where id in ($AG,$S,$B)");
     foreach ([$sa, $sg, $sb ?? ''] as $s) if ($s) @unlink("$root/runtime/session/sess_$s");
     echo "[cleanup] done\n";

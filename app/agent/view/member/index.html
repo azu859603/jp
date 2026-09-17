@@ -298,7 +298,7 @@ function loadList(page){
                         + '<td>' + (u.reg_time ? fmtTime(u.reg_time) : '-') + '</td>'
                         + '<td>' + (u.last_login_time ? fmtTime(u.last_login_time) : '<span class="gray">未登录</span>') + '</td>'
                         + '<td style="white-space:nowrap;"><a class="btn btn-sm" href="/agent/member/detail?id=' + u.id + '">详情</a>'
-                        + ' <a class="btn btn-sm" href="javascript:;" onclick="openBalance(' + u.id + ')">余额</a>'
+                        + (BALANCE_ADJUST ? ' <a class="btn btn-sm" href="javascript:;" onclick="openBalance(' + u.id + ')">余额</a>' : '')
                         + ' <a class="btn btn-sm btn-primary" href="javascript:;" onclick="openEdit(' + u.id + ')">编辑</a>'
                         + ((u.is_seller == 1 && u.seller_check == 1) ? ' <a class="btn btn-sm btn-primary" href="javascript:;" onclick="openShopEdit(' + u.id + ')">编辑店铺</a>' : '')
                         + (u.status == 1
@@ -381,7 +381,9 @@ function doDisable(){
     });
 }
 
+var BALANCE_ADJUST = {$agent_balance_adjust|default=1} == 1;   // 主后台「代理后台权限」开关
 function openBalance(id){
+    if (!BALANCE_ADJUST) { alert('平台已关闭代理调整余额功能'); return; }
     var u = null; listData.forEach(function(x){ if(x.id == id) u = x; });
     if(!u) return;
     document.getElementById('balanceId').value = u.id;

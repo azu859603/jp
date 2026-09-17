@@ -256,6 +256,7 @@ class Bid extends Base
             return json(['code' => 0, 'msg' => '操作失败：' . $e->getMessage()]);
         }
 
+        agent_log('手动添加出价：拍品「' . $goods['title'] . '」 买家 ' . ($buyer['mobile'] ?: $userId) . ' 出价 ' . number_format($price, 2));
         return json(['code' => 1, 'msg' => '已添加出价记录']);
     }
     /**
@@ -327,6 +328,7 @@ class Bid extends Base
             return json(['code' => 0, 'msg' => '操作失败：' . $e->getMessage()]);
         }
         $msg = '出价记录已删除' . ($refunded > 0 ? '，已退回保证金 ' . number_format($refunded, 2) . ' 元' : ($moved ? '，保证金已转到该买家的其它出价' : ''));
+        agent_log('删除出价记录 #' . $id . '：拍品「' . ($goods['title'] ?? $bid['goods_id']) . '」 买家ID ' . $bid['user_id'] . ' 出价 ' . number_format((float)$bid['price'], 2) . ($refunded > 0 ? '，退回保证金 ' . number_format($refunded, 2) : ''));
         return json(['code' => 1, 'msg' => $msg]);
     }
 }

@@ -134,6 +134,7 @@ function cleanup() {
         try { $pdo->exec("delete from `order` where seller_id in ($in)"); } catch (Throwable $e) {}
         try { $pdo->exec("delete from bid_record where goods_id in (select id from goods where seller_id in ($in))"); } catch (Throwable $e) {}
         try { $pdo->exec("delete from goods where seller_id in ($in)"); } catch (Throwable $e) {}
+        try { $pdo->exec("delete from agent_log where agent_id in ($in)"); } catch (Throwable $e) {}
         $pdo->exec("delete from user where id in ($in)");
     }
     if ($CREATED_CAT) q('delete from category where id=?', [$CREATED_CAT]);

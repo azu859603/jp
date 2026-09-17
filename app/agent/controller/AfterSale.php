@@ -170,6 +170,7 @@ class AfterSale extends Base
             Db::rollback();
             return json(['code' => 0, 'msg' => '处理失败：' . $e->getMessage()]);
         }
+        agent_log(($action === 'agree' ? '售后同意退款：' : '售后驳回：') . $sale['order_no']);
         return json(['code' => 1, 'msg' => $action === 'agree' ? '已同意退款' : '已驳回']);
     }
 
