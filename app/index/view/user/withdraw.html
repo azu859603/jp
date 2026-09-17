@@ -1,38 +1,45 @@
 {extend name="layout" /}
 {block name="content"}
-<div class="withdraw-page">
-    <div class="withdraw-card">
-        <div class="w-balance">
-            <div class="num">{$user.balance|number_format=2}</div>
-            <div class="lbl">{:lang('可提现金额(元)')}</div>
+<div class="wd">
+    <!-- 可提现金额 -->
+    <div class="wd-hero">
+        <div class="wd-hero-lbl">{:lang('可提现金额(元)')}</div>
+        <div class="wd-hero-num"><small>¥</small>{$user.balance|number_format=2}</div>
+        {if $user.freeze_balance > 0}<div class="wd-hero-sub">{:lang('冻结保证金')} ¥{$user.freeze_balance|number_format=2}</div>{/if}
+    </div>
+
+    <div class="wd-card">
+        <!-- 金额 -->
+        <div class="wd-sec-t">{:lang('提现金额')}</div>
+        <div class="wd-amount">
+            <span class="wd-cur">¥</span>
+            <input type="number" id="amount" inputmode="decimal" placeholder="{:lang('请输入提现金额')}">
+            <span class="all-btn" onclick="document.getElementById('amount').value='{$user.balance}'">{:lang('全部')}</span>
         </div>
-        <div class="w-form">
-            <div class="w-row">
-                <span class="lbl">{:lang('提现金额')}</span>
-                <input type="number" id="amount" placeholder="{:lang('请输入提现金额')}">
-                <span class="all-btn" onclick="document.getElementById('amount').value='{$user.balance}'">{:lang('全部')}</span>
-            </div>
-            <div class="w-row">
-                <span class="lbl">{:lang('提现方式')}</span>
-            </div>
+        <div class="wd-rules">
+            <span><i>{:lang('提现手续费：')}</i>{if $fee_rate>0}{$fee_rate}%{else}{:lang('免费')}{/if}</span>
+            {if $withdraw_min>0 || $withdraw_max>0}<span><i>{:lang('单笔限额：')}</i>{if $withdraw_min>0}¥{$withdraw_min|number_format=2}{else}{:lang('不限')}{/if} ~ {if $withdraw_max>0}¥{$withdraw_max|number_format=2}{else}{:lang('不限')}{/if}</span>{/if}
+            <span><i>{:lang('到账时间：')}</i>{:lang('1-3个工作日')}</span>
         </div>
-        <!-- 提现方式选项 -->
+
+        <!-- 提现方式 -->
+        <div class="wd-sec-t">{:lang('提现方式')}</div>
         <div class="w-types">
             <div class="w-type" data-type="wechat" onclick="selectPay('wechat')">
-                <span class="w-tname">{:lang('微信')}</span>
-                <span class="w-tstate" id="st_wechat">{:lang('未绑定')}</span>
+                <span class="w-ico c-wechat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 4C5.4 4 2 6.8 2 10.2c0 1.9 1 3.6 2.7 4.7L4 17.5l2.9-1.6c.8.2 1.7.4 2.6.4"/><path d="M14.5 8.5c4.1 0 7.5 2.6 7.5 5.8 0 1.7-1 3.2-2.5 4.2l.6 2.5-2.7-1.4c-.9.3-1.9.5-2.9.5-4.1 0-7.5-2.6-7.5-5.8s3.4-5.8 7.5-5.8z"/></svg></span>
+                <span class="w-txt"><span class="w-tname">{:lang('微信')}</span><span class="w-tstate" id="st_wechat">{:lang('未绑定')}</span></span>
             </div>
             <div class="w-type" data-type="alipay" onclick="selectPay('alipay')">
-                <span class="w-tname">{:lang('支付宝')}</span>
-                <span class="w-tstate" id="st_alipay">{:lang('未绑定')}</span>
+                <span class="w-ico c-alipay"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="4"/><path d="M7 9h10M12 6v3M6 15c3 2 7 3 12 3M9 12c1 3 4 5 8 6"/></svg></span>
+                <span class="w-txt"><span class="w-tname">{:lang('支付宝')}</span><span class="w-tstate" id="st_alipay">{:lang('未绑定')}</span></span>
             </div>
             <div class="w-type" data-type="bank" onclick="selectPay('bank')">
-                <span class="w-tname">{:lang('银行卡')}</span>
-                <span class="w-tstate" id="st_bank">{:lang('未绑定')}</span>
+                <span class="w-ico c-bank"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18"/><path d="M7 15h4"/></svg></span>
+                <span class="w-txt"><span class="w-tname">{:lang('银行卡')}</span><span class="w-tstate" id="st_bank">{:lang('未绑定')}</span></span>
             </div>
             <div class="w-type" data-type="usdt" onclick="selectPay('usdt')">
-                <span class="w-tname">{:lang('虚拟货币')}</span>
-                <span class="w-tstate" id="st_usdt">{:lang('未绑定')}</span>
+                <span class="w-ico c-usdt"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 8h8M12 8v9M9.5 12.5c1.5.6 3.5.6 5 0"/></svg></span>
+                <span class="w-txt"><span class="w-tname">{:lang('虚拟货币')}</span><span class="w-tstate" id="st_usdt">{:lang('未绑定')}</span></span>
             </div>
         </div>
         <!-- 绑定状态提示区 -->
@@ -44,25 +51,25 @@
             </div>
         </div>
     </div>
+
+    {if $pending == 1}
+    <div class="wd-pending">{:lang('您有一笔提现正在审核中，审核通过后方可提交下一笔申请。')}</div>
+    {/if}
     <div class="withdraw-btn">
         <button class="btn btn-red" id="submitBtn" onclick="doWithdraw()">{:lang('提交提现申请')}</button>
     </div>
-    {if $pending == 1}
-    <div style="margin:0 14px 12px;background:#fff7e6;border:1px solid #ffd591;border-radius:8px;padding:10px 12px;font-size:12px;color:#ad6800;line-height:1.6;">
-        {:lang('您有一笔提现正在审核中，审核通过后方可提交下一笔申请。')}
-    </div>
-    {/if}
-    <div class="form-tip" style="color:#888;padding:0 16px;">{:lang('提现手续费：')}{if $fee_rate>0}{$fee_rate}%{else}{:lang('免费')}{/if}{:lang('，到账时间1-3个工作日')}{if $withdraw_min>0 || $withdraw_max>0}{:lang('，单笔限额：')}{if $withdraw_min>0}¥{$withdraw_min|number_format=2}{else}{:lang('不限')}{/if} ~ {if $withdraw_max>0}¥{$withdraw_max|number_format=2}{else}{:lang('不限')}{/if}{/if}</div>
 
     {if !empty($records)}
-    <div class="w-records">
-        <div class="r-head">{:lang('提现记录')}</div>
+    <div class="wd-card w-records">
+        <div class="wd-sec-t">{:lang('提现记录')}</div>
         {foreach $records as $r}
         <div class="w-record">
-            <div class="r-amount">-¥{$r.amount|number_format=2}</div>
-            <div style="text-align:right;">
-                <div class="r-status s{$r.status}">{if $r.status==0}{:lang('审核中')}{elseif $r.status==1}{:lang('已到账')}{else}{:lang('已拒绝')}{/if}</div>
+            <div class="r-left">
+                <div class="r-amount">-¥{$r.amount|number_format=2}</div>
                 <div class="r-info">{$r.create_time|date='Y-m-d H:i'}</div>
+            </div>
+            <div class="r-right">
+                <div class="r-status s{$r.status}">{if $r.status==0}{:lang('审核中')}{elseif $r.status==1}{:lang('已到账')}{else}{:lang('已拒绝')}{/if}</div>
                 {if $r.status==2 && !empty($r.refuse_reason)}
                 <div class="r-reason">{:lang('拒绝原因：')}{$r.refuse_reason}</div>
                 {/if}
@@ -73,18 +80,58 @@
     {/if}
 </div>
 <style>
-.withdraw-page{min-height:calc(100vh - 44px);background:linear-gradient(180deg,#AC3030 0,#AC3030 150px,#f5f5f5 150px);padding-bottom:20px;}
-.w-types{display:flex;gap:10px;padding:0 14px 12px;}
-.w-type{flex:1;background:#fff;border:1px solid #eee;border-radius:8px;padding:10px 6px;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;}
-.w-type.on{border-color:#AC3030;background:#fff7f7;}
-.w-tname{font-size:14px;color:#333;font-weight:600;}
-.w-tstate{font-size:11px;color:#999;}
-.w-type.on .w-tstate{color:#AC3030;}
-.w-bindtip{padding:0 14px 14px;}
-.w-bindinfo{background:#fff;border-radius:8px;padding:10px 12px;font-size:13px;color:#333;line-height:1.8;}
-.w-unbind{background:#fff;border-radius:8px;padding:12px;display:flex;align-items:center;justify-content:space-between;font-size:13px;color:#999;}
-.w-bindbtn{background:#AC3030;color:#fff;padding:6px 16px;border-radius:6px;font-size:13px;}
-.w-record .r-reason{font-size:11px;color:#e6a23c;margin-top:4px;max-width:220px;line-height:1.5;text-align:right;}
+.wd{min-height:calc(100vh - 44px);background:#F4F5F7;padding-bottom:24px;}
+.wd-hero{position:relative;overflow:hidden;padding:26px 16px 58px;text-align:center;color:#fff;background:linear-gradient(160deg,#B4201E 0%,#E4393C 55%,#FF7A6B 100%);border-radius:0 0 26px 26px;}
+.wd-hero::before{content:'';position:absolute;right:-60px;top:-80px;width:220px;height:220px;border-radius:50%;background:rgba(255,255,255,.10);}
+.wd-hero > *{position:relative;}
+.wd-hero-lbl{font-size:13px;opacity:.9;}
+.wd-hero-num{margin-top:6px;font-size:36px;font-weight:700;line-height:1.1;font-variant-numeric:tabular-nums;letter-spacing:.5px;}
+.wd-hero-num small{font-size:20px;font-weight:500;margin-right:3px;}
+.wd-hero-sub{margin-top:8px;font-size:12px;opacity:.85;}
+.wd-card{position:relative;margin:-40px 12px 0;background:#fff;border-radius:18px;padding:16px 16px 14px;box-shadow:0 10px 26px rgba(180,32,30,.10);}
+.wd-card + .withdraw-btn,.wd-card ~ .wd-card{margin-top:12px;}
+.wd-sec-t{font-size:15px;font-weight:600;color:#1A1A1A;margin:0 0 10px;display:flex;align-items:center;gap:8px;}
+.wd-sec-t::before{content:'';width:4px;height:14px;border-radius:2px;background:linear-gradient(180deg,#E4393C,#FF7A6B);}
+.wd-amount{display:flex;align-items:center;height:56px;padding:0 12px 0 14px;border-radius:14px;background:#F7F7F9;border:1px solid #EEE;}
+.wd-amount .wd-cur{font-size:24px;font-weight:700;color:#1A1A1A;margin-right:6px;}
+.wd-amount input{flex:1;min-width:0;height:100%;border:0;outline:0;background:transparent;font-size:24px;font-weight:700;color:#1A1A1A;font-variant-numeric:tabular-nums;}
+.wd-amount input::placeholder{font-size:14px;font-weight:400;color:#BBB;}
+.wd-amount .all-btn{flex:none;font-size:13px;color:#E4393C;font-weight:600;padding:6px 10px;border-radius:14px;background:#FDECEC;}
+.wd-rules{display:flex;flex-wrap:wrap;gap:6px 14px;margin:10px 2px 18px;font-size:12px;color:#666;line-height:1.6;}
+.wd-rules i{font-style:normal;color:#999;}
+.w-types{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;padding:0;}
+.w-type{position:relative;display:flex;align-items:center;gap:10px;padding:12px 12px;border:1.5px solid #EEE;border-radius:14px;background:#FAFAFA;cursor:pointer;}
+.w-type.on{border-color:#E4393C;background:#FFF6F5;}
+.w-type.on::after{content:'';position:absolute;right:10px;top:10px;width:8px;height:8px;border-radius:50%;background:#E4393C;box-shadow:0 0 0 3px rgba(228,57,60,.18);}
+.w-ico{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex:none;}
+.w-ico svg{width:19px;height:19px;}
+.w-ico.c-wechat{background:#E8F8EE;color:#16A34A;}
+.w-ico.c-alipay{background:#EAF2FF;color:#2563EB;}
+.w-ico.c-bank{background:#FFF3E5;color:#EA7B12;}
+.w-ico.c-usdt{background:#E6F7F9;color:#0E9AAB;}
+.w-type .w-txt{display:flex;flex-direction:column;min-width:0;padding-right:14px;}
+.w-type .w-tname{display:block;font-size:14px;color:#1A1A1A;font-weight:600;white-space:nowrap;line-height:1.3;}
+.w-type .w-tstate{display:block;font-size:11px;color:#999;margin-top:2px;line-height:1.3;}
+.w-type.on .w-tstate{color:#E4393C;}
+.w-bindtip{margin-top:12px;}
+.w-bindinfo{background:#F7F7F9;border-radius:12px;padding:10px 12px;font-size:13px;color:#333;line-height:1.8;}
+.w-unbind{background:#FFF8E1;border-radius:12px;padding:11px 12px;display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:13px;color:#9A5B00;}
+.w-bindbtn{flex:none;background:#E4393C;color:#fff;padding:6px 14px;border-radius:14px;font-size:13px;font-weight:600;}
+.wd-pending{margin:12px 12px 0;background:#FFF8E1;border:1px solid #FFE08A;border-radius:12px;padding:10px 12px;font-size:12px;color:#9A5B00;line-height:1.6;}
+.wd .withdraw-btn{padding:12px 12px 0;}
+.wd .withdraw-btn .btn{width:100%;height:48px;border-radius:24px;font-size:16px;font-weight:600;background:linear-gradient(90deg,#E4393C,#FF6B5E);box-shadow:0 8px 18px rgba(228,57,60,.28);border:0;color:#fff;}
+.wd .withdraw-btn .btn:disabled{background:#E5E7EB;box-shadow:none;color:#999;}
+.wd .w-records{margin-top:12px;padding-bottom:4px;}
+.wd .w-record{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid #F3F3F3;}
+.wd .w-record:last-child{border-bottom:0;}
+.wd .r-amount{font-size:16px;font-weight:700;color:#1A1A1A;font-variant-numeric:tabular-nums;}
+.wd .r-info{font-size:11px;color:#AAA;margin-top:3px;}
+.wd .r-right{text-align:right;max-width:55%;}
+.wd .r-status{display:inline-block;font-size:12px;font-weight:600;padding:2px 9px;border-radius:10px;}
+.wd .r-status.s0{background:#FFF3E5;color:#EA7B12;}
+.wd .r-status.s1{background:#E8F8EE;color:#16A34A;}
+.wd .r-status.s2{background:#FDECEC;color:#E4393C;}
+.wd .r-reason{font-size:11px;color:#E6A23C;margin-top:4px;line-height:1.5;}
 </style>
 {/block}
 {block name="script"}

@@ -885,4 +885,6 @@ return [
     '未实名' => 'Not verified',
     '代理' => 'Agent',
     '邀请好友' => 'Invite Friends',
+    '到账时间：' => 'Arrival: ',
+    '1-3个工作日' => '1-3 business days',
 ];

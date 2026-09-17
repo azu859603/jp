@@ -1082,7 +1082,10 @@ class User extends Base
         }
         // 是否有待审核提现（审核通过后才能提交下一笔）
         $pending = Db::name('withdraw')->where('user_id', $this->user['id'])->where('status', 0)->find();
+        // 可提现金额用库里的最新余额（会话里的是登录时的旧值）
+        $freshUser = Db::name('user')->where('id', $this->user['id'])->field('id,balance,freeze_balance')->find();
         View::assign([
+            'user'         => array_merge($this->user, $freshUser ?: []),
             'records'      => $records,
             'fee_rate'     => (float)get_setting('withdraw_fee', 0),
             'pay_accounts' => $paMap,
