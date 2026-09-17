@@ -39,6 +39,23 @@
     <div class="pagination" id="pagination"></div>
 </div>
 
+<!-- 完成支付（代买家余额支付） -->
+<div class="mask" id="payMask">
+    <div class="dialog">
+        <div class="dialog-title">完成支付</div>
+        <div class="dialog-body">
+            <div class="tip" id="payTip" style="margin:0 0 10px;line-height:1.7;"></div>
+            <div class="form-group"><label>收货人 <span class="req">*</span></label><input type="text" class="form-control" id="payShipName"></div>
+            <div class="form-group"><label>收货电话 <span class="req">*</span></label><input type="text" class="form-control" id="payShipMobile"></div>
+            <div class="form-group"><label>收货地址 <span class="req">*</span></label><input type="text" class="form-control" id="payShipAddress"></div>
+            <div class="tip" style="color:#b45309;">代买家用其账户余额支付：应付 = 成交价 − 已冻结保证金；余额不足会提示，不会垫付。支付后订单转为待发货，成交款在买家确认收货后结算给卖家。</div>
+        </div>
+        <div class="dialog-footer">
+            <button class="btn" onclick="document.getElementById('payMask').classList.remove('show')">取消</button>
+            <button class="btn btn-primary" id="payBtn" onclick="doPay()">确认支付</button>
+        </div>
+    </div>
+</div>
 <script>
 var currentPage = 1;
 var orderStatusMap = {
@@ -65,14 +82,16 @@ function loadList(page){
                         + '<td>' + o.id + '</td>'
                         + '<td>' + o.order_no + '</td>'
                         + '<td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + esc(o.goods_title) + '">' + esc(o.goods_title) + '</td>'
-                        + '<td>' + esc(o.buyer_mobile || o.buyer_name || o.buyer_id) + '</td>'
+                        + '<td>' + esc(o.buyer_mobile || o.buyer_name || o.buyer_id) + (o.buyer_virtual == 1 ? '<div style="font-size:12px;color:#999;">（虚拟会员）</div>' : '') + '</td>'
                         + '<td>' + esc(o.seller_mobile || o.seller_name || o.seller_id) + '</td>'
                         + '<td class="price">￥' + o.price + '</td>'
                         + '<td>￥' + o.commission + '</td>'
                         + '<td>' + payHtml + '</td>'
                         + '<td><span class="tag ' + st[1] + '">' + st[0] + '</span></td>'
                         + '<td>' + (o.create_time ? fmtTime(o.create_time) : '-') + '</td>'
-                        + '<td><a class="btn btn-sm" href="/admin1314/order/detail?id=' + o.id + '">详情</a></td></tr>';
+                        + '<td><a class="btn btn-sm" href="/admin1314/order/detail?id=' + o.id + '">详情</a>'
+                        + (o.pay_status == 0 && o.order_status == 0 ? ' <a class="btn btn-sm btn-primary" href="javascript:;" onclick="openPay(' + o.id + ')">完成支付</a>' : '')
+                        + '</td></tr>';
                 });
             }
             document.getElementById('tbody').innerHTML = html;
@@ -108,5 +127,42 @@ function fmtTime(ts){
 }
 
 loadList(1);
+var PAY_BASE = '/admin1314';
+// ---------- 完成支付 ----------
+var payOrderId = 0, payVirtual = false;
+function openPay(id){
+    payOrderId = id;
+    fetch(PAY_BASE + '/order/payInfo?id=' + id, {headers:{'X-Requested-With':'XMLHttpRequest'}})
+        .then(function(r){ return r.json(); })
+        .then(function(res){
+            if (res.code != 1) { alert(res.msg || '加载失败'); return; }
+            var d = res.data;
+            document.getElementById('payTip').innerHTML =
+                '订单 <b>' + esc(d.order_no) + '</b>　' + esc(d.goods_title) + '<br>'
+                + '买家：' + esc(d.buyer) + '　当前余额 <b>￥' + d.buyer_balance + '</b><br>'
+                + '成交价 ￥' + d.price + '　已冻结保证金 ￥' + d.deposit + '　<b>本次需从余额扣 ￥' + d.balance_need + '</b>'
+                + (d.is_virtual == 1 ? '<br><span style="color:#2563eb;">买家是虚拟会员：不真实扣款，直接标记为已支付；收货信息仍需填写，供卖家发货</span>' : (d.enough ? '' : ' <span style="color:#dc2626;">（余额不足）</span>'));
+            payVirtual = d.is_virtual == 1;
+            document.getElementById('payShipName').value = d.ship_name || '';
+            document.getElementById('payShipMobile').value = d.ship_mobile || '';
+            document.getElementById('payShipAddress').value = d.ship_address || '';
+            document.getElementById('payBtn').disabled = !d.enough;
+            document.getElementById('payMask').classList.add('show');
+        });
+}
+function doPay(){
+    var data = {
+        id: payOrderId,
+        ship_name: document.getElementById('payShipName').value.trim(),
+        ship_mobile: document.getElementById('payShipMobile').value.trim(),
+        ship_address: document.getElementById('payShipAddress').value.trim()
+    };
+    if (!data.ship_name || !data.ship_mobile || !data.ship_address) { alert('请填写收货人、电话和地址'); return; }
+    if (!confirm(payVirtual ? '买家是虚拟会员，将直接标记为已支付（不扣款），确认？' : '确认代买家用余额完成支付？')) return;
+    ajaxPost(PAY_BASE + '/order/pay', data, function(res){
+        alert(res.msg);
+        if (res.code == 1) { document.getElementById('payMask').classList.remove('show'); loadList(typeof currentPage !== 'undefined' ? currentPage : 1); }
+    });
+}
 </script>
 {/block}

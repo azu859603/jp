@@ -21,7 +21,7 @@ class Order extends Base
             $query = Db::name('order')->alias('o')
                 ->leftJoin('user u', 'o.buyer_id = u.id')
                 ->leftJoin('user s', 'o.seller_id = s.id')
-                ->field('o.*, u.mobile as buyer_mobile, u.nickname as buyer_name, s.mobile as seller_mobile, s.nickname as seller_name');
+                ->field('o.*, u.mobile as buyer_mobile, u.nickname as buyer_name, u.is_virtual as buyer_virtual, s.mobile as seller_mobile, s.nickname as seller_name');
 
             if ($keyword !== '') {
                 $query->where(function ($q) use ($keyword) {
@@ -57,7 +57,7 @@ class Order extends Base
         $order = Db::name('order')->alias('o')
             ->leftJoin('user u', 'o.buyer_id = u.id')
             ->leftJoin('user s', 'o.seller_id = s.id')
-            ->field('o.*, u.mobile as buyer_mobile, u.nickname as buyer_name, s.mobile as seller_mobile, s.nickname as seller_name')
+            ->field('o.*, u.mobile as buyer_mobile, u.nickname as buyer_name, u.is_virtual as buyer_virtual, s.mobile as seller_mobile, s.nickname as seller_name')
             ->where('o.id', $id)
             ->find();
 
@@ -79,6 +79,46 @@ class Order extends Base
     /**
      * 订单发货
      */
+    /**
+     * 「完成支付」弹窗信息
+     */
+    public function payInfo()
+    {
+        $order = Db::name('order')->find((int)$this->request->param('id', 0));
+        if (!$order) {
+            return json(['code' => 0, 'msg' => '订单不存在']);
+        }
+        if ((int)$order['order_status'] !== 0 || (int)$order['pay_status'] !== 0) {
+            return json(['code' => 0, 'msg' => '订单不是待付款状态']);
+        }
+        return json(['code' => 1, 'data' => pay_order_info($order)]);
+    }
+
+    /**
+     * 完成支付：代买家用余额支付待付款订单（余额不足则失败，不垫付）
+     */
+    public function pay()
+    {
+        if (!$this->request->isPost()) {
+            return json(['code' => 0, 'msg' => '请求方式错误']);
+        }
+        $id    = (int)$this->request->post('id', 0);
+        $order = Db::name('order')->find($id);
+        if (!$order) {
+            return json(['code' => 0, 'msg' => '订单不存在']);
+        }
+        $r = pay_order_for_buyer($id, [
+            'name'    => $this->request->post('ship_name', ''),
+            'mobile'  => $this->request->post('ship_mobile', ''),
+            'address' => $this->request->post('ship_address', ''),
+        ], '后台代付');
+        if (!$r['ok']) {
+            return json(['code' => 0, 'msg' => $r['msg']]);
+        }
+        admin_log('完成支付（代买家余额支付）：订单 ' . $order['order_no'] . '，买家 ID ' . $order['buyer_id'] . '，成交价 ' . $order['price']);
+        return json(['code' => 1, 'msg' => $r['msg']]);
+    }
+
     public function ship()
     {
         if (!$this->request->isPost()) {

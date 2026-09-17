@@ -947,3 +947,133 @@ function money_max_text()
 {
     return number_format(MONEY_MAX, 2);
 }
+
+/**
+ * 后台 / 代理后台「完成支付」：代买家用余额支付待付款订单
+ * 规则与前台 Order::pay() 一致：应付 = 成交价 − 保证金，保证金从冻结余额抵扣，差额从可用余额扣；
+ * 余额不足直接返回失败，不做垫付；成交款仍在买家确认收货后才结算给卖家。
+ * 买家是虚拟会员时不真实扣款：直接标记已支付，冻结的保证金解冻回余额；收货信息同样必填，供卖家发货。
+ *
+ * @param int    $orderId
+ * @param array  $ship     ['name' => 收货人, 'mobile' => 电话, 'address' => 地址]
+ * @param string $operator 操作人描述，写入买家流水备注，如「后台代付」「代理代付」
+ * @return array ['ok' => bool, 'msg' => string]
+ */
+function pay_order_for_buyer($orderId, array $ship, $operator = '后台代付')
+{
+    $shipName    = trim((string)($ship['name'] ?? ''));
+    $shipMobile  = trim((string)($ship['mobile'] ?? ''));
+    $shipAddress = trim((string)($ship['address'] ?? ''));
+    // 不论买家是否虚拟会员，收货信息都必填：卖家发货时要看到地址
+    if ($shipName === '' || $shipMobile === '' || $shipAddress === '') {
+        return ['ok' => false, 'msg' => '请填写收货人、电话和地址'];
+    }
+    Db::startTrans();
+    try {
+        $order = Db::name('order')->where('id', (int)$orderId)->lock(true)->find();
+        if (!$order) {
+            Db::rollback();
+            return ['ok' => false, 'msg' => '订单不存在'];
+        }
+        if ((int)$order['order_status'] !== 0 || (int)$order['pay_status'] !== 0) {
+            Db::rollback();
+            return ['ok' => false, 'msg' => '订单不是待付款状态'];
+        }
+        $user = Db::name('user')->where('id', $order['buyer_id'])->lock(true)->find();
+        if (!$user) {
+            Db::rollback();
+            return ['ok' => false, 'msg' => '买家不存在'];
+        }
+        $isVirtual = (int)$user['is_virtual'] === 1;
+        $now       = time();
+        if ($isVirtual) {
+            // 虚拟会员：不真实扣款；若有冻结的保证金，解冻回可用余额
+            $unfreeze = min((float)$order['deposit'], (float)$user['freeze_balance']);
+            $upd = ['total_buy' => Db::raw('total_buy+1'), 'update_time' => $now];
+            if ($unfreeze > 0) {
+                $upd['balance']        = round($user['balance'] + $unfreeze, 2);
+                $upd['freeze_balance'] = round($user['freeze_balance'] - $unfreeze, 2);
+            }
+            Db::name('user')->where('id', $user['id'])->update($upd);
+            if ($unfreeze > 0) {
+                Db::name('balance_log')->insert([
+                    'user_id'     => $user['id'],
+                    'type'        => 'refund',
+                    'amount'      => $unfreeze,
+                    'balance'     => $upd['balance'],
+                    'remark'      => '虚拟会员完成支付，保证金解冻：' . $order['order_no'] . '（' . $operator . '）',
+                    'create_time' => $now,
+                ]);
+            }
+        } else {
+            $payAmount     = round($order['price'] - $order['deposit'], 2);
+            $freezeDeduct  = min((float)$order['deposit'], (float)$user['freeze_balance']);
+            $balanceDeduct = round($payAmount + ($order['deposit'] - $freezeDeduct), 2);
+            if ((float)$user['balance'] < $balanceDeduct) {
+                Db::rollback();
+                return ['ok' => false, 'msg' => '买家余额不足，还需 ¥' . number_format($balanceDeduct - (float)$user['balance'], 2) . '，请先给买家充值'];
+            }
+            $newBalance = round($user['balance'] - $balanceDeduct, 2);
+            $newFreeze  = round($user['freeze_balance'] - $freezeDeduct, 2);
+            Db::name('user')->where('id', $user['id'])->update([
+                'balance'        => $newBalance,
+                'freeze_balance' => $newFreeze,
+                'total_buy'      => Db::raw('total_buy+1'),
+                'update_time'    => $now,
+            ]);
+            if ($payAmount > 0) {
+                Db::name('balance_log')->insert([
+                    'user_id'     => $user['id'],
+                    'type'        => 'pay',
+                    'amount'      => -$payAmount,
+                    'balance'     => $newBalance,
+                    'remark'      => '拍卖订单支付：' . $order['order_no'] . '（' . $operator . '）',
+                    'create_time' => $now,
+                ]);
+            }
+        }
+        if (Db::name('order')->where('id', $order['id'])->where('pay_status', 0)->where('order_status', 0)->update([
+            'pay_status'   => 1,
+            'pay_time'     => $now,
+            'order_status' => 1,
+            'ship_name'    => mb_substr($shipName, 0, 50),
+            'ship_mobile'  => mb_substr($shipMobile, 0, 20),
+            'ship_address' => mb_substr($shipAddress, 0, 255),
+            'update_time'  => $now,
+        ]) !== 1) {
+            throw new \RuntimeException('订单状态已变化');
+        }
+        Db::commit();
+    } catch (\Throwable $e) {
+        Db::rollback();
+        return ['ok' => false, 'msg' => '支付失败：' . $e->getMessage()];
+    }
+    return ['ok' => true, 'msg' => $isVirtual ? '已完成支付（虚拟会员，未扣款），订单转为待发货' : '已完成支付，订单转为待发货'];
+}
+
+/**
+ * 「完成支付」弹窗所需信息：应付金额、买家余额、默认收货地址
+ */
+function pay_order_info(array $order)
+{
+    $user = Db::name('user')->where('id', $order['buyer_id'])->field('id,nickname,mobile,balance,freeze_balance,is_virtual')->find();
+    $addr = Db::name('user_address')->where('user_id', $order['buyer_id'])->order('is_default', 'desc')->order('id', 'desc')->find();
+    $payAmount    = round($order['price'] - $order['deposit'], 2);
+    $freezeDeduct = $user ? min((float)$order['deposit'], (float)$user['freeze_balance']) : 0;
+    $balanceNeed  = round($payAmount + ($order['deposit'] - $freezeDeduct), 2);
+    return [
+        'order_no'      => $order['order_no'],
+        'goods_title'   => $order['goods_title'],
+        'price'         => number_format((float)$order['price'], 2, '.', ''),
+        'deposit'       => number_format((float)$order['deposit'], 2, '.', ''),
+        'pay_amount'    => number_format($payAmount, 2, '.', ''),
+        'balance_need'  => number_format($balanceNeed, 2, '.', ''),
+        'buyer'         => $user ? ($user['nickname'] . '（' . $user['mobile'] . '）') : '',
+        'buyer_balance' => $user ? number_format((float)$user['balance'], 2, '.', '') : '0.00',
+        'is_virtual'    => $user ? (int)$user['is_virtual'] : 0,
+        'enough'        => $user ? ((int)$user['is_virtual'] === 1 || (float)$user['balance'] >= $balanceNeed) : false,
+        'ship_name'     => $order['ship_name'] ?: ($addr['name'] ?? ''),
+        'ship_mobile'   => $order['ship_mobile'] ?: ($addr['mobile'] ?? ''),
+        'ship_address'  => $order['ship_address'] ?: ($addr ? trim($addr['province'] . ' ' . $addr['city'] . ' ' . $addr['district'] . ' ' . $addr['address']) : ''),
+    ];
+}
