@@ -26,6 +26,10 @@ class Base extends BaseController
         if (!empty($user)) {
             $user = Db::name('user')->where('id', $user['id'])->find();
             if (!$user || $user['status'] != 1) {
+                if ($user) {
+                    // 登录期间被后台禁用：记下禁用原因，下次打开登录页时告知会员
+                    session('disabled_notice', trim((string)($user['status_remark'] ?? '')));
+                }
                 session('user', null);
                 $user = null;
             } else {

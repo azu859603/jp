@@ -24,7 +24,19 @@ class User extends Base
         if (!empty($this->user)) {
             return redirect('/user/center');
         }
-        View::assign('page_title', lang('会员登录'));
+        // 登录期间被禁用踢出的会员：登录页展示禁用原因（只展示一次）
+        $disabledNotice = false;
+        $disabledReason = '';
+        if (session('?disabled_notice')) {
+            $disabledNotice = true;
+            $disabledReason = (string)session('disabled_notice');
+            session('disabled_notice', null);
+        }
+        View::assign([
+            'page_title'      => lang('会员登录'),
+            'disabled_notice' => $disabledNotice ? 1 : 0,
+            'disabled_reason' => $disabledReason,
+        ]);
         return View::fetch();
     }
 
@@ -121,7 +133,14 @@ class User extends Base
         }
         if ($user['status'] != 1) {
             $this->markLoginFail($acctKey, $acctFails, $ipKey, $ipFails);
-            return json(['code' => 0, 'msg' => lang('账号已被禁用')]);
+            // 把后台填写的禁用备注告知会员
+            $reason = trim((string)($user['status_remark'] ?? ''));
+            return json([
+                'code'     => 0,
+                'disabled' => 1,
+                'reason'   => $reason,
+                'msg'      => lang('账号已被禁用') . ($reason !== '' ? lang('，原因：') . $reason : '') . lang('，如有疑问请联系客服'),
+            ]);
         }
 
         // 登录成功，清空两个维度的失败计数

@@ -888,5 +888,10 @@ return [
     '到账时间：' => 'Arrival: ',
     '您的提现功能已关闭，请联系客服' => 'Withdrawals are disabled for your account, please contact support',
     '提现功能已关闭' => 'Withdrawals disabled',
+    '您的账号已被禁用' => 'Your account has been disabled',
+    '禁用原因：' => 'Reason: ',
+    '如有疑问请联系客服' => 'Please contact customer service if you have any questions',
+    '，原因：' => ', reason: ',
+    '，如有疑问请联系客服' => ', please contact customer service if you have any questions',
     '1-3个工作日' => '1-3 business days',
 ];
