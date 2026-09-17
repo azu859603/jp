@@ -13,7 +13,6 @@
 # 每天 09:00：催发货提醒
 0 9 * * *   cd /www/wwwroot/jp && /usr/bin/php think order:remind      >> runtime/log/cron_order_remind.log 2>&1
 
-
 清空用户数据
 php think user:init --force
 
