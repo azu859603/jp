@@ -17,13 +17,14 @@ return [
             // 日志记录方式
             'type'           => 'File',
             // 日志保存目录
-            'path'           => '',
+            // 框架日志单独放 runtime/log/app/，与定时脚本自己的 *.log 分开，30 天轮转只清理这个目录
+            'path'           => runtime_path('log' . DIRECTORY_SEPARATOR . 'app'),
             // 单文件日志写入
             'single'         => false,
             // 独立日志级别
-            'apart_level'    => [],
+            'apart_level'    => ['error'],   // error 单独写 runtime/log/YYYYMM/DD_error.log
             // 最大日志文件数量
-            'max_files'      => 0,
+            'max_files'      => 30,          // 只保留最近 30 天
             // 使用JSON格式记录
             'json'           => false,
             // 日志处理

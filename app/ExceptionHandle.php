@@ -33,7 +33,23 @@ class ExceptionHandle extends Handle
      */
     public function report(Throwable $exception): void
     {
-        // 使用内置的方式记录异常
+        // 线上 APP_DEBUG=false 时框架默认只记录一句错误信息，这里补上请求地址 / 方式 / IP / 当前登录身份和精简调用栈，
+        // 写入 runtime/log/YYYYMM/DD_error.log，排查问题时不用再猜是哪个页面触发的
+        if (!$this->isIgnoreReport($exception)) {
+            try {
+                $req  = $this->app->request;
+                $who  = '';
+                $u = session('user'); $a = session('admin');
+                if (!empty($a['id'])) $who = 'admin#' . $a['id'];
+                elseif (!empty($u['id'])) $who = 'user#' . $u['id'];
+                $line = sprintf('[%s %s] ip=%s %s %s: %s in %s:%d', $req->method(), $req->url(true), $req->ip(), $who ?: 'guest', get_class($exception), $exception->getMessage(), $exception->getFile(), $exception->getLine());
+                $trace = array_slice(explode("\n", $exception->getTraceAsString()), 0, 8);
+                $this->app->log->record($line . "\n" . implode("\n", $trace), 'error');
+                return;
+            } catch (Throwable $e) {
+                // 记录本身出错时退回框架默认方式
+            }
+        }
         parent::report($exception);
     }
 

@@ -38,6 +38,8 @@ return [
             'charset'           => env('database.charset', 'utf8mb4'),
             // 数据库表前缀
             'prefix'            => env('database.prefix', ''),
+            // 只在调试模式下记录 SQL 日志，线上（APP_DEBUG=false）不记录，避免淹没错误日志
+            'trigger_sql'     => env('app_debug', false),
 
             // 数据库部署方式:0 集中式(单一服务器),1 分布式(主从服务器)
             'deploy'            => 0,
