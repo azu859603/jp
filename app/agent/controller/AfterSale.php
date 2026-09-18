@@ -33,7 +33,7 @@ class AfterSale extends Base
                 $query->where(function ($q) use ($keyword) {
                     $q->whereLike('a.order_no', "%{$keyword}%")
                         ->whereOr('a.goods_title', 'like', "%{$keyword}%")
-                        ->whereOr('u.mobile', 'like', "%{$keyword}%");
+                        ->whereOr('u.account', 'like', "%{$keyword}%");
                 });
             }
 
@@ -185,7 +185,7 @@ class AfterSale extends Base
         return Db::name('after_sale')->alias('a')
             ->leftJoin('user u', 'a.user_id = u.id')
             ->leftJoin('user s', 'a.seller_id = s.id')
-            ->field('a.*, u.mobile as buyer_mobile, u.nickname as buyer_name, s.mobile as seller_mobile, s.nickname as seller_name')
+            ->field('a.*, u.account as buyer_mobile, u.nickname as buyer_name, s.account as seller_mobile, s.nickname as seller_name')
             ->whereIn('a.seller_id', $ids);
     }
 

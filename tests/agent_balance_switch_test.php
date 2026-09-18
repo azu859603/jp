@@ -47,6 +47,12 @@ try {
     [, , $j] = req($sg, 'POST', '/agent/member/adjustBalance', ['id' => $U, 'amount' => 10, 'remark' => 'QA']);
     ok('关闭后接口拒绝，余额不变', ($j['code'] ?? 1) == 0 && strpos($j['msg'] ?? '', '关闭') !== false && bal($U) == 110, json_encode($j, JSON_UNESCAPED_UNICODE));
     [, , $j] = req($sa, 'POST', '/admin1314/member/adjustBalance', ['id' => $U, 'amount' => 5, 'remark' => 'QA']);
+    [, , $j2] = req($sg, 'POST', '/agent/member/add', ['account' => '19999990652', 'password' => 'pass1234', 'balance' => 500]);
+    ok('关闭后代理添加会员不能带初始余额', ($j2['code'] ?? 1) == 0 && strpos($j2['msg'] ?? '', '初始余额只能为 0') !== false && !$pdo->query("select id from user where mobile='19999990652'")->fetchColumn(), json_encode($j2, JSON_UNESCAPED_UNICODE));
+    [, , $j2] = req($sg, 'POST', '/agent/member/batchAddVirtual', ['count' => 1, 'prefix' => 'QA开关虚', 'password' => 'pass1234', 'balance' => 100000]);
+    ok('关闭后批量虚拟会员不能带初始余额', ($j2['code'] ?? 1) == 0 && strpos($j2['msg'] ?? '', '初始余额只能为 0') !== false, json_encode($j2, JSON_UNESCAPED_UNICODE));
+    [, , $j2] = req($sg, 'POST', '/agent/member/add', ['account' => '19999990652', 'password' => 'pass1234', 'balance' => 0]);
+    ok('关闭后初始余额为 0 仍可添加会员', ($j2['code'] ?? 0) == 1, json_encode($j2, JSON_UNESCAPED_UNICODE));
     ok('主后台调整余额不受影响', ($j['code'] ?? 0) == 1 && bal($U) == 115, json_encode($j, JSON_UNESCAPED_UNICODE));
 
     echo "== 重新开启 ==\n";
@@ -64,7 +70,7 @@ try {
     $pdo->exec("delete from balance_log where user_id=$U");
     $pdo->exec("delete from agent_log where agent_id=$AG");
     $pdo->exec("delete from admin_log where action like '%19999990651%'");
-    $pdo->exec("delete from user where id in ($AG,$U)");
+    $pdo->exec("delete from user where id in ($AG,$U) or mobile='19999990652' or nickname like 'QA开关虚%'");
     foreach ([$sa, $sg] as $s) @unlink("$root/runtime/session/sess_$s");
     echo "[cleanup] done\n";
 }

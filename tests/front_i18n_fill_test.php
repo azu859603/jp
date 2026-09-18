@@ -45,7 +45,11 @@ try {
     ok('售后理由过短 → Please enter a reason (at least 5 characters)', ($j['code'] ?? 1) != 1 && strpos($j['msg'] ?? '', 'Please enter a reason') !== false, json_encode($j, JSON_UNESCAPED_UNICODE));
     [, , $j] = req($sb, 'POST', '/user/password?lang=en-us', ['old_password' => 'wrong', 'new_password' => '123456', 'new_password2' => '123456']);
     ok('原密码错误 → Current password is incorrect', ($j['code'] ?? 1) != 1 && strpos($j['msg'] ?? '', 'Current password is incorrect') !== false, json_encode($j, JSON_UNESCAPED_UNICODE));
+    // 一键开通只在「卖家开通审核 = 自动开通」时可用：先临时关掉审核，测完恢复，避免受本地设置影响
+    $scBak = $pdo->query("select value from setting where name='seller_check'")->fetchColumn();
+    $pdo->exec("update setting set value='0' where name='seller_check'");
     [, , $j] = req($ss, 'POST', '/seller/quickApply?lang=en-us', []);
+    if ($scBak !== false) { $pdo->prepare("update setting set value=? where name='seller_check'")->execute([$scBak]); }
     ok('已是卖家再申请 → You are already a seller', ($j['code'] ?? 1) != 1 && strpos($j['msg'] ?? '', 'already a seller') !== false, json_encode($j, JSON_UNESCAPED_UNICODE));
 
     echo "== 繁体 ==\n";

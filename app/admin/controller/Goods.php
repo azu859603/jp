@@ -24,7 +24,7 @@ class Goods extends Base
             $query = Db::name('goods')->alias('g')
                 ->leftJoin('user u', 'g.seller_id = u.id')
                 ->leftJoin('category c', 'g.category_id = c.id')
-                ->field('g.*, u.mobile as seller_mobile, u.nickname as seller_name, c.name as category_name');
+                ->field('g.*, u.account as seller_mobile, u.nickname as seller_name, c.name as category_name');
 
             if ($keyword !== '') {
                 $query->whereLike('g.title', "%{$keyword}%");
@@ -32,7 +32,7 @@ class Goods extends Base
             if ($sellerKw !== '') {
                 $query->where(function ($q) use ($sellerKw) {
                     $q->whereLike('u.nickname', "%{$sellerKw}%")
-                        ->whereOr('u.mobile', 'like', "%{$sellerKw}%");
+                        ->whereOr('u.account', 'like', "%{$sellerKw}%");
                 });
             }
             if ($status !== '') {
@@ -61,7 +61,7 @@ class Goods extends Base
         }
 
         $categories = Db::name('category')->where('status', 1)->order('sort', 'asc')->select()->toArray();
-        $sellers = Db::name('user')->where('is_seller', 1)->field('id,nickname,mobile')->order('id', 'desc')->select()->toArray();
+        $sellers = Db::name('user')->where('is_seller', 1)->field('id,nickname,account as mobile')->order('id', 'desc')->select()->toArray();
         View::assign(['categories' => $categories, 'sellers' => $sellers, 'menu_active' => '/admin1314/goods/index']);
         return View::fetch();
     }
@@ -122,6 +122,11 @@ class Goods extends Base
         }
 
         $images = is_array($images) ? array_values(array_filter($images)) : [];
+        foreach (array_merge($images, $cover !== '' ? [$cover] : []) as $img) {
+            if (!is_safe_image_url($img)) {
+                return json(['code' => 0, 'msg' => '图片地址不合法，请重新上传']);
+            }
+        }
         if (empty($images)) {
             return json(['code' => 0, 'msg' => '请至少上传一张商品图片']);
         }
@@ -166,7 +171,7 @@ class Goods extends Base
 
             $query = Db::name('goods')->alias('g')
                 ->leftJoin('user u', 'g.seller_id = u.id')
-                ->field('g.*, u.mobile as seller_mobile, u.nickname as seller_name')
+                ->field('g.*, u.account as seller_mobile, u.nickname as seller_name')
                 ->where('g.status', (int)$status);
 
             $total = $query->count();
@@ -188,7 +193,7 @@ class Goods extends Base
         $goods = Db::name('goods')->alias('g')
             ->leftJoin('user u', 'g.seller_id = u.id')
             ->leftJoin('category c', 'g.category_id = c.id')
-            ->field('g.*, u.mobile as seller_mobile, u.nickname as seller_name, c.name as category_name')
+            ->field('g.*, u.account as seller_mobile, u.nickname as seller_name, c.name as category_name')
             ->where('g.id', $id)
             ->find();
 
@@ -205,7 +210,7 @@ class Goods extends Base
         $bids = Db::name('bid_record')
             ->alias('b')
             ->leftJoin('user u', 'b.user_id = u.id')
-            ->field('b.*, u.mobile, u.nickname')
+            ->field('b.*, u.account as mobile, u.nickname')
             ->where('b.goods_id', $id)
             ->order('b.price', 'desc')
             ->select()
@@ -431,13 +436,13 @@ class Goods extends Base
         $query = Db::name('user')->where('is_seller', 1)->where('seller_check', 1);
         if ($kw !== '') {
             $query->where(function ($q) use ($kw) {
-                $q->where('shop_name', 'like', "%{$kw}%")->whereOr('nickname', 'like', "%{$kw}%")->whereOr('mobile', 'like', "%{$kw}%");
+                $q->where('shop_name', 'like', "%{$kw}%")->whereOr('nickname', 'like', "%{$kw}%")->whereOr('account', 'like', "%{$kw}%");
                 if (ctype_digit($kw)) {
                     $q->whereOr('id', (int)$kw);
                 }
             });
         }
-        $list = $query->field('id,mobile,nickname,shop_name')->order('id', 'desc')->limit(20)->select()->toArray();
+        $list = $query->field('id,account as mobile,nickname,shop_name')->order('id', 'desc')->limit(20)->select()->toArray();
         $ids = array_column($list, 'id');
         $fails = [];
         if ($ids) {
@@ -500,7 +505,7 @@ class Goods extends Base
             Db::rollback();
             return json(['code' => 0, 'msg' => '操作失败：' . $e->getMessage()]);
         }
-        admin_log('批量重新上架流拍商品：卖家 ' . ($seller['mobile'] ?: $sellerId) . '，' . count($ids) . ' 件');
+        admin_log('批量重新上架流拍商品：卖家 ' . (user_account($seller) ?: $sellerId) . '，' . count($ids) . ' 件');
         return json(['code' => 1, 'msg' => '已重新上架 ' . count($ids) . ' 件商品', 'count' => count($ids)]);
     }
     /**
@@ -539,11 +544,11 @@ class Goods extends Base
             return json(['code' => 0, 'msg' => '商品不存在']);
         }
         if (!$this->request->isPost()) {
-            $seller = Db::name('user')->where('id', $goods['seller_id'])->field('id,nickname,mobile')->find();
+            $seller = Db::name('user')->where('id', $goods['seller_id'])->field('id,nickname,account as mobile')->find();
             $goods['images_arr']     = $goods['images'] ? (json_decode($goods['images'], true) ?: []) : [];
             $goods['end_time_local'] = $goods['end_time'] ? date('Y-m-d\TH:i', $goods['end_time']) : '';
             $goods['price_locked']   = ($goods['status'] == 1 && $goods['bid_count'] > 0) ? 1 : 0;
-            $goods['seller_text']    = $seller ? ($seller['nickname'] . '（' . $seller['mobile'] . '）') : ('ID:' . $goods['seller_id']);
+            $goods['seller_text']    = $seller ? ($seller['nickname'] . '（' . user_account($seller) . '）') : ('ID:' . $goods['seller_id']);
             return json(['code' => 1, 'data' => $goods]);
         }
         if ($goods['status'] == 2) {
@@ -600,6 +605,11 @@ class Goods extends Base
             return json(['code' => 0, 'msg' => '截拍时间必须晚于当前时间1分钟以上']);
         }
         $images = is_array($images) ? array_values(array_filter($images)) : [];
+        foreach (array_merge($images, $cover !== '' ? [$cover] : []) as $img) {
+            if (!is_safe_image_url($img)) {
+                return json(['code' => 0, 'msg' => '图片地址不合法，请重新上传']);
+            }
+        }
         if (empty($images)) {
             return json(['code' => 0, 'msg' => '请至少上传一张商品图片']);
         }

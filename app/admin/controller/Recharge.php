@@ -18,7 +18,7 @@ class Recharge extends Base
 
             $query = Db::name('recharge')->alias('r')
                 ->leftJoin('user u', 'r.user_id = u.id')
-                ->field('r.*, u.mobile, u.nickname');
+                ->field('r.*, u.account as mobile, u.nickname');
 
             if ($status !== '') {
                 $query->where('r.status', (int)$status);
@@ -26,7 +26,7 @@ class Recharge extends Base
             $keyword = trim((string)$this->request->param('keyword', ''));
             if ($keyword !== '') {
                 $query->where(function ($q) use ($keyword) {
-                    $q->where('u.mobile', 'like', "%{$keyword}%")->whereOr('u.nickname', 'like', "%{$keyword}%");
+                    $q->where('u.account', 'like', "%{$keyword}%")->whereOr('u.nickname', 'like', "%{$keyword}%");
                 });
             }
 
@@ -91,7 +91,7 @@ class Recharge extends Base
                 ]) !== 1) {
                     throw new \RuntimeException('申请状态已变化');
                 }
-                admin_log('充值到账：会员 ' . $user['mobile'] . ' ' . $recharge['amount'] . '元');
+                admin_log('充值到账：会员 ' . user_account($user) . ' ' . $recharge['amount'] . '元');
             } else {
                 if (empty($reason)) {
                     Db::rollback();
@@ -102,7 +102,7 @@ class Recharge extends Base
                     'refuse_reason' => $reason,
                     'handle_time'   => time(),
                 ]);
-                admin_log('拒绝充值：会员 ' . $user['mobile'] . '，原因：' . $reason);
+                admin_log('拒绝充值：会员 ' . user_account($user) . '，原因：' . $reason);
             }
             Db::commit();
         } catch (\Throwable $e) {

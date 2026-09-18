@@ -38,9 +38,9 @@ class Service extends Base
             // 有搜索词时，把没有会话记录的会员也列出来（标记为「未开始」），客服可主动发起聊天
             $newUsers = [];
             if ($keyword !== '' && !$onlyUnread) {
-                $q = Db::name('user')->field('id,nickname,mobile,avatar,is_seller,shop_name')->where('status', 1)
+                $q = Db::name('user')->field('id,nickname,account as mobile,avatar,is_seller,shop_name')->where('status', 1)
                     ->where(function ($q) use ($keyword) {
-                        $q->whereLike('mobile', "%{$keyword}%")->whereOr('nickname', 'like', "%{$keyword}%")->whereOr('shop_name', 'like', "%{$keyword}%");
+                        $q->whereLike('account', "%{$keyword}%")->whereOr('nickname', 'like', "%{$keyword}%")->whereOr('shop_name', 'like', "%{$keyword}%");
                     });
                 if ($lastByUser) {
                     $q->whereNotIn('id', array_keys($lastByUser));
@@ -60,10 +60,10 @@ class Service extends Base
             $unreadByGuest = array_column($unreadGuestRows, 'c', 'guest_key');
 
             $userIds = array_keys($lastByUser) ?: [0];
-            $usersQ  = Db::name('user')->whereIn('id', $userIds)->field('id,nickname,mobile,avatar,is_seller,shop_name');
+            $usersQ  = Db::name('user')->whereIn('id', $userIds)->field('id,nickname,account as mobile,avatar,is_seller,shop_name');
             if ($keyword !== '') {
                 $usersQ->where(function ($q) use ($keyword) {
-                    $q->whereLike('mobile', "%{$keyword}%")->whereOr('nickname', 'like', "%{$keyword}%")->whereOr('shop_name', 'like', "%{$keyword}%");
+                    $q->whereLike('account', "%{$keyword}%")->whereOr('nickname', 'like', "%{$keyword}%")->whereOr('shop_name', 'like', "%{$keyword}%");
                 });
             }
             $users = array_column($usersQ->select()->toArray(), null, 'id');
@@ -163,7 +163,7 @@ class Service extends Base
         $lastId = (int)$this->request->param('last_id', 0);
 
         if ($conv['type'] === 'u') {
-            $user = Db::name('user')->where('id', $conv['user_id'])->field('id,nickname,mobile,avatar,is_seller,shop_name,reg_time')->find();
+            $user = Db::name('user')->where('id', $conv['user_id'])->field('id,nickname,account as mobile,avatar,is_seller,shop_name,reg_time')->find();
             if (!$user) {
                 return json(['code' => 0, 'msg' => '会员不存在']);
             }

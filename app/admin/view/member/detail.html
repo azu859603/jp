@@ -8,7 +8,7 @@
     <div class="card-title">基本信息</div>
     <table class="detail-list">
         <tr><td>会员ID</td><td>{$user.id}</td></tr>
-        <tr><td>手机号</td><td>{$user.mobile}</td></tr>
+        <tr><td>登录账号</td><td>{$user.account}{if $user.email} <span class="tag tag-blue">邮箱注册</span>{/if}</td></tr>
         <tr><td>昵称</td><td>{$user.nickname ?: '-'}</td></tr>
         <tr><td>邀请码</td><td>{$user.invite_code}</td></tr>
         <tr><td>上级会员</td>
@@ -153,14 +153,14 @@
 <!-- 修改上级弹层 -->
 <div class="mask" id="parentMask">
     <div class="dialog">
-        <div class="dialog-title">修改上级 - {$user.mobile}</div>
+        <div class="dialog-title">修改上级 - {$user.account}</div>
         <div class="dialog-body">
             <div class="form-group">
                 <label>当前上级</label>
                 <div style="font-size:13px;color:#64748b;">{if $user.parent}{$user.parent.mobile}{else /}无{/if}</div>
             </div>
             <div class="form-group" style="margin-bottom:0;">
-                <label>新上级（手机号 / 邀请码 / 会员ID）</label>
+                <label>新上级（账号 / 邀请码 / 会员ID）</label>
                 <input type="text" class="form-control" id="parentValue" placeholder="留空表示清空上级">
                 <div class="tip">上级即邀请人，修改后该会员会归到新上级的代理中心下级列表；留空并确定即清空上级。</div>
             </div>

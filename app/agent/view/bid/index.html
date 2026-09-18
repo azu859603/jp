@@ -26,7 +26,7 @@
 <div class="search-bar">
     <div class="search-input">
         <svg class="s-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/></svg>
-        <input type="text" class="form-control" id="keyword" placeholder="拍品标题 / 买家手机号 / 昵称">
+        <input type="text" class="form-control" id="keyword" placeholder="拍品标题 / 买家账号 / 昵称">
     </div>
     <button class="btn btn-primary" onclick="loadList(1)">查询</button>
     <button class="btn" onclick="resetSearch()">重置</button>
@@ -38,7 +38,7 @@
         <table class="table">
             <thead>
             <tr>
-                <th>ID</th><th>拍品</th><th>出价人</th><th>手机号</th><th>出价金额</th><th>状态</th><th>是否得标</th><th>归属</th><th>时间</th><th>操作</th>
+                <th>ID</th><th>拍品</th><th>出价人</th><th>账号</th><th>出价金额</th><th>状态</th><th>是否得标</th><th>归属</th><th>时间</th><th>操作</th>
             </tr>
             </thead>
             <tbody id="tbody"></tbody>
@@ -62,9 +62,9 @@
                 <div class="picker-sel" id="goodsSel"></div>
             </div>
             <div class="form-group" style="margin-bottom:12px;">
-                <label>买家 <span class="tip" style="display:inline">（输入手机号、昵称或会员 ID，只列团队内会员）</span></label>
+                <label>买家 <span class="tip" style="display:inline">（输入账号、昵称或会员 ID，只列团队内会员）</span></label>
                 <div class="picker" id="userPicker">
-                    <input type="text" class="form-control" id="userKw" placeholder="手机号 / 昵称 / 会员 ID" autocomplete="off">
+                    <input type="text" class="form-control" id="userKw" placeholder="账号 / 昵称 / 会员 ID" autocomplete="off">
                     <input type="hidden" id="addUser" value="">
                     <div class="picker-list" id="userList"></div>
                 </div>

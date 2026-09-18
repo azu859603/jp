@@ -3756,4 +3756,11 @@ CREATE TABLE IF NOT EXISTS `agent_log` (
   KEY `idx_create_time` (`create_time`) USING BTREE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ROW_FORMAT=DYNAMIC COMMENT='代理操作日志';
 
+ALTER TABLE `user`
+  MODIFY `mobile` VARCHAR(20) NULL DEFAULT NULL COMMENT '手机号（邮箱注册的会员为 NULL）',
+  ADD COLUMN `email` VARCHAR(100) NULL DEFAULT NULL COMMENT '邮箱（手机号注册的会员为 NULL）' AFTER `mobile`,
+  ADD COLUMN `account` VARCHAR(100) GENERATED ALWAYS AS (IFNULL(NULLIF(`mobile`,''), `email`)) VIRTUAL COMMENT '登录账号（虚拟列）' AFTER `email`,
+  ADD UNIQUE KEY `uk_email` (`email`),
+  ADD KEY `idx_account` (`account`);
+
 SET FOREIGN_KEY_CHECKS = 1;

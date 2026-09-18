@@ -23,7 +23,7 @@
 .picker-sel a{color:#94a3b8;margin-left:8px}
 </style>
 <div class="search-bar">
-    <input type="text" class="form-control" id="keyword" placeholder="拍品标题 / 买家手机号 / 昵称">
+    <input type="text" class="form-control" id="keyword" placeholder="拍品标题 / 买家账号 / 昵称">
     <button class="btn btn-primary" onclick="loadList(1)">查询</button>
     <button class="btn" onclick="resetSearch()">重置</button>
     <button class="btn btn-primary" onclick="openBidAdd()">添加出价</button>
@@ -34,7 +34,7 @@
         <table class="table">
             <thead>
             <tr>
-                <th>ID</th><th>商品</th><th>出价人</th><th>手机号</th><th>出价金额</th><th>状态</th><th>是否得标</th><th>时间</th><th>操作</th>
+                <th>ID</th><th>商品</th><th>出价人</th><th>账号</th><th>出价金额</th><th>状态</th><th>是否得标</th><th>时间</th><th>操作</th>
             </tr>
             </thead>
             <tbody id="tbody"></tbody>
@@ -58,9 +58,9 @@
                 <div class="picker-sel" id="goodsSel"></div>
             </div>
             <div class="form-group" style="margin-bottom:12px;">
-                <label>买家 <span class="tip" style="display:inline">（输入手机号、昵称或会员 ID 搜索）</span></label>
+                <label>买家 <span class="tip" style="display:inline">（输入账号、昵称或会员 ID 搜索）</span></label>
                 <div class="picker" id="userPicker">
-                    <input type="text" class="form-control" id="userKw" placeholder="手机号 / 昵称 / 会员 ID" autocomplete="off">
+                    <input type="text" class="form-control" id="userKw" placeholder="账号 / 昵称 / 会员 ID" autocomplete="off">
                     <input type="hidden" id="addUser" value="">
                     <div class="picker-list" id="userList"></div>
                 </div>

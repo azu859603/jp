@@ -41,8 +41,8 @@ body{font-family:"Microsoft YaHei",Arial,sans-serif;background:linear-gradient(1
     <div class="error-tip" id="errorTip"></div>
     <form id="loginForm" onsubmit="return doLogin();">
         <div class="form-group">
-            <label>手机号</label>
-            <input type="tel" maxlength="11" class="form-control" id="mobile" placeholder="请输入代理账号手机号" autocomplete="off">
+            <label>账号</label>
+            <input type="text" maxlength="100" class="form-control" id="mobile" placeholder="请输入代理账号（手机号或邮箱）" autocomplete="off" autocapitalize="off">
         </div>
         <div class="form-group">
             <label>密码</label>
@@ -74,7 +74,7 @@ function doLogin(){
         password: document.getElementById('password').value,
         captcha: document.getElementById('captcha').value.trim()
     };
-    if(!data.mobile || !data.password){ return showErr('请输入手机号和密码'); }
+    if(!data.mobile || !data.password){ return showErr('请输入账号和密码'); }
     if(!data.captcha){ return showErr('请输入验证码'); }
 
     btn.disabled = true;

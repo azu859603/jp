@@ -20,7 +20,7 @@ class Withdraw extends Base
             $status = $this->request->param('status', '');
             $query = Db::name('withdraw')->alias('w')
                 ->leftJoin('user u', 'w.user_id = u.id')
-                ->field('w.*, u.mobile, u.nickname, u.is_virtual')
+                ->field('w.*, u.account as mobile, u.nickname, u.is_virtual')
                 ->whereIn('w.user_id', $this->memberIds());
             if ($status !== '') {
                 $query->where('w.status', (int)$status);
@@ -28,7 +28,7 @@ class Withdraw extends Base
             $keyword = trim((string)$this->request->param('keyword', ''));
             if ($keyword !== '') {
                 $query->where(function ($q) use ($keyword) {
-                    $q->where('u.mobile', 'like', "%{$keyword}%")->whereOr('u.nickname', 'like', "%{$keyword}%");
+                    $q->where('u.account', 'like', "%{$keyword}%")->whereOr('u.nickname', 'like', "%{$keyword}%");
                 });
             }
             $total = $query->count();
@@ -95,7 +95,7 @@ class Withdraw extends Base
             Db::rollback();
             return json(['code' => 0, 'msg' => '操作失败：' . $e->getMessage()]);
         }
-        agent_log($action === 'pass' ? ('提现打款：会员 ' . $user['mobile'] . ' ' . $withdraw['amount'] . '元') : ('拒绝提现：会员 ' . $user['mobile'] . '，原因：' . $reason));
+        agent_log($action === 'pass' ? ('提现打款：会员 ' . user_account($user) . ' ' . $withdraw['amount'] . '元') : ('拒绝提现：会员 ' . user_account($user) . '，原因：' . $reason));
         return json(['code' => 1, 'msg' => $action === 'pass' ? '已打款' : '已拒绝']);
     }
 }

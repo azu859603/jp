@@ -12,7 +12,7 @@
 <div class="search-bar">
     <div class="search-input">
         <svg class="s-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/></svg>
-        <input type="text" class="form-control" id="keyword" placeholder="手机号/昵称/邀请码">
+        <input type="text" class="form-control" id="keyword" placeholder="账号/昵称/邀请码">
     </div>
     <select class="form-control" id="is_seller">
         <option value="">全部类型</option>
@@ -157,7 +157,7 @@
     <div class="dialog" style="width:520px;">
         <div class="dialog-title">批量添加虚拟会员</div>
         <div class="dialog-body">
-            <div class="tip" style="margin-bottom:12px;">账号自动生成为 <b>12 开头的 11 位数字</b>（真实手机号没有 12 号段，不会与真实用户冲突），昵称为前缀加 4 位随机数字。添加后的虚拟会员自动成为您的下级。</div>
+            <div class="tip" style="margin-bottom:12px;">账号自动生成为 <b>12 开头的 11 位数字</b>（真实手机号没有 12 号段，不会与真实用户冲突）；平台「注册方式」为邮箱时生成 <b>v + 9 位数字@virtual.local</b>，昵称为前缀加 4 位随机数字。添加后的虚拟会员自动成为您的下级。</div>
             <div class="form-group">
                 <label>数量 <span class="req">*</span>（每次最多 100 个）</label>
                 <input type="number" min="1" max="100" step="1" class="form-control" id="vbCount" value="10" placeholder="1 ~ 100">
@@ -166,9 +166,9 @@
                 <label>昵称前缀</label>
                 <input type="text" class="form-control" id="vbPrefix" maxlength="20" placeholder="默认「用户」，生成如 用户3827">
             </div>
-            <div class="form-group">
+            <div class="form-group"{if empty($agent_balance_adjust)} style="display:none;"{/if}>
                 <label>初始余额（元）</label>
-                <input type="number" step="0.01" min="0" class="form-control" id="vbBalance" value="100000">
+                <input type="number" step="0.01" min="0" class="form-control" id="vbBalance" value="{if empty($agent_balance_adjust)}0{else}100000{/if}">
             </div>
             <div class="form-group" style="margin-bottom:0;">
                 <label>登录密码</label>
@@ -201,8 +201,8 @@
         <div class="dialog-title">添加会员</div>
         <div class="dialog-body">
             <div class="form-group">
-                <label><span class="req">*</span>手机号</label>
-                <input type="text" class="form-control" id="addMobile" maxlength="11" placeholder="11 位手机号，作为登录账号" autocomplete="off">
+                <label><span class="req">*</span>登录账号</label>
+                <input type="text" class="form-control" id="addMobile" maxlength="100" placeholder="手机号或邮箱（含 @ 按邮箱处理）" autocomplete="off" autocapitalize="off">
             </div>
             <div class="form-group">
                 <label><span class="req">*</span>登录密码</label>
@@ -219,7 +219,7 @@
                     <label style="display:flex;align-items:center;gap:6px;font-weight:normal;font-size:13px;"><input type="radio" name="addType" value="1" onchange="onAddType()"> 虚拟会员</label>
                 </div>
             </div>
-            <div class="form-group">
+            <div class="form-group"{if empty($agent_balance_adjust)} style="display:none;"{/if}>
                 <label>初始余额（元）</label>
                 <input type="number" step="0.01" min="0" class="form-control" id="addBalance" placeholder="0" value="0">
                 <div class="tip" id="addTypeTip" style="display:none;">虚拟会员由平台创建，用于配合手动出价活跃气氛；前台功能与普通会员完全一致，余额正常增减并记录流水</div>
@@ -243,7 +243,7 @@
         <table class="table">
             <thead>
             <tr>
-                <th>ID</th><th>昵称</th><th>手机号</th><th>邀请码</th><th>类型</th><th>余额</th>
+                <th>ID</th><th>昵称</th><th>账号</th><th>邀请码</th><th>类型</th><th>余额</th>
                 <th>成交(买/卖)</th><th>状态</th><th>注册时间</th><th>最后登录</th><th>操作</th>
             </tr>
             </thead>
@@ -435,7 +435,7 @@ function saveShop(){
 function openBatchVirtual(){
     document.getElementById('vbCount').value = '10';
     document.getElementById('vbPrefix').value = '';
-    document.getElementById('vbBalance').value = '100000';
+    document.getElementById('vbBalance').value = BALANCE_ADJUST ? '100000' : '0';   // 开关关闭时初始余额只能为 0
     document.getElementById('vbPassword').value = '';
     document.getElementById('vbMask').classList.add('show');
     setTimeout(function(){ document.getElementById('vbCount').focus(); }, 50);
@@ -476,7 +476,7 @@ function onAddType(){
     var v = document.querySelector('input[name="addType"]:checked').value;
     var balance = document.getElementById('addBalance');
     var tip = document.getElementById('addTypeTip');
-    balance.value = v == '1' ? '100000' : '0';
+    balance.value = (v == '1' && BALANCE_ADJUST) ? '100000' : '0';   // 开关关闭时初始余额只能为 0
     balance.placeholder = balance.value;
     tip.style.display = v == '1' ? '' : 'none';
 }
@@ -485,12 +485,12 @@ function doAdd(){
     var mobile = document.getElementById('addMobile').value.trim();
     var password = document.getElementById('addPassword').value.trim();
     var nickname = document.getElementById('addNickname').value.trim();
-    if(!/^1\d{10}$/.test(mobile)){ alert('请输入正确的 11 位手机号'); return; }
+    if(!/^1\d{10}$/.test(mobile) && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(mobile)){ alert('请输入正确的手机号或邮箱'); return; }
     if(password.length < 6){ alert('密码至少 6 位'); return; }
     var balance = document.getElementById('addBalance').value;
     if(balance !== '' && parseFloat(balance) < 0){ alert('初始余额不能为负数'); return; }
     var btn = document.getElementById('addBtn'); btn.disabled = true;
-    fetch('/agent/member/add', {method:'POST', headers:{'X-Requested-With':'XMLHttpRequest','Content-Type':'application/x-www-form-urlencoded'}, body:new URLSearchParams({mobile:mobile, password:password, nickname:nickname, balance:balance || '0', is_seller:document.getElementById('addIsSeller').checked ? 1 : 0, is_virtual:document.querySelector('input[name="addType"]:checked').value})})
+    fetch('/agent/member/add', {method:'POST', headers:{'X-Requested-With':'XMLHttpRequest','Content-Type':'application/x-www-form-urlencoded'}, body:new URLSearchParams({account:mobile, password:password, nickname:nickname, balance:balance || '0', is_seller:document.getElementById('addIsSeller').checked ? 1 : 0, is_virtual:document.querySelector('input[name="addType"]:checked').value})})
         .then(function(r){ return r.json(); })
         .then(function(res){
             btn.disabled = false;

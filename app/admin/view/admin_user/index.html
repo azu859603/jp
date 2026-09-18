@@ -87,7 +87,7 @@ function loadList(){
                     html += '<tr>'
                         + '<td>' + a.id + '</td>'
                         + '<td>' + a.username + '</td>'
-                        + '<td>' + (a.real_name || '-') + '</td>'
+                        + '<td>' + esc(a.real_name || '-') + '</td>'
                         + '<td>' + roleHtml + '</td>'
                         + '<td>' + stHtml + '</td>'
                         + '<td>' + (a.ga_bound == 1 ? '<span class="tag tag-green">已绑定</span>' : '<span class="tag tag-gray">未绑定</span>') + '</td>'

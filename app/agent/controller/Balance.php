@@ -21,11 +21,11 @@ class Balance extends Base
             $type    = trim($this->request->param('type', ''));
             $query = Db::name('balance_log')->alias('l')
                 ->leftJoin('user u', 'l.user_id = u.id')
-                ->field('l.*, u.mobile, u.nickname')
+                ->field('l.*, u.account as mobile, u.nickname')
                 ->whereIn('l.user_id', $this->memberIds());
             if ($keyword !== '') {
                 $query->where(function ($q) use ($keyword) {
-                    $q->where('u.mobile', 'like', "%{$keyword}%")->whereOr('u.nickname', 'like', "%{$keyword}%");
+                    $q->where('u.account', 'like', "%{$keyword}%")->whereOr('u.nickname', 'like', "%{$keyword}%");
                 });
             }
             if ($type !== '') {

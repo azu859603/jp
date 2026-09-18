@@ -7,7 +7,7 @@ $cat = (int)$pdo->query('select id from category where status=1 limit 1')->fetch
 $sid = md5('rs' . $T); $u = $pdo->query("select * from user where id=$uid")->fetch(PDO::FETCH_ASSOC); unset($u['password']); file_put_contents("$root/runtime/session/sess_$sid", serialize(['user' => $u]));
 function req($sid, $m, $p, $d = null, $ajax = true) { $ch = curl_init('http://localhost' . $p); curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => 1, CURLOPT_HTTPHEADER => $ajax ? ['X-Requested-With: XMLHttpRequest'] : ['Accept: text/html'], CURLOPT_COOKIE => 'PHPSESSID=' . $sid]); if ($m === 'POST') { curl_setopt($ch, CURLOPT_POST, 1); curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($d)); } $b = curl_exec($ch); $c = curl_getinfo($ch, CURLINFO_HTTP_CODE); curl_close($ch); return [$c, $b, json_decode($b, true)]; }
 function ok($n, $c, $d = '') { echo ($c ? '  PASS ' : '  FAIL ') . $n . ($c ? '' : '  <- ' . mb_substr((string)$d, 0, 300)) . "\n"; }
-$base = ['title' => 'QA保留价商品', 'category_id' => $cat, 'start_price' => 100, 'raise_price' => 10, 'deposit' => 0, 'end_time' => date('Y-m-d\TH:i', $T + 86400), 'content' => 'x', 'is_featured' => 0, 'images' => ['/a.jpg', '/b.jpg', '/c.jpg', '/d.jpg']];
+$base = ['title' => 'QA保留价商品', 'category_id' => $cat, 'start_price' => 100, 'raise_price' => 10, 'deposit' => 0, 'end_time' => date('Y-m-d\TH:i', $T + 86400), 'content' => 'x', 'is_featured' => 0, 'images' => ['/uploads/qa/a.jpg', '/uploads/qa/b.jpg', '/uploads/qa/c.jpg', '/uploads/qa/d.jpg']];
 $made = [];
 try {
     foreach (['zh-cn' => ['保留价', '低于此价流拍，不填则无（选填）'], 'zh-tw' => ['保留價', '低於此價流拍'], 'en-us' => ['Reserve price', 'Lot fails below this price']] as $lang => [$l1, $l2]) {

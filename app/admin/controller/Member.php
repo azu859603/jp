@@ -23,7 +23,7 @@ class Member extends Base
             $query = Db::name('user');
             if ($keyword !== '') {
                 $query->where(function ($q) use ($keyword) {
-                    $q->whereLike('mobile', "%{$keyword}%")
+                    $q->whereLike('account', "%{$keyword}%")
                         ->whereOr('nickname', 'like', "%{$keyword}%")
                         ->whereOr('invite_code', 'like', "%{$keyword}%");
                 });
@@ -56,14 +56,14 @@ class Member extends Base
             }
 
             $total = $query->count();
-            $list = $query->order('id', 'desc')->page($page, $limit)->field('id,mobile,nickname,avatar,invite_code,pid,is_seller,is_agent,is_virtual,seller_check,balance,freeze_balance,points,commission_rate,total_buy,total_sell,status,status_remark,can_withdraw,reg_ip,reg_time,last_login_time,create_time')->select()->toArray();
+            $list = $query->order('id', 'desc')->page($page, $limit)->field('id,account as mobile,nickname,avatar,invite_code,pid,is_seller,is_agent,is_virtual,seller_check,balance,freeze_balance,points,commission_rate,total_buy,total_sell,status,status_remark,can_withdraw,reg_ip,reg_time,last_login_time,create_time')->select()->toArray();
 
             // 上级会员信息（列表展示用）
             $pids = array_values(array_unique(array_filter(array_column($list, 'pid'))));
-            $parents = $pids ? Db::name('user')->whereIn('id', $pids)->column('mobile,nickname', 'id') : [];
+            $parents = $pids ? Db::name('user')->whereIn('id', $pids)->column('account,nickname', 'id') : [];
             foreach ($list as &$u) {
                 $p = $parents[$u['pid']] ?? null;
-                $u['parent_mobile']   = $p['mobile'] ?? '';
+                $u['parent_mobile']   = $p['account'] ?? '';
                 $u['parent_nickname'] = $p['nickname'] ?? '';
             }
             unset($u);
@@ -90,7 +90,7 @@ class Member extends Base
             if ($status !== '') {
                 $query->where('seller_check', (int)$status);
             }
-            $query->field('id,mobile,nickname,avatar,invite_code,pid,is_seller,seller_check,balance,freeze_balance,points,commission_rate,total_buy,total_sell,status,reg_ip,reg_time,last_login_time,create_time,shop_name,company_name,license_img,real_name,shop_score,credit_score');
+            $query->field('id,account as mobile,nickname,avatar,invite_code,pid,is_seller,seller_check,balance,freeze_balance,points,commission_rate,total_buy,total_sell,status,reg_ip,reg_time,last_login_time,create_time,shop_name,company_name,license_img,real_name,shop_score,credit_score');
             $total = $query->count();
             $list = $query->order('id', 'desc')->page($page, $limit)->select()->toArray();
 
@@ -125,13 +125,13 @@ class Member extends Base
                 'seller_check' => 1,
                 'is_seller'    => 1,
             ]);
-            admin_log('通过卖家审核：' . $user['mobile']);
+            admin_log('通过卖家审核：' . user_account($user));
             return json(['code' => 1, 'msg' => '已通过，该会员已开通卖家权限']);
         } else {
             Db::name('user')->where('id', $id)->update([
                 'seller_check' => 2,
             ]);
-            admin_log('拒绝卖家审核：' . $user['mobile']);
+            admin_log('拒绝卖家审核：' . user_account($user));
             return json(['code' => 1, 'msg' => '已拒绝']);
         }
     }
@@ -153,7 +153,7 @@ class Member extends Base
                 // 全部：排除从未提交认证的用户（未认证无记录）
                 $query->where('auth_status', '<>', 0);
             }
-            $query->field('id,mobile,nickname,real_name,id_card,id_card_front,id_card_back,auth_status,auth_reason,auth_time,reg_time,create_time');
+            $query->field('id,account as mobile,nickname,real_name,id_card,id_card_front,id_card_back,auth_status,auth_reason,auth_time,reg_time,create_time');
             $total = $query->count();
             $list = $query->order('id', 'desc')->page($page, $limit)->select()->toArray();
 
@@ -190,7 +190,7 @@ class Member extends Base
                 'auth_reason' => '',
                 'auth_time'   => time(),
             ]);
-            admin_log('通过实名认证：' . $user['mobile']);
+            admin_log('通过实名认证：' . user_account($user));
             return json(['code' => 1, 'msg' => '已通过，该会员可申请成为卖家']);
         } else {
             if ($reason === '') {
@@ -200,7 +200,7 @@ class Member extends Base
                 'auth_status' => 3,
                 'auth_reason' => $reason,
             ]);
-            admin_log('拒绝实名认证：' . $user['mobile'] . '，原因：' . $reason);
+            admin_log('拒绝实名认证：' . user_account($user) . '，原因：' . $reason);
             return json(['code' => 1, 'msg' => '已拒绝']);
         }
     }
@@ -222,7 +222,7 @@ class Member extends Base
 
         // 上级会员
         $user['parent'] = $user['pid'] > 0
-            ? Db::name('user')->where('id', $user['pid'])->field('id,mobile,nickname,invite_code')->find()
+            ? Db::name('user')->where('id', $user['pid'])->field('id,account as mobile,nickname,invite_code')->find()
             : null;
         $user['child_count'] = Db::name('user')->where('pid', $id)->count();
 
@@ -299,7 +299,7 @@ class Member extends Base
             'update_time'  => time(),
         ]);
         $creditNote = $credit !== (int)($user['credit_score'] ?? 100) ? '，信誉分 ' . (int)$user['credit_score'] . ' → ' . $credit : '';
-        admin_log('修改店铺资料：会员 ' . ($user['mobile'] ?: $user['id']) . $creditNote);
+        admin_log('修改店铺资料：会员 ' . (user_account($user) ?: $user['id']) . $creditNote);
         return json(['code' => 1, 'msg' => '已保存']);
     }
 
@@ -311,7 +311,8 @@ class Member extends Base
         if (!$this->request->isPost()) {
             return json(['code' => 0, 'msg' => '请求方式错误']);
         }
-        $mobile = trim($this->request->post('mobile', ''));
+        // 账号：手机号或邮箱（含 @ 按邮箱处理）；参数名 account，兼容旧的 mobile
+        $mobile = trim((string)$this->request->post('account', $this->request->post('mobile', '')));
         $nickname = trim($this->request->post('nickname', ''));
         $password = trim($this->request->post('password', ''));
         $balance = round((float)$this->request->post('balance', 0), 2);
@@ -319,9 +320,6 @@ class Member extends Base
         $isAgent = (int)$this->request->post('is_agent', 0);
         $isVirtual = (int)$this->request->post('is_virtual', 0);
 
-        if (!preg_match('/^1\d{10}$/', $mobile)) {
-            return json(['code' => 0, 'msg' => '手机号格式不正确']);
-        }
         if (strlen($password) < 6) {
             return json(['code' => 0, 'msg' => '密码至少6位']);
         }
@@ -331,11 +329,13 @@ class Member extends Base
         if ($balance < 0) {
             return json(['code' => 0, 'msg' => '初始余额不能为负数']);
         }
-        if (Db::name('user')->where('mobile', $mobile)->find()) {
-            return json(['code' => 0, 'msg' => '该手机号已注册']);
+        $acc = parse_new_account($mobile);
+        if (!$acc['ok']) {
+            return json(['code' => 0, 'msg' => $acc['msg']]);
         }
+        $mobile = $acc['account'];
         if ($nickname === '') {
-            $nickname = '用户' . substr($mobile, -4);
+            $nickname = $acc['nick'];
         }
 
         // 生成唯一的纯数字邀请码
@@ -347,7 +347,8 @@ class Member extends Base
         Db::startTrans();
         try {
             $userId = Db::name('user')->insertGetId([
-                'mobile'      => $mobile,
+                'mobile'      => $acc['mobile'],
+                'email'       => $acc['email'],
                 'password'    => hash_password($password),
                 'nickname'    => $nickname,
                 'invite_code' => $myCode,
@@ -413,7 +414,7 @@ class Member extends Base
             'is_read'     => 0,
             'create_time' => time(),
         ]);
-        admin_log('发送站内信：会员 ' . ($user['mobile'] ?: $user['id']) . '「' . mb_substr($title, 0, 30) . '」');
+        admin_log('发送站内信：会员 ' . (user_account($user) ?: $user['id']) . '「' . mb_substr($title, 0, 30) . '」');
         return json(['code' => 1, 'msg' => '发送成功']);
     }
 
@@ -443,7 +444,7 @@ class Member extends Base
             'status_remark' => $status === 0 ? $remark : '',
             'update_time'   => time(),
         ]);
-        admin_log(($status ? '启用' : '禁用') . '会员：' . $user['mobile'] . ($status === 0 ? '，备注：' . $remark : ''));
+        admin_log(($status ? '启用' : '禁用') . '会员：' . user_account($user) . ($status === 0 ? '，备注：' . $remark : ''));
         return json(['code' => 1, 'msg' => $status ? '已启用' : '已禁用']);
     }
 
@@ -467,7 +468,7 @@ class Member extends Base
             'is_seller'    => $isSeller ? 1 : 0,
             'seller_check' => $isSeller ? 1 : ($user['seller_check'] == 1 ? 0 : $user['seller_check']),
         ]);
-        admin_log(($isSeller ? '设置' : '取消') . '卖家：' . $user['mobile']);
+        admin_log(($isSeller ? '设置' : '取消') . '卖家：' . user_account($user));
         return json(['code' => 1, 'msg' => '操作成功']);
     }
 
@@ -521,7 +522,7 @@ class Member extends Base
             return json(['code' => 0, 'msg' => '操作失败：' . $e->getMessage()]);
         }
 
-        admin_log('调整会员余额 ' . $user['mobile'] . '：' . $amount);
+        admin_log('调整会员余额 ' . user_account($user) . '：' . $amount);
         return json(['code' => 1, 'msg' => '余额已调整']);
     }
 
@@ -545,7 +546,7 @@ class Member extends Base
         }
 
         Db::name('user')->where('id', $id)->update(['password' => hash_password($password)]);
-        admin_log('重置会员密码：' . $user['mobile']);
+        admin_log('重置会员密码：' . user_account($user));
         return json(['code' => 1, 'msg' => '密码已重置']);
     }
     /**
@@ -570,7 +571,7 @@ class Member extends Base
             'agent_time'  => $isAgent ? ($user['agent_time'] > 0 ? $user['agent_time'] : time()) : 0,
             'update_time' => time(),
         ]);
-        admin_log(($isAgent ? '设置' : '取消') . '代理：' . $user['mobile']);
+        admin_log(($isAgent ? '设置' : '取消') . '代理：' . user_account($user));
         return json(['code' => 1, 'msg' => '操作成功']);
     }
 
@@ -598,7 +599,7 @@ class Member extends Base
         $parent = null;
         if ($parentInput !== '') {
             // 依次按 手机号 / 邀请码 / 会员ID 查找上级
-            $parent = Db::name('user')->where('mobile', $parentInput)->find()
+            $parent = find_user_by_account($parentInput)
                 ?: Db::name('user')->where('invite_code', $parentInput)->find();
             if (!$parent && ctype_digit($parentInput)) {
                 $parent = Db::name('user')->where('id', (int)$parentInput)->find();
@@ -627,9 +628,9 @@ class Member extends Base
         Db::name('user')->where('id', $id)->update(['pid' => $newPid, 'update_time' => time()]);
 
         $oldText = $user['pid'] > 0 ? ('#' . $user['pid']) : '无';
-        $newText = $parent ? ($parent['mobile'] . '(#' . $parent['id'] . ')') : '无';
-        admin_log('修改会员上级：' . $user['mobile'] . ' 由 ' . $oldText . ' 改为 ' . $newText);
-        return json(['code' => 1, 'msg' => $parent ? ('已将上级改为 ' . $parent['mobile']) : '已清空上级']);
+        $newText = $parent ? (user_account($parent) . '(#' . $parent['id'] . ')') : '无';
+        admin_log('修改会员上级：' . user_account($user) . ' 由 ' . $oldText . ' 改为 ' . $newText);
+        return json(['code' => 1, 'msg' => $parent ? ('已将上级改为 ' . user_account($parent)) : '已清空上级']);
     }
 
     /**
@@ -651,7 +652,7 @@ class Member extends Base
         }
         $token = bin2hex(random_bytes(16));
         \think\facade\Cache::set('login_as_' . $token, ['uid' => $id, 'admin_id' => (int)($this->admin['id'] ?? 0)], 60);
-        admin_log('以会员身份登录前台：' . $user['mobile'] . '(#' . $id . ')');
+        admin_log('以会员身份登录前台：' . user_account($user) . '(#' . $id . ')');
         return json(['code' => 1, 'msg' => '正在打开前台…', 'url' => '/user/loginAs?token=' . $token]);
     }
     /**
@@ -686,7 +687,7 @@ class Member extends Base
             if ($parentInput === '') {
                 $newPid = 0;
             } else {
-                $parent = Db::name('user')->where('mobile', $parentInput)->find()
+                $parent = find_user_by_account($parentInput)
                     ?: Db::name('user')->where('invite_code', $parentInput)->find();
                 if (!$parent && ctype_digit($parentInput)) {
                     $parent = Db::name('user')->where('id', (int)$parentInput)->find();
@@ -716,7 +717,7 @@ class Member extends Base
         }
         if ($newPid !== (int)$user['pid']) {
             $data['pid'] = $newPid;
-            $logs[] = '上级 ' . ($user['pid'] > 0 ? '#' . $user['pid'] : '无') . ' → ' . ($parent ? $parent['mobile'] . '(#' . $parent['id'] . ')' : '无');
+            $logs[] = '上级 ' . ($user['pid'] > 0 ? '#' . $user['pid'] : '无') . ' → ' . ($parent ? user_account($parent) . '(#' . $parent['id'] . ')' : '无');
         }
         if ($isSeller !== (int)$user['is_seller']) {
             $data['is_seller']    = $isSeller;
@@ -741,7 +742,7 @@ class Member extends Base
         }
         $data['update_time'] = time();
         Db::name('user')->where('id', $id)->update($data);
-        admin_log('编辑会员 ' . $user['mobile'] . '：' . implode('，', $logs));
+        admin_log('编辑会员 ' . user_account($user) . '：' . implode('，', $logs));
         return json(['code' => 1, 'msg' => '已保存：' . implode('，', $logs)]);
     }
     /**
@@ -819,7 +820,7 @@ class Member extends Base
             Db::name('pay_account')->insert($data);
         }
         $names = [1 => '支付宝', 2 => '微信', 3 => '银行卡', 4 => '虚拟货币'];
-        admin_log('修改会员提现账户：' . ($user['mobile'] ?: $userId) . ' ' . $names[$type]);
+        admin_log('修改会员提现账户：' . (user_account($user) ?: $userId) . ' ' . $names[$type]);
         return json(['code' => 1, 'msg' => '已保存']);
     }
 
@@ -840,7 +841,7 @@ class Member extends Base
         Db::name('pay_account')->where('id', $row['id'])->delete();
         $user = Db::name('user')->find($userId);
         $names = [1 => '支付宝', 2 => '微信', 3 => '银行卡', 4 => '虚拟货币'];
-        admin_log('删除会员提现账户：' . ($user['mobile'] ?? $userId) . ' ' . ($names[$type] ?? $type));
+        admin_log('删除会员提现账户：' . (user_account($user) ?? $userId) . ' ' . ($names[$type] ?? $type));
         return json(['code' => 1, 'msg' => '已删除']);
     }
     /**
@@ -879,10 +880,13 @@ class Member extends Base
         Db::startTrans();
         try {
             for ($i = 0; $i < $count; $i++) {
-                $mobile   = generate_virtual_mobile();
+                // 注册方式为邮箱时，虚拟会员也生成邮箱账号
+                $byEmail  = register_mode() === 'email';
+                $mobile   = $byEmail ? generate_virtual_email() : generate_virtual_mobile();
                 $nickname = $prefix . str_pad((string)mt_rand(0, 9999), 4, '0', STR_PAD_LEFT);
                 $userId = Db::name('user')->insertGetId([
-                    'mobile'       => $mobile,
+                    'mobile'       => $byEmail ? null : $mobile,
+                    'email'        => $byEmail ? $mobile : null,
                     'password'     => $hash,
                     'nickname'     => $nickname,
                     'invite_code'  => generate_invite_code(),
@@ -929,10 +933,10 @@ class Member extends Base
         if ($kw !== '') {
             if ($scene === 'parent') {
                 // 选上级只按手机号搜索
-                $query->where('mobile', 'like', "%{$kw}%");
+                $query->where('account', 'like', "%{$kw}%");
             } else {
                 $query->where(function ($q) use ($kw) {
-                    $q->where('mobile', 'like', "%{$kw}%")->whereOr('nickname', 'like', "%{$kw}%");
+                    $q->where('account', 'like', "%{$kw}%")->whereOr('nickname', 'like', "%{$kw}%");
                     if (ctype_digit($kw)) {
                         $q->whereOr('id', (int)$kw);
                     }
@@ -951,7 +955,7 @@ class Member extends Base
                 $query->where('id', '<>', $exclude);
             }
         }
-        $list = $query->field('id,mobile,nickname,auth_status,seller_check,shop_name,is_seller,is_agent,invite_code')
+        $list = $query->field('id,account as mobile,nickname,auth_status,seller_check,shop_name,is_seller,is_agent,invite_code')
             ->order('id', 'desc')->limit(20)->select()->toArray();
         return json(['code' => 1, 'data' => $list]);
     }
@@ -991,7 +995,7 @@ class Member extends Base
         // 身份证号全站唯一
         $dup = Db::name('user')->where('id_card', $idCard)->where('id', '<>', $id)->find();
         if ($dup) {
-            return json(['code' => 0, 'msg' => '该身份证号已被会员 ID ' . $dup['id'] . '（' . $dup['mobile'] . '）使用']);
+            return json(['code' => 0, 'msg' => '该身份证号已被会员 ID ' . $dup['id'] . '（' . user_account($dup) . '）使用']);
         }
         // 已是卖家的会员必须保持实名通过状态
         if ($status !== 2 && (int)$user['is_seller'] === 1) {
@@ -1010,7 +1014,7 @@ class Member extends Base
             'update_time'   => time(),
         ]);
         $stText = [1 => '待审核', 2 => '已通过', 3 => '已拒绝'][$status];
-        admin_log(($isNew ? '录入' : '修改') . '实名认证：' . $user['mobile'] . '，姓名 ' . $realName . '，状态 ' . $stText);
+        admin_log(($isNew ? '录入' : '修改') . '实名认证：' . user_account($user) . '，姓名 ' . $realName . '，状态 ' . $stText);
         return json(['code' => 1, 'msg' => ($isNew ? '实名资料已录入' : '实名资料已更新') . '（' . $stText . '）']);
     }
 
@@ -1051,7 +1055,7 @@ class Member extends Base
         // 店铺名称全站唯一
         $dup = Db::name('user')->where('shop_name', $shopName)->where('id', '<>', $id)->find();
         if ($dup) {
-            return json(['code' => 0, 'msg' => '该店铺名称已被会员 ID ' . $dup['id'] . '（' . $dup['mobile'] . '）使用']);
+            return json(['code' => 0, 'msg' => '该店铺名称已被会员 ID ' . $dup['id'] . '（' . user_account($dup) . '）使用']);
         }
 
         $isNew = trim((string)$user['shop_name']) === '';
@@ -1064,7 +1068,7 @@ class Member extends Base
             'update_time'  => time(),
         ]);
         $stText = [0 => '待审核', 1 => '已通过', 2 => '已拒绝'][$status];
-        admin_log(($isNew ? '录入' : '修改') . '卖家资料：' . $user['mobile'] . '，店铺 ' . $shopName . '，状态 ' . $stText);
+        admin_log(($isNew ? '录入' : '修改') . '卖家资料：' . user_account($user) . '，店铺 ' . $shopName . '，状态 ' . $stText);
         return json(['code' => 1, 'msg' => ($isNew ? '卖家资料已录入' : '卖家资料已更新') . '（' . $stText . ($status === 1 ? '，已开通卖家权限' : '') . '）']);
     }
 }

@@ -47,13 +47,13 @@ class Log extends Base
 
             $query = Db::name('agent_log')->alias('l')
                 ->leftJoin('user u', 'l.agent_id = u.id')
-                ->field('l.*, u.mobile as agent_mobile, u.nickname as agent_nickname');
+                ->field('l.*, u.account as agent_mobile, u.nickname as agent_nickname');
             if ($keyword !== '') {
                 $query->whereLike('l.action', "%{$keyword}%");
             }
             if ($agent !== '') {
                 $query->where(function ($q) use ($agent) {
-                    $q->whereLike('u.mobile', "%{$agent}%")->whereOr('u.nickname', 'like', "%{$agent}%");
+                    $q->whereLike('u.account', "%{$agent}%")->whereOr('u.nickname', 'like', "%{$agent}%");
                     if (ctype_digit($agent)) {
                         $q->whereOr('l.agent_id', (int)$agent);
                     }

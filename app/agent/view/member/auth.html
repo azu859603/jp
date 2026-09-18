@@ -4,7 +4,7 @@
 {block name="crumb"}会员管理 / <b>实名认证</b>{/block}
 
 {block name="content"}
-<div class="readonly-tip"><span>🔒</span><span><b>数据范围</b>：仅包含您直接邀请的一级会员的申请记录。列表中的手机号与身份证号已脱敏，编辑时可看到并修改完整号码。</span></div>
+<div class="readonly-tip"><span>🔒</span><span><b>数据范围</b>：仅包含您直接邀请的一级会员的申请记录。列表中的账号与身份证号已脱敏，编辑时可看到并修改完整号码。</span></div>
 <div class="search-bar">
     <select class="form-control" id="status" onchange="loadList(1)">
         <option value="" selected>全部</option>
@@ -21,7 +21,7 @@
         <table class="table">
             <thead>
             <tr>
-                <th>ID</th><th>会员</th><th>手机号</th><th>真实姓名</th><th>身份证号</th><th>证件照片</th><th>提交时间</th><th>状态</th><th>操作</th>
+                <th>ID</th><th>会员</th><th>账号</th><th>真实姓名</th><th>身份证号</th><th>证件照片</th><th>提交时间</th><th>状态</th><th>操作</th>
             </tr>
             </thead>
             <tbody id="tbody"></tbody>
@@ -39,7 +39,7 @@
             <div class="form-group" id="pickGroup">
                 <label>会员 <span class="req">*</span> <span class="tip" style="display:inline">（只能选择您团队内还没有实名资料的会员）</span></label>
                 <div style="position:relative;">
-                    <input type="text" class="form-control" id="userKw" placeholder="手机号 / 昵称 / 会员 ID" autocomplete="off">
+                    <input type="text" class="form-control" id="userKw" placeholder="账号 / 昵称 / 会员 ID" autocomplete="off">
                     <div id="userList" class="pick-list"></div>
                 </div>
                 <div class="tip" id="userSel" style="color:#16a34a;min-height:16px;"></div>

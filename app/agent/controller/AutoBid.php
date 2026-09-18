@@ -27,7 +27,7 @@ class AutoBid extends Base
             if ($keyword !== '') {
                 $query->where(function ($q) use ($keyword) {
                     // 拍品标题 / 卖家手机号
-                    $q->where('g.title', 'like', "%{$keyword}%")->whereOr('u.mobile', 'like', "%{$keyword}%");
+                    $q->where('g.title', 'like', "%{$keyword}%")->whereOr('u.account', 'like', "%{$keyword}%");
                 });
             }
             if ($status !== '') {
@@ -181,7 +181,7 @@ class AutoBid extends Base
         return Db::name('auto_bid')->alias('a')
             ->leftJoin('goods g', 'a.goods_id = g.id')
             ->leftJoin('user u', 'g.seller_id = u.id')
-            ->field('a.*, g.title, g.cover, g.status as goods_status, g.start_price, g.raise_price, g.end_time, g.bid_count as goods_bid_count, g.seller_id, u.nickname as seller_name, u.mobile as seller_mobile, u.shop_name')
+            ->field('a.*, g.title, g.cover, g.status as goods_status, g.start_price, g.raise_price, g.end_time, g.bid_count as goods_bid_count, g.seller_id, u.nickname as seller_name, u.account as seller_mobile, u.shop_name')
             ->whereIn('g.seller_id', $ids ?: [-1]);
     }
 

@@ -30,7 +30,7 @@ class Bid extends Base
             $query = Db::name('bid_record')->alias('b')
                 ->leftJoin('goods g', 'b.goods_id = g.id')
                 ->leftJoin('user u', 'b.user_id = u.id')
-                ->field('b.*, g.title as goods_title, g.seller_id, u.mobile, u.nickname')
+                ->field('b.*, g.title as goods_title, g.seller_id, u.account as mobile, u.nickname')
                 // 团队范围：拍品卖家是我的下级，或出价人是我的下级
                 ->where(function ($q) use ($ids) {
                     $q->whereIn('g.seller_id', $ids)->whereOr('b.user_id', 'in', $ids);
@@ -39,7 +39,7 @@ class Bid extends Base
             if ($keyword !== '') {
                 $query->where(function ($q) use ($keyword) {
                     $q->whereLike('g.title', "%{$keyword}%")
-                        ->whereOr('u.mobile', 'like', "%{$keyword}%")
+                        ->whereOr('u.account', 'like', "%{$keyword}%")
                         ->whereOr('u.nickname', 'like', "%{$keyword}%");
                 });
             }
@@ -114,13 +114,13 @@ class Bid extends Base
         $query = $this->memberQuery()->where('status', 1);
         if ($kw !== '') {
             $query->where(function ($q) use ($kw) {
-                $q->where('mobile', 'like', "%{$kw}%")->whereOr('nickname', 'like', "%{$kw}%");
+                $q->where('account', 'like', "%{$kw}%")->whereOr('nickname', 'like', "%{$kw}%");
                 if (ctype_digit($kw)) {
                     $q->whereOr('id', (int)$kw);
                 }
             });
         }
-        $list = $query->field('id,mobile,nickname,is_virtual,balance')->order('id', 'desc')->limit(20)->select()->toArray();
+        $list = $query->field('id,account as mobile,nickname,is_virtual,balance')->order('id', 'desc')->limit(20)->select()->toArray();
         return json(['code' => 1, 'data' => $list]);
     }
 
@@ -256,7 +256,7 @@ class Bid extends Base
             return json(['code' => 0, 'msg' => '操作失败：' . $e->getMessage()]);
         }
 
-        agent_log('手动添加出价：拍品「' . $goods['title'] . '」 买家 ' . ($buyer['mobile'] ?: $userId) . ' 出价 ' . number_format($price, 2));
+        agent_log('手动添加出价：拍品「' . $goods['title'] . '」 买家 ' . (user_account($buyer) ?: $userId) . ' 出价 ' . number_format($price, 2));
         return json(['code' => 1, 'msg' => '已添加出价记录']);
     }
     /**

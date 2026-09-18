@@ -38,7 +38,7 @@ class Index extends Base
             ->alias('b')
             ->leftJoin('goods g', 'b.goods_id = g.id')
             ->leftJoin('user u', 'b.user_id = u.id')
-            ->field('b.*, g.title as goods_title, u.nickname, u.mobile')
+            ->field('b.*, g.title as goods_title, u.nickname, u.account as mobile')
             ->order('b.id', 'desc')
             ->limit(8)
             ->select()

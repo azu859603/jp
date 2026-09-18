@@ -7,7 +7,7 @@
 <div class="search-bar">
     <div class="search-input">
         <svg class="s-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/></svg>
-        <input type="text" class="form-control" id="keyword" placeholder="手机号/昵称/邀请码">
+        <input type="text" class="form-control" id="keyword" placeholder="账号/昵称/邀请码">
     </div>
     <select class="form-control" id="is_seller">
         <option value="">全部类型</option>
@@ -44,7 +44,7 @@
         <table class="table">
             <thead>
             <tr>
-                <th>ID</th><th>会员</th><th>手机号</th><th>上级</th><th>类型</th><th>代理</th>
+                <th>ID</th><th>会员</th><th>账号</th><th>上级</th><th>类型</th><th>代理</th>
                 <th>余额</th><th>冻结</th><th>成交(买/卖)</th><th>状态</th><th>注册时间</th><th>操作</th>
             </tr>
             </thead>
@@ -59,7 +59,7 @@
     <div class="dialog" style="width:520px;">
         <div class="dialog-title">批量添加虚拟会员</div>
         <div class="dialog-body">
-            <div class="tip" style="margin-bottom:12px;">账号自动生成为 <b>12 开头的 11 位数字</b>（真实手机号没有 12 号段，不会与真实用户冲突），昵称为前缀加 4 位随机数字。</div>
+            <div class="tip" style="margin-bottom:12px;">账号自动生成为 <b>12 开头的 11 位数字</b>（真实手机号没有 12 号段，不会与真实用户冲突）；「注册方式」为邮箱时生成 <b>v + 9 位数字@virtual.local</b>，昵称为前缀加 4 位随机数字。</div>
             <div class="form-group">
                 <label>数量 <span class="req">*</span>（每次最多 100 个）</label>
                 <input type="number" min="1" max="100" step="1" class="form-control" id="vbCount" value="10" placeholder="1 ~ 100">
@@ -103,8 +103,8 @@
         <div class="dialog-title">添加会员</div>
         <div class="dialog-body">
             <div class="form-group">
-                <label>手机号 <span class="req">*</span></label>
-                <input type="tel" maxlength="11" class="form-control" id="addMobile" placeholder="请输入手机号">
+                <label>登录账号 <span class="req">*</span></label>
+                <input type="text" maxlength="100" class="form-control" id="addMobile" placeholder="手机号或邮箱（含 @ 按邮箱处理）" autocomplete="off" autocapitalize="off">
             </div>
             <div class="form-group">
                 <label>昵称</label>
@@ -203,9 +203,9 @@
                 <input type="text" class="form-control" id="editPwd" placeholder="留空表示不修改；至少 6 位" autocomplete="off">
             </div>
             <div class="form-group">
-                <label>上级（手机号）</label>
+                <label>上级（账号）</label>
                 <div style="position:relative;">
-                    <input type="text" class="form-control" id="editParent" placeholder="输入手机号搜索并选择，留空表示无上级" autocomplete="off">
+                    <input type="text" class="form-control" id="editParent" placeholder="输入账号搜索并选择，留空表示无上级" autocomplete="off">
                     <div id="parentList" class="pick-list"></div>
                 </div>
                 <div class="tip" id="editParentTip">当前上级：无</div>
@@ -409,10 +409,10 @@ function onAddType(){
 function doAddMember(){
     var mobile = document.getElementById('addMobile').value.trim();
     var password = document.getElementById('addPassword').value.trim();
-    if(!/^1\d{10}$/.test(mobile)){ alert('手机号格式不正确'); return; }
+    if(!/^1\d{10}$/.test(mobile) && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(mobile)){ alert('请输入正确的手机号或邮箱'); return; }
     if(password.length < 6){ alert('密码至少6位'); return; }
     ajaxPost('/admin1314/member/add', {
-        mobile: mobile,
+        account: mobile,
         nickname: document.getElementById('addNickname').value.trim(),
         password: password,
         balance: document.getElementById('addBalance').value,
@@ -483,7 +483,7 @@ function openEdit(id){
     document.getElementById('editPwd').value = '';
     document.getElementById('editParent').value = u.pid > 0 ? (u.parent_mobile || String(u.pid)) : '';
     hideParentList();
-    document.getElementById('editParentTip').textContent = '当前上级：' + (u.pid > 0 ? (u.parent_mobile || ('#' + u.pid)) : '无') + '；输入其它会员的手机号并选择即换上级，清空并保存即取消上级';
+    document.getElementById('editParentTip').textContent = '当前上级：' + (u.pid > 0 ? (u.parent_mobile || ('#' + u.pid)) : '无') + '；输入其它会员的账号并选择即换上级，清空并保存即取消上级';
     setRadio('editSeller', u.is_seller == 1 ? 1 : 0);
     setRadio('editAgent', u.is_agent == 1 ? 1 : 0);
     setRadio('editVirtual', u.is_virtual == 1 ? 1 : 0);
@@ -491,7 +491,7 @@ function openEdit(id){
     document.getElementById('editMask').classList.add('show');
 }
 
-/* 上级搜索下拉：输入手机号 / 昵称 / 会员ID，250ms 防抖请求，点选后把手机号填入输入框 */
+/* 上级搜索下拉：输入账号 / 昵称 / 会员ID，250ms 防抖请求，点选后把账号填入输入框 */
 var parentTimer = null;
 function hideParentList(){ var l = document.getElementById('parentList'); l.style.display = 'none'; l.innerHTML = ''; }
 function searchParent(){

@@ -14,7 +14,7 @@ function post($headers) {
     $b = curl_exec($ch); $c = curl_getinfo($ch, CURLINFO_HTTP_CODE); curl_close($ch);
     return [$c, $b];
 }
-[$c, $b] = post(['Origin: http://localhost']);                     ok('同站 Origin 放行（进入控制器校验）', $c == 200 && strpos($b, '请输入手机号和密码') !== false, "HTTP $c $b");
+[$c, $b] = post(['Origin: http://localhost']);                     ok('同站 Origin 放行（进入控制器校验）', $c == 200 && strpos($b, '请输入账号和密码') !== false, "HTTP $c $b");
 [$c, $b] = post(['Referer: http://localhost/user/login']);          ok('同站 Referer 放行', $c == 200, "HTTP $c $b");
 [$c, $b] = post(['Origin: http://evil.example']);                   ok('跨站 Origin → 403', $c == 403 && strpos($b, '请求来源不合法') !== false, "HTTP $c $b");
 [$c, $b] = post(['Referer: http://evil.example/x']);                ok('跨站 Referer → 403', $c == 403, "HTTP $c $b");

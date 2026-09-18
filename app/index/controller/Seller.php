@@ -77,7 +77,7 @@ class Seller extends Base
     {
         $base = trim((string)$this->user['nickname']);
         if ($base === '') {
-            $base = lang('用户') . substr((string)$this->user['mobile'], -4);
+            $base = lang('用户') . substr(explode('@', user_account($this->user))[0], -4);
         }
         $base = mb_substr($base, 0, 20) . lang('的店铺');
         $name = $base;
@@ -120,12 +120,17 @@ class Seller extends Base
             return json(['code' => 0, 'msg' => lang('请填写完整信息')]);
         }
         $licArr = $licenseImgs === '' ? [] : explode(',', $licenseImgs);
+        foreach ($licArr as $img) {
+            if (!is_upload_image($img)) {
+                return json(['code' => 0, 'msg' => lang('图片地址不合法，请重新上传')]);
+            }
+        }
         if (count($licArr) > 5) {
             return json(['code' => 0, 'msg' => lang('企业资料最多上传5张图片')]);
         }
         // 姓名/手机号以实名认证信息为准（实名已通过，姓名不可更改）
         $realName = $this->user['real_name'];
-        $mobile = $this->user['mobile'];
+        $mobile = (string)$this->user['mobile'];
 
         // 是否需要人工审核
         $needCheck = (int)get_setting('seller_check', 1) === 1;
@@ -208,6 +213,11 @@ class Seller extends Base
             }
 
             $images = is_array($images) ? array_values(array_filter($images)) : [];
+            foreach (array_merge($images, $cover !== '' ? [$cover] : []) as $img) {
+                if (!is_upload_image($img)) {
+                    return json(['code' => 0, 'msg' => lang('图片地址不合法，请重新上传')]);
+                }
+            }
             if (count($images) < 4) {
                 return json(['code' => 0, 'msg' => lang('请至少上传4张不同角度的商品照片')]);
             }

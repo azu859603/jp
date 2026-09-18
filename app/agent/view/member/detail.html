@@ -16,7 +16,7 @@
         <table class="table">
             <tbody>
             <tr><th style="width:140px;">会员ID</th><td>{$member.id}</td><th style="width:140px;">昵称</th><td>{$member.nickname|default='-'}</td></tr>
-            <tr><th>手机号</th><td>{$member.mobile}</td><th>邀请码</th><td>{$member.invite_code|default='-'}</td></tr>
+            <tr><th>登录账号</th><td>{$member.account}</td><th>邀请码</th><td>{$member.invite_code|default='-'}</td></tr>
             <tr><th>可用余额</th><td><span class="price">￥{$member.balance|number_format=2}</span></td><th>冻结余额</th><td>￥{$member.freeze_balance|number_format=2}</td></tr>
             <tr>
                 <th>会员类型</th>
@@ -47,7 +47,7 @@
                     <span style="margin-right:14px;">信誉分 <b>{$member.credit_score|default='100'}</b></span>
                     <span style="margin-right:14px;">消费保证金 <b>¥{$member.deposit|number_format=2}</b></span>
                     <span style="margin-right:14px;">粉丝 <b>{$member.fans_count|default='0'}</b></span>
-                    <a class="btn btn-sm" href="/agent/member/index?keyword={$member.mobile}">去列表编辑店铺资料</a>
+                    <a class="btn btn-sm" href="/agent/member/index?keyword={$member.account|urlencode}">去列表编辑店铺资料</a>
                     {if !empty($member.seller_intro)}<div class="gray" style="margin-top:6px;font-size:12px;">介绍：{$member.seller_intro}</div>{/if}
                     {else /}<span class="gray">该会员还不是卖家</span>{/if}
                 </td>

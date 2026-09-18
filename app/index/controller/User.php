@@ -33,6 +33,7 @@ class User extends Base
             session('disabled_notice', null);
         }
         View::assign([
+            'register_mode'   => register_mode(),
             'page_title'      => lang('会员登录'),
             'disabled_notice' => $disabledNotice ? 1 : 0,
             'disabled_reason' => $disabledReason,
@@ -101,12 +102,16 @@ class User extends Base
         if (!$this->request->isPost()) {
             return json(['code' => 0, 'msg' => lang('请求方式错误')]);
         }
-        $mobile = trim($this->request->post('mobile', ''));
+        // 登录账号：手机号或邮箱都认（与后台「注册方式」无关）；参数名 account，兼容旧的 mobile
+        $mobile = trim((string)$this->request->post('account', $this->request->post('mobile', '')));
+        if (strpos($mobile, '@') !== false) {
+            $mobile = strtolower($mobile);
+        }
         $password = trim($this->request->post('password', ''));
         $captcha  = trim($this->request->post('captcha', ''));
 
         if (empty($mobile) || empty($password)) {
-            return json(['code' => 0, 'msg' => lang('请输入手机号和密码')]);
+            return json(['code' => 0, 'msg' => lang('请输入账号和密码')]);
         }
 
         // 防爆破：账号维度与 IP 维度双重限制，任一触发即拒绝
@@ -126,10 +131,10 @@ class User extends Base
             return json(['code' => 0, 'msg' => lang('验证码错误')]);
         }
 
-        $user = Db::name('user')->where('mobile', $mobile)->find();
+        $user = find_user_by_account($mobile);
         if (!$user || !verify_password($password, $user['password'])) {
             $this->markLoginFail($acctKey, $acctFails, $ipKey, $ipFails);
-            return json(['code' => 0, 'msg' => lang('手机号或密码错误')]);
+            return json(['code' => 0, 'msg' => lang('账号或密码错误')]);
         }
         if ($user['status'] != 1) {
             $this->markLoginFail($acctKey, $acctFails, $ipKey, $ipFails);
@@ -196,6 +201,8 @@ class User extends Base
         }
         View::assign([
             'page_title'      => lang('会员注册'),
+            // 后台开关：手机号注册 / 邮箱注册
+            'register_mode'   => register_mode(),
             // 后台开关：注册是否必须填写邀请码（默认必须）
             'invite_required' => (int)get_setting('invite_required', 1) === 1,
         ]);
@@ -210,7 +217,9 @@ class User extends Base
         if (!$this->request->isPost()) {
             return json(['code' => 0, 'msg' => lang('请求方式错误')]);
         }
-        $mobile = trim($this->request->post('mobile', ''));
+        // 注册账号：后台「注册方式」为手机号时是手机号，为邮箱时是邮箱；参数名 account，兼容旧的 mobile
+        $mode   = register_mode();
+        $mobile = trim((string)$this->request->post('account', $this->request->post('mobile', '')));
         $password = trim($this->request->post('password', ''));
         $captcha  = trim($this->request->post('captcha', ''));
         $password2 = trim($this->request->post('password2', ''));
@@ -229,7 +238,13 @@ class User extends Base
             return json(['code' => 0, 'msg' => lang('注册过于频繁，请稍后再试')]);
         }
         // 注册只接受真实手机号段（13~19 开头）；12 开头留给后台生成的虚拟会员，登录不受此限制
-        if (!preg_match('/^1[3-9]\d{9}$/', $mobile)) {
+        $email = '';
+        if ($mode === 'email') {
+            $email = normalize_email($mobile);
+            if ($email === '') {
+                return json(['code' => 0, 'msg' => lang('请输入正确的邮箱地址')]);
+            }
+        } elseif (!preg_match('/^1[3-9]\d{9}$/', $mobile)) {
             return json(['code' => 0, 'msg' => lang('请使用真实手机号注册（13～19 开头的 11 位号码）')]);
         }
         if (strlen($password) < 6) {
@@ -239,9 +254,14 @@ class User extends Base
             return json(['code' => 0, 'msg' => lang('两次密码不一致')]);
         }
         if ($nickname === '') {
-            $nickname = '用户' . substr($mobile, -4);
+            // 手机号取后 4 位；邮箱取 @ 前面的部分（最多 12 个字符）
+            $nickname = '用户' . ($mode === 'email' ? mb_substr(explode('@', $email)[0], 0, 12) : substr($mobile, -4));
         }
-        if (Db::name('user')->where('mobile', $mobile)->find()) {
+        if ($mode === 'email') {
+            if (Db::name('user')->where('email', $email)->find()) {
+                return json(['code' => 0, 'msg' => lang('该邮箱已注册')]);
+            }
+        } elseif (Db::name('user')->where('mobile', $mobile)->find()) {
             return json(['code' => 0, 'msg' => lang('该手机号已注册')]);
         }
 
@@ -265,7 +285,9 @@ class User extends Base
 
         $now = time();
         $userId = Db::name('user')->insertGetId([
-            'mobile'      => $mobile,
+            // 手机号 / 邮箱二选一，另一个留 NULL（两列都有唯一索引，NULL 不参与唯一性）
+            'mobile'      => $mode === 'email' ? null : $mobile,
+            'email'       => $mode === 'email' ? $email : null,
             'password'    => hash_password($password),
             'nickname'    => $nickname,
             'invite_code' => $myCode,
@@ -397,7 +419,7 @@ class User extends Base
             ->toArray();
 
         // 分享记录（我邀请的用户）
-        $shareUsers = Db::name('user')->where('pid', $id)->field('id, nickname, mobile, reg_time')->order('id', 'desc')->limit(10)->select()->toArray();
+        $shareUsers = Db::name('user')->where('pid', $id)->field('id, nickname, account as mobile, reg_time')->order('id', 'desc')->limit(10)->select()->toArray();
 
         // 后台配置的客服链接
         $serviceLink = (string)get_setting('service_link');
@@ -1310,6 +1332,9 @@ class User extends Base
             }
             if (!preg_match('/^\d{17}[\dX]$/', $idCard)) {
                 return json(['code' => 0, 'msg' => lang('身份证号格式不正确')]);
+            }
+            if (($front !== '' && !is_upload_image($front)) || ($back !== '' && !is_upload_image($back))) {
+                return json(['code' => 0, 'msg' => lang('图片地址不合法，请重新上传')]);
             }
             if ($front === '' || $back === '') {
                 return json(['code' => 0, 'msg' => lang('请上传身份证正反面照片')]);

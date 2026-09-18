@@ -42,7 +42,7 @@ class Login extends BaseController
             }
             if ($cur && $cur['status'] == 1) {
                 // 前台已登录但不是代理：提示换号，不清除其前台登录态
-                $notice = '当前登录的账号（' . $this->maskMobile($cur['mobile']) . '）不是代理账号，请使用代理账号登录。';
+                $notice = '当前登录的账号（' . $this->maskMobile(user_account($cur)) . '）不是代理账号，请使用代理账号登录。';
             }
         }
 
@@ -83,10 +83,11 @@ class Login extends BaseController
         }
         session('agent_captcha', null);
 
-        $user = Db::name('user')->where('mobile', $mobile)->find();
+        // 代理用前台账号登录：手机号或邮箱都认
+        $user = find_user_by_account($mobile);
         if (!$user || !verify_password($password, $user['password'])) {
             $this->markFail($lockKey, $fails);
-            return json(['code' => 0, 'msg' => '手机号或密码错误']);
+            return json(['code' => 0, 'msg' => '账号或密码错误']);
         }
         if ($user['status'] != 1) {
             $this->markFail($lockKey, $fails);
@@ -190,11 +191,8 @@ class Login extends BaseController
      */
     protected function maskMobile($mobile)
     {
-        $mobile = (string)$mobile;
-        if (strlen($mobile) < 7) {
-            return $mobile;
-        }
-        return substr($mobile, 0, 3) . '****' . substr($mobile, -4);
+        // 统一走公共脱敏：手机号 138****0000，邮箱 ab***@qq.com
+        return mask_mobile($mobile);
     }
 
     /**

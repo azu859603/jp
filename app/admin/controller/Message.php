@@ -24,15 +24,15 @@ class Message extends Base
                 ->leftJoin('user fu', 'm.from_uid = fu.id')
                 ->leftJoin('user tu', 'm.to_uid = tu.id')
                 ->leftJoin('goods g', 'm.goods_id = g.id')
-                ->field('m.*, fu.nickname as from_nick, fu.mobile as from_mobile, fu.shop_name as from_shop, tu.nickname as to_nick, tu.mobile as to_mobile, tu.shop_name as to_shop, g.title as goods_title');
+                ->field('m.*, fu.nickname as from_nick, fu.account as from_mobile, fu.shop_name as from_shop, tu.nickname as to_nick, tu.account as to_mobile, tu.shop_name as to_shop, g.title as goods_title');
             if ($keyword !== '') {
                 $query->where(function ($q) use ($keyword) {
                     $q->whereLike('m.content', "%{$keyword}%")
                         ->whereOr('g.title', 'like', "%{$keyword}%")
                         ->whereOr('fu.nickname', 'like', "%{$keyword}%")
-                        ->whereOr('fu.mobile', 'like', "%{$keyword}%")
+                        ->whereOr('fu.account', 'like', "%{$keyword}%")
                         ->whereOr('tu.nickname', 'like', "%{$keyword}%")
-                        ->whereOr('tu.mobile', 'like', "%{$keyword}%");
+                        ->whereOr('tu.account', 'like', "%{$keyword}%");
                 });
             }
 

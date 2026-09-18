@@ -131,7 +131,8 @@ function admin_log($action, $adminId = 0)
         Db::name('admin_log')->insert([
             // 登录时写入的是 session('admin')，此前误读 session('admin_id') 导致所有不传 id 的日志静默丢失
             'admin_id'    => $adminId ?: (int)((session('admin') ?: [])['id'] ?? 0),
-            'action'      => $action,
+            // action 列是 VARCHAR(255)：超长（如商品标题很长）时截断，避免严格模式下整条日志写入失败被静默吞掉
+            'action'      => mb_substr((string)$action, 0, 255),
             'ip'          => request()->ip(),
             'create_time' => time(),
         ]);
@@ -959,6 +960,50 @@ function auto_bid_run($limit = 200, $scope = 'all')
 }
 
 /**
+ * 后台 / 代理后台「添加会员」用：解析并校验新账号。
+ * 含 @ 按邮箱处理，否则按手机号处理（与当前注册方式无关，方便后台按需添加任意一种）；
+ * 什么都不像时，提示语跟随当前注册方式。
+ * @return array ['ok'=>bool, 'msg'=>string, 'mobile'=>?string, 'email'=>?string, 'account'=>string, 'nick'=>string]
+ */
+function parse_new_account($input)
+{
+    $input = trim((string)$input);
+    $fail  = function ($msg) { return ['ok' => false, 'msg' => $msg, 'mobile' => null, 'email' => null, 'account' => '', 'nick' => '']; };
+    if (strpos($input, '@') !== false) {
+        $email = normalize_email($input);
+        if ($email === '') {
+            return $fail('邮箱格式不正确');
+        }
+        if (Db::name('user')->where('email', $email)->count()) {
+            return $fail('该邮箱已注册');
+        }
+        return ['ok' => true, 'msg' => '', 'mobile' => null, 'email' => $email, 'account' => $email, 'nick' => '用户' . mb_substr(explode('@', $email)[0], 0, 12)];
+    }
+    if (!preg_match('/^1\d{10}$/', $input)) {
+        return $fail(register_mode() === 'email' ? '邮箱格式不正确' : '手机号格式不正确');
+    }
+    if (Db::name('user')->where('mobile', $input)->count()) {
+        return $fail('该手机号已注册');
+    }
+    return ['ok' => true, 'msg' => '', 'mobile' => $input, 'email' => null, 'account' => $input, 'nick' => '用户' . substr($input, -4)];
+}
+
+/**
+ * 生成虚拟会员邮箱账号（注册方式为邮箱时批量添加虚拟会员用）：v + 9 位随机数字 @virtual.local
+ * .local 是保留域名，不会与真实邮箱冲突
+ */
+function generate_virtual_email()
+{
+    for ($i = 0; $i < 50; $i++) {
+        $email = 'v' . str_pad((string)mt_rand(0, 999999999), 9, '0', STR_PAD_LEFT) . '@virtual.local';
+        if (!Db::name('user')->where('email', $email)->count()) {
+            return $email;
+        }
+    }
+    throw new \RuntimeException('生成虚拟会员账号失败，请重试');
+}
+
+/**
  * 生成虚拟会员账号：12 开头 + 9 位随机数字，共 11 位
  * 国内真实手机号没有 12 号段，因此不会与真实用户注册的号码冲突
  */
@@ -1007,10 +1052,91 @@ function command_lock($name)
 function mask_mobile($mobile)
 {
     $mobile = (string)$mobile;
+    // 邮箱账号：保留前 2 位和域名，如 ab***@qq.com
+    if (strpos($mobile, '@') !== false) {
+        [$local, $domain] = explode('@', $mobile, 2);
+        return mb_substr($local, 0, min(2, max(1, mb_strlen($local) - 1))) . '***@' . $domain;
+    }
     if (strlen($mobile) < 7) {
         return $mobile;
     }
     return substr($mobile, 0, 3) . '****' . substr($mobile, -4);
+}
+
+/**
+ * 前台会员提交的图片地址：只能是本站上传接口返回的 /uploads/ 下的图片。
+ * 不校验的话可以塞进任意字符串（如 x" onerror="...），在后台列表的 <img src> 里变成脚本执行。
+ */
+function is_upload_image($path)
+{
+    $path = (string)$path;
+    return strpos($path, '..') === false
+        && (bool)preg_match('~^/uploads/[\w\-./]+\.(jpg|jpeg|png|gif|webp)$~i', $path);
+}
+
+/**
+ * 后台 / 代理后台提交的图片地址：本站相对路径，或采集商品留下的 http(s) 外链；同样不允许引号、尖括号、空格等字符
+ */
+function is_safe_image_url($path)
+{
+    $path = (string)$path;
+    if (strpos($path, '..') !== false) {
+        return false;
+    }
+    return (bool)preg_match('~^/[\w\-./]+\.(jpg|jpeg|png|gif|webp)$~i', $path)
+        || (bool)preg_match('~^https?://[\w\-.]+(:\d+)?/[\w\-./%]+\.(jpg|jpeg|png|gif|webp)(\?[\w=&\-.%]*)?$~i', $path);
+}
+
+/**
+ * 注册方式（主后台「注册与审核 › 注册方式」）：mobile 手机号 / email 邮箱。
+ * 只决定「新会员用什么注册」；登录始终两种都认，老会员不受切换影响。
+ */
+function register_mode()
+{
+    return (string)get_setting('register_mode', 'mobile') === 'email' ? 'email' : 'mobile';
+}
+
+/**
+ * 会员登录账号：手机号注册的是手机号，邮箱注册的是邮箱。
+ * user 表有虚拟列 account = IFNULL(mobile, email)；传入的行没带 account 时用 mobile / email 兜底。
+ */
+function user_account($user)
+{
+    if (!is_array($user)) {
+        return '';
+    }
+    foreach (['account', 'mobile', 'email'] as $k) {
+        if (isset($user[$k]) && (string)$user[$k] !== '') {
+            return (string)$user[$k];
+        }
+    }
+    return '';
+}
+
+/**
+ * 邮箱格式校验（统一转小写后入库、查库）
+ */
+function normalize_email($email)
+{
+    $email = strtolower(trim((string)$email));
+    // 只接受常规字符的邮箱（字母数字 . _ % + -），避免引号、尖括号等特殊字符进入账号
+    return ($email !== '' && strlen($email) <= 100 && filter_var($email, FILTER_VALIDATE_EMAIL)
+        && preg_match('/^[a-z0-9._%+\-]+@[a-z0-9.\-]+\.[a-z]{2,}$/', $email)) ? $email : '';
+}
+
+/**
+ * 按登录账号找会员：含 @ 按邮箱查，否则按手机号查
+ */
+function find_user_by_account($account)
+{
+    $account = trim((string)$account);
+    if ($account === '') {
+        return null;
+    }
+    if (strpos($account, '@') !== false) {
+        return Db::name('user')->where('email', strtolower($account))->find();
+    }
+    return Db::name('user')->where('mobile', $account)->find();
 }
 
 /**
@@ -1136,7 +1262,7 @@ function pay_order_for_buyer($orderId, array $ship, $operator = '后台代付')
  */
 function pay_order_info(array $order)
 {
-    $user = Db::name('user')->where('id', $order['buyer_id'])->field('id,nickname,mobile,balance,freeze_balance,is_virtual')->find();
+    $user = Db::name('user')->where('id', $order['buyer_id'])->field('id,nickname,account as mobile,balance,freeze_balance,is_virtual')->find();
     $addr = Db::name('user_address')->where('user_id', $order['buyer_id'])->order('is_default', 'desc')->order('id', 'desc')->find();
     $payAmount    = round($order['price'] - $order['deposit'], 2);
     $freezeDeduct = $user ? min((float)$order['deposit'], (float)$user['freeze_balance']) : 0;

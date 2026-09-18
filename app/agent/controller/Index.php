@@ -62,7 +62,7 @@ class Index extends Base
 
             // 最近加入的 10 位下级
             $recent = (clone $this->memberQuery())
-                ->field('id,nickname,mobile,avatar,is_seller,seller_check,status,total_buy,total_sell,reg_time')
+                ->field('id,nickname,account as mobile,avatar,is_seller,seller_check,status,total_buy,total_sell,reg_time')
                 ->order('id', 'desc')
                 ->limit(10)
                 ->select()

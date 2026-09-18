@@ -42,9 +42,9 @@ function loadList(page){
                 res.data.forEach(function(l){
                     html += '<tr>'
                         + '<td>' + l.id + '</td>'
-                        + '<td>' + (l.real_name || l.username || ('ID:' + l.admin_id)) + '</td>'
-                        + '<td>' + l.action + '</td>'
-                        + '<td>' + l.ip + '</td>'
+                        + '<td>' + esc(l.real_name || l.username || ('ID:' + l.admin_id)) + '</td>'
+                        + '<td>' + esc(l.action) + '</td>'
+                        + '<td>' + esc(l.ip) + '</td>'
                         + '<td>' + fmtTime(l.create_time) + '</td></tr>';
                 });
             }

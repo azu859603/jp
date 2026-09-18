@@ -20,13 +20,13 @@ class Bid extends Base
             $query = Db::name('bid_record')->alias('b')
                 ->leftJoin('goods g', 'b.goods_id = g.id')
                 ->leftJoin('user u', 'b.user_id = u.id')
-                ->field('b.*, g.title as goods_title, u.mobile, u.nickname');
+                ->field('b.*, g.title as goods_title, u.account as mobile, u.nickname');
 
             if ($keyword !== '') {
                 $query->where(function ($q) use ($keyword) {
                     // 拍品标题 / 买家手机号 / 买家昵称
                     $q->whereLike('g.title', "%{$keyword}%")
-                        ->whereOr('u.mobile', 'like', "%{$keyword}%")
+                        ->whereOr('u.account', 'like', "%{$keyword}%")
                         ->whereOr('u.nickname', 'like', "%{$keyword}%");
                 });
             }
@@ -233,13 +233,13 @@ class Bid extends Base
         $query = Db::name('user')->where('status', 1);
         if ($kw !== '') {
             $query->where(function ($q) use ($kw) {
-                $q->where('mobile', 'like', "%{$kw}%")->whereOr('nickname', 'like', "%{$kw}%");
+                $q->where('account', 'like', "%{$kw}%")->whereOr('nickname', 'like', "%{$kw}%");
                 if (ctype_digit($kw)) {
                     $q->whereOr('id', (int)$kw);
                 }
             });
         }
-        $list = $query->field('id,mobile,nickname,is_virtual,balance')->order('id', 'desc')->limit(20)->select()->toArray();
+        $list = $query->field('id,account as mobile,nickname,is_virtual,balance')->order('id', 'desc')->limit(20)->select()->toArray();
         return json(['code' => 1, 'data' => $list]);
     }
     /**

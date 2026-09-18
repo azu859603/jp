@@ -57,7 +57,7 @@ try {
 
     echo "== 上级搜索 ==\n";
     [$c, $html] = req($sa, 'GET', '/admin1314/member/index', null, false);
-    ok('弹窗里的上级输入框带搜索下拉', strpos($html, 'id="parentList"') !== false && strpos($html, "searchUser?scene=parent&exclude=") !== false && strpos($html, '<label>上级（手机号）</label>') !== false, '');
+    ok('弹窗里的上级输入框带搜索下拉', strpos($html, 'id="parentList"') !== false && strpos($html, "searchUser?scene=parent&exclude=") !== false && strpos($html, '<label>上级（账号）</label>') !== false, '');
     $idsOf = function ($j) { return array_map(function ($x) { return (int)$x['id']; }, $j['data'] ?? []); };
     [, , $j] = req($sa, 'GET', '/admin1314/member/searchUser?scene=parent&exclude=' . $M . '&kw=19999990');
     $r = $idsOf($j);

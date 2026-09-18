@@ -18,7 +18,7 @@ class Withdraw extends Base
 
             $query = Db::name('withdraw')->alias('w')
                 ->leftJoin('user u', 'w.user_id = u.id')
-                ->field('w.*, u.mobile, u.nickname, u.is_virtual');
+                ->field('w.*, u.account as mobile, u.nickname, u.is_virtual');
 
             if ($status !== '') {
                 $query->where('w.status', (int)$status);
@@ -26,7 +26,7 @@ class Withdraw extends Base
             $keyword = trim((string)$this->request->param('keyword', ''));
             if ($keyword !== '') {
                 $query->where(function ($q) use ($keyword) {
-                    $q->where('u.mobile', 'like', "%{$keyword}%")->whereOr('u.nickname', 'like', "%{$keyword}%");
+                    $q->where('u.account', 'like', "%{$keyword}%")->whereOr('u.nickname', 'like', "%{$keyword}%");
                 });
             }
 
@@ -78,7 +78,7 @@ class Withdraw extends Base
                 ]) !== 1) {
                     throw new \RuntimeException('申请状态已变化');
                 }
-                admin_log('提现打款：会员 ' . $user['mobile'] . ' ' . $withdraw['amount'] . '元');
+                admin_log('提现打款：会员 ' . user_account($user) . ' ' . $withdraw['amount'] . '元');
             } else {
                 if (empty($reason)) {
                     Db::rollback();
@@ -105,7 +105,7 @@ class Withdraw extends Base
                 ]) !== 1) {
                     throw new \RuntimeException('申请状态已变化');
                 }
-                admin_log('拒绝提现：会员 ' . $user['mobile'] . '，原因：' . $reason);
+                admin_log('拒绝提现：会员 ' . user_account($user) . '，原因：' . $reason);
             }
             Db::commit();
         } catch (\Throwable $e) {

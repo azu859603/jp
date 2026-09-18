@@ -20,7 +20,7 @@ class Recharge extends Base
             $status = $this->request->param('status', '');
             $query = Db::name('recharge')->alias('r')
                 ->leftJoin('user u', 'r.user_id = u.id')
-                ->field('r.*, u.mobile, u.nickname')
+                ->field('r.*, u.account as mobile, u.nickname')
                 ->whereIn('r.user_id', $this->memberIds());
             if ($status !== '') {
                 $query->where('r.status', (int)$status);
@@ -28,7 +28,7 @@ class Recharge extends Base
             $keyword = trim((string)$this->request->param('keyword', ''));
             if ($keyword !== '') {
                 $query->where(function ($q) use ($keyword) {
-                    $q->where('u.mobile', 'like', "%{$keyword}%")->whereOr('u.nickname', 'like', "%{$keyword}%");
+                    $q->where('u.account', 'like', "%{$keyword}%")->whereOr('u.nickname', 'like', "%{$keyword}%");
                 });
             }
             $total = $query->count();
@@ -94,7 +94,7 @@ class Recharge extends Base
             Db::rollback();
             return json(['code' => 0, 'msg' => '操作失败：' . $e->getMessage()]);
         }
-        agent_log($action === 'pass' ? ('充值到账：会员 ' . $user['mobile'] . ' ' . $recharge['amount'] . '元') : ('拒绝充值：会员 ' . $user['mobile'] . '，原因：' . $reason));
+        agent_log($action === 'pass' ? ('充值到账：会员 ' . user_account($user) . ' ' . $recharge['amount'] . '元') : ('拒绝充值：会员 ' . user_account($user) . '，原因：' . $reason));
         return json(['code' => 1, 'msg' => $action === 'pass' ? '已到账' : '已拒绝']);
     }
 }

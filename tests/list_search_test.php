@@ -60,11 +60,11 @@ try {
         [, , $j] = req($sid, "$pre/auto_bid/index?page=1&limit=50&keyword=$g");
         ok("$tag 纯拍品 ID 不再作为搜索条件", !in_array($task, idsOf($j)), json_encode(idsOf($j)));
         [$c, $html] = req($sid, "$pre/auto_bid/index", false);
-        ok("$tag 页面：占位文案、卖家手机号列", $c == 200 && strpos($html, 'placeholder="拍品标题 / 卖家手机号"') !== false && strpos($html, '<th>卖家手机号</th>') !== false && strpos($html, "esc(t.seller_mobile || '-')") !== false && strpos($html, 'colspan="12"') !== false, "HTTP $c");
+        ok("$tag 页面：占位文案、卖家手机号列", $c == 200 && strpos($html, 'placeholder="拍品标题 / 卖家账号"') !== false && strpos($html, '<th>卖家账号</th>') !== false && strpos($html, "esc(t.seller_mobile || '-')") !== false && strpos($html, 'colspan="12"') !== false, "HTTP $c");
     }
 
     echo "== 订单列表 ==\n";
-    foreach ([['主后台', $sa, '/admin1314', '订单号 / 商品名称 / 卖家手机号 / 买家手机号'], ['代理后台', $sag, '/agent', '订单号 / 商品名称 / 卖家手机号 / 买家手机号']] as [$tag, $sid, $pre, $ph]) {
+    foreach ([['主后台', $sa, '/admin1314', '订单号 / 商品名称 / 卖家账号 / 买家账号'], ['代理后台', $sag, '/agent', '订单号 / 商品名称 / 卖家账号 / 买家账号']] as [$tag, $sid, $pre, $ph]) {
         foreach (['QALS0001' => '订单号', 'QALS订单' => '商品名称', '19999990491' => '卖家手机号', '19999990492' => '买家手机号'] as $kw => $what) {
             [, , $j] = req($sid, "$pre/order/index?page=1&limit=50&keyword=" . urlencode($kw));
             ok("$tag 按{$what}搜到订单", in_array($order, idsOf($j)), json_encode(idsOf($j)));
@@ -77,7 +77,7 @@ try {
     foreach ([['主后台', $sa, '/admin1314'], ['代理后台', $sag, '/agent']] as [$tag, $sid, $pre]) {
         foreach (['recharge', 'withdraw', 'balance'] as $mod) {
             [$c, $html] = req($sid, "$pre/$mod/index", false);
-            ok("$tag $mod 占位为「手机号 / 昵称」", $c == 200 && strpos($html, 'placeholder="手机号 / 昵称"') !== false, "HTTP $c");
+            ok("$tag $mod 占位为「手机号 / 昵称」", $c == 200 && strpos($html, 'placeholder="账号 / 昵称"') !== false, "HTTP $c");
         }
     }
 

@@ -12,7 +12,7 @@
     </div>
     <div class="search-input">
         <svg class="s-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4.5 21c1.2-3.6 4-5.5 7.5-5.5s6.3 1.9 7.5 5.5"/></svg>
-        <input type="text" class="form-control" id="seller_kw" placeholder="卖家昵称/手机号">
+        <input type="text" class="form-control" id="seller_kw" placeholder="卖家昵称/账号">
     </div>
     <select class="form-control" id="category_id">
         <option value="">全部分类</option>
@@ -59,7 +59,7 @@
             <thead>
             <tr>
                 <th style="width:36px;"></th>
-                <th>ID</th><th>封面</th><th>商品标题</th><th>分类</th><th>卖家</th><th>卖家手机号</th>
+                <th>ID</th><th>封面</th><th>商品标题</th><th>分类</th><th>卖家</th><th>卖家账号</th>
                 <th>起拍价</th><th>当前/成交价</th><th>保证金</th><th>状态</th><th>出价次数</th><th>浏览量</th><th>结束时间</th><th>操作</th>
             </tr>
             </thead>
@@ -75,9 +75,9 @@
         <div class="dialog-title">批量上架流拍商品</div>
         <div class="dialog-body">
             <div class="form-group">
-                <label>选择卖家 <span class="tip" style="display:inline">（输入店铺名 / 昵称 / 手机号 / 会员 ID 搜索）</span></label>
+                <label>选择卖家 <span class="tip" style="display:inline">（输入店铺名 / 昵称 / 账号 / 会员 ID 搜索）</span></label>
                 <div style="position:relative">
-                    <input type="text" class="form-control" id="rlSellerKw" placeholder="店铺名 / 昵称 / 手机号 / 会员 ID" autocomplete="off">
+                    <input type="text" class="form-control" id="rlSellerKw" placeholder="店铺名 / 昵称 / 账号 / 会员 ID" autocomplete="off">
                     <input type="hidden" id="rlSellerId" value="">
                 </div>
                 <div id="rlSellerList" style="display:none;background:#fff;border:1px solid #e2e8f0;border-radius:8px;box-shadow:0 4px 14px rgba(0,0,0,.08);max-height:220px;overflow-y:auto;margin-top:4px;"></div>
@@ -111,7 +111,7 @@
                 <div class="g-col" style="flex:1;">
                     <label>卖家店铺 <span class="req">*</span></label>
                     <div id="sellerRO" class="form-control" style="display:none;background:#f8fafc;color:#64748b;"></div>
-                    <input type="text" class="form-control" id="sellerSearch" placeholder="输入昵称/手机号筛选" oninput="filterSeller()" style="margin-bottom:6px;">
+                    <input type="text" class="form-control" id="sellerSearch" placeholder="输入昵称/账号筛选" oninput="filterSeller()" style="margin-bottom:6px;">
                     <select class="form-control" id="sellerSel" style="max-height:130px;">
                         {volist name="sellers" id="s"}
                         <option value="{$s.id}">{$s.nickname}（{$s.mobile}）</option>
@@ -279,7 +279,7 @@ function loadList(page){
             } else {
                 res.data.forEach(function(g){
                     var st = statusMap[g.status] || ['未知','tag-gray'];
-                    var cover = g.cover ? '<img class="thumb" src="' + g.cover + '" onerror="this.style.visibility=\'hidden\'">' : '-';
+                    var cover = g.cover ? '<img class="thumb" src="' + esc(g.cover) + '" onerror="this.style.visibility=\'hidden\'">' : '-';
                     html += '<tr>'
                         + '<td><input type="checkbox" class="row-check" value="' + g.id + '" onchange="updateSel()"></td>'
                         + '<td>' + g.id + '</td>'

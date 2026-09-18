@@ -18,7 +18,7 @@ try {
             ok("$tag 按{$what}搜到出价记录", in_array($bid, ids($j)), json_encode(ids($j)));
         }
         $ch = curl_init("http://localhost$pre/bid/index"); curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => 1, CURLOPT_COOKIE => 'PHPSESSID=' . $sid, CURLOPT_HTTPHEADER => ['Accept: text/html']]); $h = curl_exec($ch); curl_close($ch);
-        ok("$tag 占位文案", strpos($h, 'placeholder="拍品标题 / 买家手机号 / 昵称"') !== false, '');
+        ok("$tag 占位文案", strpos($h, 'placeholder="拍品标题 / 买家账号 / 昵称"') !== false, '');
     }
 } finally {
     $pdo->exec("delete from bid_record where id=$bid"); $pdo->exec("delete from goods where id=$g"); $pdo->exec("delete from user where id in ($AG,$S,$B)");

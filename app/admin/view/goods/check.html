@@ -55,7 +55,7 @@ function loadList(page){
                 html = '<tr><td colspan="10" class="empty">暂无数据</td></tr>';
             } else {
                 res.data.forEach(function(g){
-                    var cover = g.cover ? '<img class="thumb" src="' + g.cover + '" onerror="this.style.visibility=\'hidden\'">' : '-';
+                    var cover = g.cover ? '<img class="thumb" src="' + esc(g.cover) + '" onerror="this.style.visibility=\'hidden\'">' : '-';
                     html += '<tr>'
                         + '<td>' + g.id + '</td>'
                         + '<td>' + cover + '</td>'

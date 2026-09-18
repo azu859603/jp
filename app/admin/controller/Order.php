@@ -21,14 +21,14 @@ class Order extends Base
             $query = Db::name('order')->alias('o')
                 ->leftJoin('user u', 'o.buyer_id = u.id')
                 ->leftJoin('user s', 'o.seller_id = s.id')
-                ->field('o.*, u.mobile as buyer_mobile, u.nickname as buyer_name, u.is_virtual as buyer_virtual, s.mobile as seller_mobile, s.nickname as seller_name');
+                ->field('o.*, u.account as buyer_mobile, u.nickname as buyer_name, u.is_virtual as buyer_virtual, s.account as seller_mobile, s.nickname as seller_name');
 
             if ($keyword !== '') {
                 $query->where(function ($q) use ($keyword) {
                     $q->whereLike('o.order_no', "%{$keyword}%")
                         ->whereOr('o.goods_title', 'like', "%{$keyword}%")
-                        ->whereOr('u.mobile', 'like', "%{$keyword}%")
-                        ->whereOr('s.mobile', 'like', "%{$keyword}%");
+                        ->whereOr('u.account', 'like', "%{$keyword}%")
+                        ->whereOr('s.account', 'like', "%{$keyword}%");
                 });
             }
             if ($orderStatus !== '') {
@@ -57,7 +57,7 @@ class Order extends Base
         $order = Db::name('order')->alias('o')
             ->leftJoin('user u', 'o.buyer_id = u.id')
             ->leftJoin('user s', 'o.seller_id = s.id')
-            ->field('o.*, u.mobile as buyer_mobile, u.nickname as buyer_name, u.is_virtual as buyer_virtual, s.mobile as seller_mobile, s.nickname as seller_name')
+            ->field('o.*, u.account as buyer_mobile, u.nickname as buyer_name, u.is_virtual as buyer_virtual, s.account as seller_mobile, s.nickname as seller_name')
             ->where('o.id', $id)
             ->find();
 

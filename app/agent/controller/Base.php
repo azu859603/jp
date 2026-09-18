@@ -263,11 +263,8 @@ class Base extends BaseController
      */
     protected function maskMobile($mobile)
     {
-        $mobile = (string)$mobile;
-        if (strlen($mobile) < 7) {
-            return $mobile;
-        }
-        return substr($mobile, 0, 3) . '****' . substr($mobile, -4);
+        // 统一走公共脱敏：手机号 138****0000，邮箱 ab***@qq.com
+        return mask_mobile($mobile);
     }
 
     /**
