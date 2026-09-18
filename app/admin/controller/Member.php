@@ -56,7 +56,7 @@ class Member extends Base
             }
 
             $total = $query->count();
-            $list = $query->order('id', 'desc')->page($page, $limit)->field('id,account as mobile,nickname,avatar,invite_code,pid,is_seller,is_agent,is_virtual,seller_check,balance,freeze_balance,points,commission_rate,total_buy,total_sell,status,status_remark,can_withdraw,reg_ip,reg_time,last_login_time,create_time')->select()->toArray();
+            $list = $query->order('id', 'desc')->page($page, $limit)->field('id,account as mobile,nickname,avatar,invite_code,pid,is_seller,is_agent,is_virtual,seller_check,balance,freeze_balance,points,commission_rate,total_buy,total_sell,status,status_remark,can_withdraw,shop_name,seller_intro,deposit,shop_score,credit_score,fans_count,reg_ip,reg_time,last_login_time,create_time')->select()->toArray();
 
             // 上级会员信息（列表展示用）
             $pids = array_values(array_unique(array_filter(array_column($list, 'pid'))));

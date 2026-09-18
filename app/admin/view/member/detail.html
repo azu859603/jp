@@ -21,7 +21,6 @@
                 {else /}
                 <span class="gray">无</span>
                 {/if}
-                <button class="btn btn-sm btn-primary" style="margin-left:10px;" onclick="openParentEdit()">修改上级</button>
             </td>
         </tr>
         <tr><td>直接下级</td><td>{$user.child_count} 人</td></tr>
@@ -41,9 +40,6 @@
         <tr><td>店铺星级</td><td><span style="color:#f59e0b;letter-spacing:2px;">{:str_repeat('★', (int)round($user.shop_score))}{:str_repeat('☆', 5 - (int)round($user.shop_score))}</span> <span class="gray" style="font-size:12px;">{$user.shop_score} 星</span></td></tr>
         <tr><td>卖家信誉分</td><td><b style="color:{if $user.credit_score >= 90}#16a34a{elseif $user.credit_score >= 60 /}#f59e0b{else /}#dc2626{/if};">{$user.credit_score}</b> <span class="gray" style="font-size:12px;">初始 100，付款后长期未发货每日扣 1 分</span></td></tr>
         <tr><td>粉丝数量</td><td>{$user.fans_count}</td></tr>
-        <tr><td>店铺资料</td>
-            <td><button class="btn btn-sm btn-primary" onclick="openShopEdit()">编辑店铺资料</button></td>
-        </tr>
         <tr><td>营业执照</td>
             <td>
                 {if !empty($user.lic_list)}
@@ -149,28 +145,6 @@
     </div>
 </div>
 
-<!-- 编辑店铺资料弹窗 -->
-<!-- 修改上级弹层 -->
-<div class="mask" id="parentMask">
-    <div class="dialog">
-        <div class="dialog-title">修改上级 - {$user.account}</div>
-        <div class="dialog-body">
-            <div class="form-group">
-                <label>当前上级</label>
-                <div style="font-size:13px;color:#64748b;">{if $user.parent}{$user.parent.mobile}{else /}无{/if}</div>
-            </div>
-            <div class="form-group" style="margin-bottom:0;">
-                <label>新上级（账号 / 邀请码 / 会员ID）</label>
-                <input type="text" class="form-control" id="parentValue" placeholder="留空表示清空上级">
-                <div class="tip">上级即邀请人，修改后该会员会归到新上级的代理中心下级列表；留空并确定即清空上级。</div>
-            </div>
-        </div>
-        <div class="dialog-footer">
-            <button class="btn" onclick="document.getElementById('parentMask').classList.remove('show')">取消</button>
-            <button class="btn btn-primary" onclick="doSetParent()">确定</button>
-        </div>
-    </div>
-</div>
 
 <!-- 提现账户编辑弹窗 -->
 <div class="mask" id="payEditMask">
@@ -208,42 +182,6 @@
     </div>
 </div>
 
-<div class="mask" id="shopEditMask">
-    <div class="dialog">
-        <div class="dialog-title">编辑店铺资料</div>
-        <div class="dialog-body">
-            <div class="form-group" style="margin-bottom:12px;">
-                <label>店铺名称</label>
-                <input class="form-control" type="text" id="se_shop_name" maxlength="50" placeholder="店铺名称">
-            </div>
-            <div class="form-group" style="margin-bottom:12px;">
-                <label>店铺介绍</label>
-                <textarea class="form-control" id="se_intro" rows="3" maxlength="200" placeholder="请输入店铺介绍"></textarea>
-            </div>
-            <div class="form-group" style="margin-bottom:12px;">
-                <label>消费保证金（元）</label>
-                <input class="form-control" type="number" id="se_deposit" min="0" step="0.01" placeholder="0.00">
-            </div>
-            <div class="form-group" style="margin-bottom:12px;">
-                <label>店铺星级（0-5）</label>
-                <input class="form-control" type="number" id="se_score" min="0" max="5" step="0.1" placeholder="5.0">
-            </div>
-            <div class="form-group" style="margin-bottom:12px;">
-                <label>卖家信誉分（0-999，初始 100）</label>
-                <input class="form-control" type="number" id="se_credit" min="0" max="999" step="1" placeholder="100">
-                <div class="tip">买家付款后卖家长期未发货，定时任务每日提醒一次并扣 1 分；此处可手动修正</div>
-            </div>
-            <div class="form-group">
-                <label>粉丝数量</label>
-                <input class="form-control" type="number" id="se_fans" min="0" step="1" placeholder="0">
-            </div>
-        </div>
-        <div class="dialog-footer">
-            <button class="btn" onclick="document.getElementById('shopEditMask').classList.remove('show')">取消</button>
-            <button class="btn btn-primary" onclick="saveShop()">保存</button>
-        </div>
-    </div>
-</div>
 
 <script>
 var payData = {$pay_json|raw};
@@ -302,57 +240,6 @@ function savePay(){
 function delPay(type){
     confirmDialog('确定删除该会员的' + payNames[type] + '绑定？删除后会员需重新绑定才能用该方式提现。', function(){
         ajaxPost('/admin1314/member/deletePayAccount', {user_id: {$user.id}, type: type}, function(res){ alert(res.msg); if(res.code == 1) location.reload(); });
-    });
-}
-
-var shopUserId = {$user.id};
-var shopData = {
-    shopName: {:json_encode($user.shop_name)},
-    intro: {:json_encode($user.seller_intro)},
-    deposit: '{$user.deposit}',
-    score: '{$user.shop_score}',
-    credit: '{$user.credit_score}',
-    fans: '{$user.fans_count}'
-};
-
-function openParentEdit(){
-    document.getElementById('parentValue').value = '';
-    document.getElementById('parentMask').classList.add('show');
-}
-
-function doSetParent(){
-    var val = document.getElementById('parentValue').value.trim();
-    var go = function(){
-        ajaxPost('/admin1314/member/setParent', {id: {$user.id}, parent: val}, function(res){
-            alert(res.msg);
-            if(res.code == 1) location.reload();
-        });
-    };
-    if(val === ''){ confirmDialog('未填写新上级，确定要清空该会员的上级吗？', go); } else { go(); }
-}
-
-function openShopEdit(){
-    document.getElementById('se_shop_name').value = shopData.shopName || '';
-    document.getElementById('se_intro').value = shopData.intro || '';
-    document.getElementById('se_deposit').value = shopData.deposit;
-    document.getElementById('se_score').value = shopData.score;
-    document.getElementById('se_credit').value = shopData.credit;
-    document.getElementById('se_fans').value = shopData.fans;
-    document.getElementById('shopEditMask').classList.add('show');
-}
-
-function saveShop(){
-    ajaxPost('/admin1314/member/updateShop', {
-        id: shopUserId,
-        shop_name: document.getElementById('se_shop_name').value.trim(),
-        seller_intro: document.getElementById('se_intro').value.trim(),
-        deposit: document.getElementById('se_deposit').value,
-        shop_score: document.getElementById('se_score').value,
-        credit_score: document.getElementById('se_credit').value,
-        fans_count: document.getElementById('se_fans').value
-    }, function(res){
-        alert(res.msg);
-        if(res.code == 1) location.reload();
     });
 }
 </script>

@@ -157,6 +157,44 @@
 </div>
 
 <!-- 余额调整弹层 -->
+<!-- 编辑店铺资料弹层（从会员详情页挪过来；只有已开通的卖家在列表里有按钮） -->
+<div class="mask" id="shopEditMask">
+    <div class="dialog">
+        <div class="dialog-title" id="shopEditTitle">编辑店铺资料</div>
+        <div class="dialog-body">
+            <div class="form-group" style="margin-bottom:12px;">
+                <label>店铺名称</label>
+                <input class="form-control" type="text" id="se_shop_name" maxlength="50" placeholder="店铺名称">
+            </div>
+            <div class="form-group" style="margin-bottom:12px;">
+                <label>店铺介绍</label>
+                <textarea class="form-control" id="se_intro" rows="3" maxlength="200" placeholder="请输入店铺介绍"></textarea>
+            </div>
+            <div class="form-group" style="margin-bottom:12px;">
+                <label>消费保证金（元）</label>
+                <input class="form-control" type="number" id="se_deposit" min="0" step="0.01" placeholder="0.00">
+            </div>
+            <div class="form-group" style="margin-bottom:12px;">
+                <label>店铺星级（0-5）</label>
+                <input class="form-control" type="number" id="se_score" min="0" max="5" step="0.1" placeholder="5.0">
+            </div>
+            <div class="form-group" style="margin-bottom:12px;">
+                <label>卖家信誉分（0-999，初始 100）</label>
+                <input class="form-control" type="number" id="se_credit" min="0" max="999" step="1" placeholder="100">
+                <div class="tip">买家付款后卖家长期未发货，定时任务每日提醒一次并扣 1 分；此处可手动修正</div>
+            </div>
+            <div class="form-group">
+                <label>粉丝数量</label>
+                <input class="form-control" type="number" id="se_fans" min="0" step="1" placeholder="0">
+            </div>
+        </div>
+        <div class="dialog-footer">
+            <button class="btn" onclick="document.getElementById('shopEditMask').classList.remove('show')">取消</button>
+            <button class="btn btn-primary" onclick="saveShop()">保存</button>
+        </div>
+    </div>
+</div>
+
 <div class="mask" id="statusMask">
     <div class="dialog">
         <div class="dialog-title">禁用会员</div>
@@ -309,6 +347,7 @@ function loadList(page){
                         + '<a class="btn btn-sm" href="/admin1314/member/detail?id=' + u.id + '">详情</a> '
                         + '<a class="btn btn-sm" href="javascript:;" onclick="openBalance(' + u.id + ')">余额</a> '
                         + '<a class="btn btn-sm btn-primary" href="javascript:;" onclick="openEdit(' + u.id + ')">编辑</a> '
+                        + ((u.is_seller == 1 && u.seller_check == 1) ? '<a class="btn btn-sm btn-primary" href="javascript:;" onclick="openShopEdit(' + u.id + ')">编辑店铺</a> ' : '')
                         + '<a class="btn btn-sm" href="javascript:;" onclick="openMsg(' + u.id + ',\'' + encodeURIComponent(u.nickname || '-') + '\')">私信</a> '
                         + (u.status == 1 ? '<a class="btn btn-sm btn-green" href="javascript:;" onclick="loginAs(' + u.id + ')" title="在新标签页打开前台并以该会员身份登录">登录会员</a> ' : '')
                         + (u.status == 1
@@ -425,6 +464,36 @@ function doAddMember(){
             document.getElementById('addMask').classList.remove('show');
             loadList(1);
         }
+    });
+}
+
+var shopUserId = 0;
+function openShopEdit(id){
+    var u = memberRows[id];
+    if(!u){ alert('请刷新列表后重试'); return; }
+    shopUserId = id;
+    document.getElementById('shopEditTitle').textContent = '编辑店铺资料 - ' + (u.shop_name || u.nickname || u.mobile || ('#' + id));
+    document.getElementById('se_shop_name').value = u.shop_name || '';
+    document.getElementById('se_intro').value = u.seller_intro || '';
+    document.getElementById('se_deposit').value = u.deposit;
+    document.getElementById('se_score').value = u.shop_score;
+    document.getElementById('se_credit').value = u.credit_score;
+    document.getElementById('se_fans').value = u.fans_count;
+    document.getElementById('shopEditMask').classList.add('show');
+}
+
+function saveShop(){
+    ajaxPost('/admin1314/member/updateShop', {
+        id: shopUserId,
+        shop_name: document.getElementById('se_shop_name').value.trim(),
+        seller_intro: document.getElementById('se_intro').value.trim(),
+        deposit: document.getElementById('se_deposit').value,
+        shop_score: document.getElementById('se_score').value,
+        credit_score: document.getElementById('se_credit').value,
+        fans_count: document.getElementById('se_fans').value
+    }, function(res){
+        alert(res.msg);
+        if(res.code == 1){ document.getElementById('shopEditMask').classList.remove('show'); loadList(currentPage); }
     });
 }
 
