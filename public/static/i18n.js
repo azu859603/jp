@@ -102,6 +102,8 @@ var LANG = (metaLang ? metaLang.getAttribute('content') : '') || getCookie(COOKI
         '提现功能已关闭': ['提現功能已關閉', 'Withdrawals disabled'],
         '去绑定': ['去綁定', 'Bind'],
         '修改绑定': ['修改綁定', 'Edit binding'],
+        '查看绑定': ['查看綁定', 'View binding'],
+        '该提现方式已绑定，如需修改请联系客服': ['該提現方式已綁定，如需修改請聯繫客服', 'Already bound. Contact customer service to change it'],
         '绑定': ['綁定', 'Bind '],
         '账号': ['帳號', 'Account'],
         '请输入收款账号': ['請輸入收款帳號', 'Enter account number'],

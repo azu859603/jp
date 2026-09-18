@@ -893,5 +893,8 @@ return [
     '如有疑问请联系客服' => 'Please contact customer service if you have any questions',
     '，原因：' => ', reason: ',
     '，如有疑问请联系客服' => ', please contact customer service if you have any questions',
+    '该提现方式已绑定，如需修改请联系客服' => 'This method is already bound. Please contact customer service to change it',
+    '绑定后不可自行修改，请仔细核对；如需修改请联系客服' => 'Binding cannot be changed by yourself afterwards. Please check carefully; contact customer service for changes',
+    '查看绑定' => 'View binding',
     '1-3个工作日' => '1-3 business days',
 ];

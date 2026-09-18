@@ -277,6 +277,14 @@ function get_setting($name, $default = '')
 }
 
 /**
+ * 主后台开关：前台会员绑定提现账户后能否自行修改（默认关闭 = 绑定后只能找客服改）
+ */
+function pay_account_editable()
+{
+    return (string)get_setting('pay_account_editable', '0') === '1';
+}
+
+/**
  * 主后台开关：是否允许代理后台调整会员余额（默认开启）
  */
 function agent_balance_adjust_enabled()

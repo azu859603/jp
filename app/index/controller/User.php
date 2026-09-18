@@ -925,6 +925,10 @@ class User extends Base
             if (!in_array($type, [1, 2, 3, 4])) {
                 return json(['code' => 0, 'msg' => lang('请选择提现方式')]);
             }
+            // 后台「提现规则 › 会员自行修改提现账户」关闭时：绑定后会员不能自行修改，需要修改由客服在后台「会员详情」里处理
+            if (!pay_account_editable() && Db::name('pay_account')->where('user_id', $this->user['id'])->where('type', $type)->count()) {
+                return json(['code' => 0, 'msg' => lang('该提现方式已绑定，如需修改请联系客服')]);
+            }
             if ($type == 4) {
                 // 虚拟货币：固定为 USDT-TRC20，只需钱包地址，无需姓名和收款码
                 if ($account === '') {
@@ -1002,6 +1006,7 @@ class User extends Base
         View::assign([
             'accounts'   => $map,
             'pa_json'    => json_encode($map, JSON_UNESCAPED_UNICODE),
+            'pa_editable' => pay_account_editable() ? 1 : 0,
             'page_title' => lang('提现账户'),
             'center_tab' => 'withdraw',
             'tab_active' => 'mine',
@@ -1113,6 +1118,7 @@ class User extends Base
             'fee_rate'     => (float)get_setting('withdraw_fee', 0),
             'pay_accounts' => $paMap,
             'pa_json'      => json_encode($paMap, JSON_UNESCAPED_UNICODE),
+            'pa_editable'  => pay_account_editable() ? 1 : 0,
             'pending'      => $pending ? 1 : 0,
             'withdraw_off' => ($freshUser && (int)$freshUser['can_withdraw'] === 0) ? 1 : 0,
             'withdraw_min' => (float)get_setting('withdraw_min', 0),

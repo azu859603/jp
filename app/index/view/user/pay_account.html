@@ -69,12 +69,21 @@
             <div class="pa-qr-tip">{:lang('收款码仅用于平台打款，请上传清晰的收款码图片')}</div>
         </div>
 
-        <div class="pa-save" onclick="saveAccount()">{:lang('保存绑定')}</div>
-        <div class="pa-tip" style="text-align:center;margin-top:8px;">{:lang('绑定信息支持随时修改，提现时将以最新绑定信息打款')}</div>
+        <div class="pa-save" id="paSave" onclick="saveAccount()">{:lang('保存绑定')}</div>
+        <div class="pa-tip" id="paTip" style="text-align:center;margin-top:8px;">{if $pa_editable == 1}{:lang('绑定信息支持随时修改，提现时将以最新绑定信息打款')}{else}{:lang('绑定后不可自行修改，请仔细核对；如需修改请联系客服')}{/if}</div>
+        <div class="pa-locked" id="paLocked" style="display:none;">
+            <div class="pa-locked-t">{:lang('该提现方式已绑定，如需修改请联系客服')}</div>
+            <a class="pa-locked-btn" href="/service/index">{:lang('联系客服')}</a>
+        </div>
     </div>
 </div>
 
 <style>
+.pa-locked{margin-top:16px;padding:12px;border-radius:10px;background:#FFF8E1;border:1px solid #FFE08A;text-align:center;}
+.pa-locked-t{font-size:13px;color:#9A5B00;line-height:1.6;}
+.pa-locked-btn{display:inline-block;margin-top:10px;padding:8px 28px;border-radius:18px;background:#AC3030;color:#fff;font-size:14px;font-weight:600;}
+.pa-card.locked input{color:#666;background:transparent;}
+.pa-card.locked .pa-qr-mask,.pa-card.locked .pa-qr-del{display:none;}
 .pa-page{padding:14px;}
 .pa-types{display:flex;gap:10px;margin-bottom:14px;}
 .pa-type{flex:1;background:#fff;border:1px solid #eee;border-radius:10px;padding:14px 6px;text-align:center;cursor:pointer;}
@@ -113,6 +122,7 @@
 {block name="script"}
 <script>
 var accounts = {$pa_json|raw};
+var PA_EDITABLE = {$pa_editable|default=0} == 1;   // 后台开关：绑定后能否自行修改
 var curType = 2;
 var typeName = {1:t('支付宝'), 2:t('微信'), 3:t('银行卡'), 4:t('虚拟货币')};
 // 支持 URL 参数 ?type=N 初始选中对应提现方式
@@ -124,7 +134,7 @@ function selectType(tp) {
     var els = document.querySelectorAll('.pa-type');
     for (var i = 0; i < els.length; i++) { els[i].classList.remove('on'); }
     document.querySelector('.pa-type[data-type="' + tp + '"]').classList.add('on');
-    document.getElementById('paCardTitle').textContent = t('绑定') + typeName[tp];
+    document.getElementById('paCardTitle').textContent = ((accounts[tp] && !PA_EDITABLE) ? t('已绑定') : t('绑定')) + typeName[tp];
     var rowName = document.getElementById('row_real_name');
     var rowAccount = document.getElementById('row_account');
     var rowBank = document.getElementById('row_bank');
@@ -152,6 +162,13 @@ function selectType(tp) {
 }
 function fillForm(tp) {
     var a = accounts[tp];
+    // 已绑定：整张卡只读，隐藏保存按钮，提示联系客服
+    var locked = !!a && !PA_EDITABLE;
+    document.getElementById('paCard').classList.toggle('locked', locked);
+    ['real_name', 'account_input', 'bank_name', 'bank_branch'].forEach(function (id) { document.getElementById(id).readOnly = locked; });
+    document.getElementById('paSave').style.display = locked ? 'none' : '';
+    document.getElementById('paTip').style.display = locked ? 'none' : '';
+    document.getElementById('paLocked').style.display = locked ? '' : 'none';
     document.getElementById('real_name').value = a ? a.real_name : '';
     document.getElementById('account_input').value = a ? a.account : '';
     document.getElementById('bank_name').value = a && tp !== 4 ? a.bank_name : '';
@@ -168,6 +185,7 @@ function fillForm(tp) {
 }
 
 function uploadQr() {
+    if (accounts[curType] && !PA_EDITABLE) { toast('该提现方式已绑定，如需修改请联系客服'); return; }
     var input = document.createElement('input');
     input.type = 'file';
     input.accept = 'image/*';
@@ -194,12 +212,14 @@ function uploadQr() {
 }
 
 function removeQr() {
+    if (accounts[curType] && !PA_EDITABLE) { return; }
     document.getElementById('qr_code').value = '';
     document.getElementById('qrPrev').style.display = 'none';
     document.getElementById('qrAdd').style.display = '';
 }
 
 function saveAccount() {
+    if (accounts[curType] && !PA_EDITABLE) { toast('该提现方式已绑定，如需修改请联系客服'); return; }
     var data = {
         type: curType,
         real_name: document.getElementById('real_name').value.trim(),
