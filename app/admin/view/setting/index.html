@@ -223,6 +223,31 @@
                 </div>
             </div>
             <div class="st-card">
+                <div class="sc-head"><div><h3>浏览量自动增加</h3><p>所有正在竞拍的商品自动增加浏览量，由 <code>php think goods:auto-views</code> 定时任务独立执行</p></div></div>
+                <div class="sc-body">
+                    <div class="form-group">
+                        <label>自动增加浏览量</label>
+                        <div class="seg">
+                            <input type="radio" name="auto_view_enabled" id="ave1" value="1" {if $settings.auto_view_enabled == '1'}checked{/if}><label for="ave1">开启</label>
+                            <input type="radio" name="auto_view_enabled" id="ave0" value="0" {if $settings.auto_view_enabled != '1'}checked{/if}><label for="ave0">关闭</label>
+                        </div>
+                        <div class="tip">开启后，脚本每次执行都会给所有「拍卖中」（已开拍、未截拍）的商品增加浏览量；关闭后脚本空跑，不改任何数据</div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>每次增加量</label>
+                            <div class="in-unit"><input type="number" min="0" max="100000" step="1" class="form-control" name="auto_view_amount" value="{$settings.auto_view_amount}"><span>次 / 件</span></div>
+                            <div class="tip">脚本每执行一次，每件商品增加的基准浏览量；填 0 等同关闭。实际增长速度 = 此数值 × 脚本执行频率（例如每 10 分钟执行一次、填 5，则每件每小时约 +30）</div>
+                        </div>
+                        <div class="form-group">
+                            <label>浮动比例</label>
+                            <div class="in-unit"><input type="number" min="0" max="100" step="1" class="form-control" name="auto_view_float" value="{$settings.auto_view_float}"><span>%</span></div>
+                            <div class="tip">每件商品的实际增加量在「增加量 ×（1 ± 浮动比例）」之间随机，各件互不相同。例如增加量 10、浮动 50%，每件每次随机 +5 ~ +15；填 0 则每件固定增加</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="st-card">
                 <div class="sc-head"><div><h3>平台自营自动出价</h3><p>会员 ID 1（平台自营账号）拍品由虚拟会员自动出价的开关与参数，由 <code>php think platform:auto-bid</code> 定时任务独立执行</p></div></div>
                 <div class="sc-body">
                     <div class="form-row">

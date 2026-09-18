@@ -284,6 +284,52 @@ function agent_balance_adjust_enabled()
     return (string)get_setting('agent_balance_adjust', '1') === '1';
 }
 
+/**
+ * 竞拍中商品自动增加浏览量（php think goods:auto-views 每次执行调用一次）
+ *
+ * 后台「基础设置 › 浏览量自动增加」：
+ *   auto_view_enabled  开关，1 开启
+ *   auto_view_amount   每次执行每件商品增加的基准量
+ *   auto_view_float    浮动比例（%）：每件商品实际增加量在 基准量 ×(1 ± 浮动比例) 之间随机取整
+ *
+ * 只处理正在竞拍的商品（status=1 且已开拍、未截拍）；不改 update_time，浏览量上限 99999999。
+ * @return array ['enabled'=>bool, 'amount'=>int, 'float'=>int, 'min'=>int, 'max'=>int, 'goods'=>int, 'total'=>int]
+ */
+function auto_increase_views()
+{
+    $enabled = (string)get_setting('auto_view_enabled', '0') === '1';
+    $amount  = max(0, (int)get_setting('auto_view_amount', 0));
+    $float   = max(0, min(100, (int)get_setting('auto_view_float', 50)));
+    $min     = (int)floor($amount * (100 - $float) / 100);
+    $max     = (int)ceil($amount * (100 + $float) / 100);
+    $result  = ['enabled' => $enabled && $amount > 0, 'amount' => $amount, 'float' => $float, 'min' => $min, 'max' => $max, 'goods' => 0, 'total' => 0];
+    if (!$result['enabled']) {
+        return $result;
+    }
+    $now = time();
+    $ids = Db::name('goods')->where('status', 1)->where('start_time', '<=', $now)->where('end_time', '>', $now)->column('id');
+    if (!$ids) {
+        return $result;
+    }
+    // 每件商品各自随机一个增量，再按增量分组批量更新（SQL 条数 = 不同增量的个数，而不是商品数）
+    $groups = [];
+    foreach ($ids as $id) {
+        $delta = mt_rand($min, $max);
+        if ($delta > 0) {
+            $groups[$delta][] = (int)$id;
+        }
+    }
+    foreach ($groups as $delta => $gids) {
+        foreach (array_chunk($gids, 500) as $chunk) {
+            Db::name('goods')->whereIn('id', $chunk)->where('status', 1)
+                ->update(['view_count' => Db::raw('LEAST(view_count + ' . (int)$delta . ', 99999999)')]);
+            $result['goods'] += count($chunk);
+            $result['total'] += $delta * count($chunk);
+        }
+    }
+    return $result;
+}
+
 /* ==================== 谷歌验证器（TOTP，RFC 6238） ==================== */
 
 /**

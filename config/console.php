@@ -19,6 +19,8 @@ return [
         'goods:collect' => \app\command\GoodsCollect::class,
         // 指定卖家流拍商品自动上架：php think goods:auto-relist（每分钟，独立执行）
         'goods:auto-relist' => \app\command\GoodsAutoRelist::class,
+        // 竞拍中商品自动增加浏览量：php think goods:auto-views（建议每 5~10 分钟，独立执行；开关与增加量在后台设置）
+        'goods:auto-views' => \app\command\GoodsAutoViews::class,
         // 虚拟用户自动出价：php think bid:auto（每分钟，独立执行；只跑后台 / 代理后台手动添加的任务）
         'bid:auto' => \app\command\BidAuto::class,
         // 平台自营（会员 ID 1）拍品自动出价：php think platform:auto-bid（每分钟，独立执行；只同步并跑平台自营任务）

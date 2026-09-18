@@ -19,6 +19,7 @@ class Setting extends Base
                 'platform_auto_bid_enabled', 'platform_auto_bid_interval', 'platform_auto_bid_multiple', 'platform_auto_bid_stop_hours',
                 'user_protocol_tw', 'user_protocol_en', 'privacy_policy_tw', 'privacy_policy_en', 'publish_protocol_tw', 'publish_protocol_en',
                 'withdraw_min', 'withdraw_max', 'agent_balance_adjust',
+                'auto_view_enabled', 'auto_view_amount', 'auto_view_float',
                 'order_pay_timeout_hours', 'order_timeout_deposit', 'order_auto_confirm_days', 'order_ship_remind_days',
                 'about_us', 'about_us_tw', 'about_us_en', 'about_us_image',
                 'about_dept', 'about_dept_tw', 'about_dept_en',
@@ -36,8 +37,14 @@ class Setting extends Base
                 if ($field === 'auto_relist_seller_id') {
                     $value = (string)max(0, (int)$value);
                 }
-                if ($field === 'platform_auto_bid_enabled' || $field === 'agent_balance_adjust') {
+                if ($field === 'platform_auto_bid_enabled' || $field === 'agent_balance_adjust' || $field === 'auto_view_enabled') {
                     $value = (string)$value === '1' ? '1' : '0';
+                }
+                if ($field === 'auto_view_amount') {
+                    $value = (string)max(0, min(100000, (int)$value));
+                }
+                if ($field === 'auto_view_float') {
+                    $value = (string)max(0, min(100, (int)$value));
                 }
                 if ($field === 'platform_auto_bid_interval') {
                     $value = (string)max(1, min(1440, (int)$value));
@@ -99,6 +106,7 @@ class Setting extends Base
             'platform_auto_bid_enabled' => '0', 'platform_auto_bid_interval' => '30', 'platform_auto_bid_multiple' => '2', 'platform_auto_bid_stop_hours' => '1', 'privacy_policy' => '', 'publish_protocol' => '',
             'user_protocol_tw' => '', 'user_protocol_en' => '', 'privacy_policy_tw' => '', 'privacy_policy_en' => '', 'publish_protocol_tw' => '', 'publish_protocol_en' => '',
             'withdraw_min' => '0', 'withdraw_max' => '0', 'agent_balance_adjust' => '1',
+            'auto_view_enabled' => '0', 'auto_view_amount' => '5', 'auto_view_float' => '50',
             'order_pay_timeout_hours' => '0', 'order_timeout_deposit' => 'forfeit_platform', 'order_auto_confirm_days' => '0', 'order_ship_remind_days' => '0',
             'about_us' => '', 'about_us_tw' => '', 'about_us_en' => '', 'about_us_image' => '',
             'about_dept' => '', 'about_dept_tw' => '', 'about_dept_en' => '',
