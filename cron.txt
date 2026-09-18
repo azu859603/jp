@@ -13,7 +13,7 @@
 # 每天 09:00：催发货提醒
 0 9 * * *   cd /www/wwwroot/jp && /usr/bin/php think order:remind      >> runtime/log/cron_order_remind.log 2>&1
 # 每10分钟执行一次 竞拍中商品自动增加浏览量
-*/10 * * * * cd /www/wwwroot/jp && /usr/bin/php think goods:auto-views >> >> runtime/log/goods_auto_views.log 2>&1
+*/10 * * * * cd /www/wwwroot/jp && /usr/bin/php think goods:auto-views >> runtime/log/goods_auto_views.log 2>&1
 
 清空用户数据
 php think user:init --force
