@@ -133,8 +133,8 @@ class Setting extends Base
         }
 
         $size = $file->getSize();
-        if ($size > 20 * 1024 * 1024) {
-            return json(['code' => 0, 'msg' => '图片不能超过20M']);
+        if ($size > upload_max_bytes()) {
+            return json(['code' => 0, 'msg' => upload_max_msg()]);
         }
         $ext = strtolower($file->getOriginalExtension());
         if (!in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp'])) {

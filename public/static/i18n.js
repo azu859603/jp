@@ -26,7 +26,7 @@ var LANG = (metaLang ? metaLang.getAttribute('content') : '') || getCookie(COOKI
         '请先登录': ['請先登入', 'Please login first'],
             '已关注': ['已關注', 'Followed'],
             '关注': ['關注', 'Follow'],
-        '图片不能超过20M': ['圖片不能超過20M', 'Image must be under 20M'],
+        '图片不能超过': ['圖片不能超過', 'Image must be under '],
         '邀请码已复制': ['邀請碼已複製', 'Invite code copied'],
         /* 补充：toast/confirm 文案 */
         '加载中': ['載入中', 'Loading'],

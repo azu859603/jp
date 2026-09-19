@@ -465,7 +465,7 @@ return [
     '填写以下企业资料申请成为卖家，审核通过后可发布拍品参与竞拍' => 'Fill in company info to apply; you can publish items after approval',
     '头像' => 'Avatar',
     '头像地址不合法' => 'Invalid avatar URL',
-    '图片不能超过20M' => 'Image must be under 20M',
+    '图片不能超过' => 'Image must be under ',
     '退出登录' => 'Sign Out',
     '网络：' => 'Network: ',
     '网络（链）' => 'Network',

@@ -1064,6 +1064,33 @@ function mask_mobile($mobile)
 }
 
 /**
+ * 图片上传大小上限（MB）。在 .env 里配置：
+ *   [UPLOAD]
+ *   MAX_SIZE_MB = 20
+ * 没配或配了非法值时用 20；最小 1，最大 200。
+ * 注意：nginx 的 client_max_body_size、PHP 的 upload_max_filesize / post_max_size 必须不小于这个值，
+ * 否则请求到不了程序，会员看到的是网络错误而不是「图片不能超过xxM」。
+ */
+function upload_max_mb()
+{
+    $mb = (int)env('upload.max_size_mb', 20);
+    return $mb < 1 ? 20 : min($mb, 200);
+}
+
+function upload_max_bytes()
+{
+    return upload_max_mb() * 1024 * 1024;
+}
+
+/**
+ * 「图片不能超过20M」提示；前台传 true 走多语言
+ */
+function upload_max_msg($i18n = false)
+{
+    return ($i18n ? lang('图片不能超过') : '图片不能超过') . upload_max_mb() . 'M';
+}
+
+/**
  * 前台会员提交的图片地址：只能是本站上传接口返回的 /uploads/ 下的图片。
  * 不校验的话可以塞进任意字符串（如 x" onerror="...），在后台列表的 <img src> 里变成脚本执行。
  */

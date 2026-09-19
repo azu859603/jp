@@ -185,7 +185,7 @@ function sendMsg(){
 function sendImage(el){
     var f = el.files && el.files[0];
     if (!f || !curKey) { el.value = ''; return; }
-    if (f.size > 20 * 1024 * 1024) { alert('图片不能超过20M'); el.value = ''; return; }
+    if (f.size > {:upload_max_bytes()}) { alert('图片不能超过{:upload_max_mb()}M'); el.value = ''; return; }
     var fd = new FormData(); fd.append('file', f);
     fetch('/admin1314/upload/image', {method:'POST', body: fd})
         .then(function(r){ return r.json(); })
