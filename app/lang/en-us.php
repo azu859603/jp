@@ -905,5 +905,6 @@ return [
     '账号或密码错误' => 'Incorrect account or password',
     '图片地址不合法，请重新上传' => 'Invalid image, please upload again',
     '请输入账号' => 'Enter your account',
+    '为保证信息准确，请手动输入，不支持粘贴' => 'Please type it in manually. Pasting is not allowed',
     '1-3个工作日' => '1-3 business days',
 ];

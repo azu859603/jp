@@ -102,6 +102,7 @@ var LANG = (metaLang ? metaLang.getAttribute('content') : '') || getCookie(COOKI
         '提现功能已关闭': ['提現功能已關閉', 'Withdrawals disabled'],
         '去绑定': ['去綁定', 'Bind'],
         '修改绑定': ['修改綁定', 'Edit binding'],
+        '为保证信息准确，请手动输入，不支持粘贴': ['為保證信息準確，請手動輸入，不支持粘貼', 'Please type it in manually. Pasting is not allowed'],
         '请输入正确的邮箱地址': ['請輸入正確的郵箱地址', 'Please enter a valid email address'],
         '请输入账号和密码': ['請輸入賬號和密碼', 'Please enter your account and password'],
         '查看绑定': ['查看綁定', 'View binding'],

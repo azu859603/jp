@@ -236,6 +236,30 @@ function saveAccount() {
     });
 }
 
+/* 银行卡信息（姓名 / 卡号 / 银行名称 / 开户行）必须手动输入：禁止粘贴、拖入和浏览器自动填充，
+   避免会员从聊天记录里整段复制导致多余空格、错位或填成别人的卡。
+   只在「银行卡」方式下生效；USDT 钱包地址共用卡号输入框，34 位手输极易出错，仍允许粘贴。 */
+(function () {
+    var ids = ['real_name', 'account_input', 'bank_name', 'bank_branch'];
+    function blocked() { return curType === 3; }
+    function deny(e) {
+        if (!blocked()) { return; }
+        e.preventDefault();
+        toast('为保证信息准确，请手动输入，不支持粘贴');
+    }
+    ids.forEach(function (id) {
+        var el = document.getElementById(id);
+        if (!el) { return; }
+        el.setAttribute('autocomplete', 'off');
+        el.addEventListener('paste', deny);
+        el.addEventListener('drop', deny);
+        // 部分输入法 / 浏览器的「粘贴」不触发 paste 事件，用 beforeinput 再兜一层
+        el.addEventListener('beforeinput', function (e) {
+            if (e.inputType === 'insertFromPaste' || e.inputType === 'insertFromDrop' || e.inputType === 'insertFromYank') { deny(e); }
+        });
+    });
+})();
+
 selectType(curType);
 </script>
 {/block}
