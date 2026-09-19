@@ -83,7 +83,7 @@
 function uploadAvatar(input){
     var f = input.files && input.files[0];
     if(!f) return;
-    if(f.size > 5*1024*1024){ toast('图片不能超过5M'); return; }
+    if(f.size > 20*1024*1024){ toast('图片不能超过20M'); return; }
     var fd = new FormData();
     fd.append('file', f);
     fetch('/upload/image', {method:'POST', body: fd})

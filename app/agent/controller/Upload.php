@@ -3,7 +3,7 @@ namespace app\agent\controller;
 
 /**
  * 代理后台图片上传（继承 Base，自动要求代理登录）
- * 逻辑与主后台一致：扩展名白名单 + 5M 限制 + 服务端重命名
+ * 逻辑与主后台一致：扩展名白名单 + 20M 限制 + 服务端重命名
  */
 class Upload extends Base
 {
@@ -14,8 +14,8 @@ class Upload extends Base
             return json(['code' => 0, 'msg' => '请选择图片']);
         }
 
-        if ($file->getSize() > 5 * 1024 * 1024) {
-            return json(['code' => 0, 'msg' => '图片不能超过5M']);
+        if ($file->getSize() > 20 * 1024 * 1024) {
+            return json(['code' => 0, 'msg' => '图片不能超过20M']);
         }
         $ext = strtolower($file->getOriginalExtension());
         if (!in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp'], true)) {

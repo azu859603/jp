@@ -95,8 +95,8 @@ class Banner extends Base
         }
 
         $size = $file->getSize();
-        if ($size > 5 * 1024 * 1024) {
-            return json(['code' => 0, 'msg' => '图片不能超过5M']);
+        if ($size > 20 * 1024 * 1024) {
+            return json(['code' => 0, 'msg' => '图片不能超过20M']);
         }
         $ext = strtolower($file->getOriginalExtension());
         if (!in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp'])) {
