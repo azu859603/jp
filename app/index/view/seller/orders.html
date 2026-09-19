@@ -34,7 +34,7 @@
     </div>
     <div class="o-foot">
         {if $o.order_status==1}
-        <a class="btn-sm solid-red" href="javascript:void(0)" data-name="{$o.ship_name}" data-mobile="{$o.ship_mobile}" data-address="{$o.ship_address}" onclick="shipOrder({$o.id}, this)">{:lang('发货')}</a>
+        <a class="btn-sm solid-red" href="javascript:void(0)" data-name="{$o.ship_name}" data-mobile="{:htmlspecialchars(mask_mobile($o.ship_mobile), ENT_QUOTES)}" data-address="{$o.ship_address}" onclick="shipOrder({$o.id}, this)">{:lang('发货')}</a>
         {/if}
     </div>
 </div>
