@@ -323,26 +323,20 @@ class Goods extends Base
             if (empty($goodsList)) {
                 return json(['code' => 0, 'msg' => '商品不存在']);
             }
-            $delIds = [];
-            $skipCount = 0;
-            foreach ($goodsList as $g) {
-                if ($g['status'] == 2) {
-                    $skipCount++;
-                    continue;
-                }
-                $delIds[] = $g['id'];
-            }
+            // 已成交的商品也允许删除：订单表自带商品标题 / 封面 / 保证金，订单的支付、发货、售后都不依赖商品行
+            $delIds  = array_column($goodsList, 'id');
+            $dealCnt = count(array_filter($goodsList, function ($g) { return $g['status'] == 2; }));
             if (!empty($delIds)) {
                 foreach ($delIds as $gid) {
                     release_goods_bids($gid, '平台删除');
                 }
                 Db::name('bid_record')->whereIn('goods_id', $delIds)->delete();
                 Db::name('goods')->whereIn('id', $delIds)->delete();
-                admin_log('批量删除商品：' . implode(',', $delIds));
+                admin_log('批量删除商品：' . implode(',', $delIds) . ($dealCnt > 0 ? '（含已成交 ' . $dealCnt . ' 个）' : ''));
             }
             $msg = '删除成功' . count($delIds) . ' 个商品';
-            if ($skipCount > 0) {
-                $msg .= '，已成交商品 ' . $skipCount . ' 个自动跳过';
+            if ($dealCnt > 0) {
+                $msg .= '（含已成交 ' . $dealCnt . ' 个，对应订单保留）';
             }
             return json(['code' => 1, 'msg' => $msg]);
         }
@@ -352,14 +346,10 @@ class Goods extends Base
         if (!$goods) {
             return json(['code' => 0, 'msg' => '商品不存在']);
         }
-        if ($goods['status'] == 2) {
-            return json(['code' => 0, 'msg' => '已成交商品不能删除']);
-        }
-
         release_goods_bids($id, '平台删除');
         Db::name('bid_record')->where('goods_id', $id)->delete();
         Db::name('goods')->where('id', $id)->delete();
-        admin_log('删除商品：' . $goods['title']);
+        admin_log('删除商品：' . $goods['title'] . ($goods['status'] == 2 ? '（已成交，订单保留）' : ''));
         return json(['code' => 1, 'msg' => '删除成功']);
     }
 

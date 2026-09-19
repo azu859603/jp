@@ -310,9 +310,7 @@ function loadList(page){
                         + ((g.status == 4)
                             ? '<a class="btn btn-sm btn-green" href="javascript:;" onclick="toggleStatus(' + g.id + ',1)">上架</a> '
                             : '')
-                        + ((g.status != 2)
-                            ? '<a class="btn btn-sm btn-danger" href="javascript:;" onclick="del(' + g.id + ')">删除</a>'
-                            : '')
+                        + '<a class="btn btn-sm btn-danger" href="javascript:;" onclick="del(' + g.id + ',' + (g.status == 2 ? 1 : 0) + ')">删除</a>'
                         + '</td></tr>';
                 });
             }
@@ -587,7 +585,7 @@ function getCheckedIds(){
 function batchDel(){
     var ids = getCheckedIds();
     if(!ids.length){ alert('请先选择商品'); return; }
-    confirmDialog('确定删除选中的 ' + ids.length + ' 个商品吗？（已成交商品自动跳过）', function(){
+    confirmDialog('确定删除选中的 ' + ids.length + ' 个商品吗？（其中已成交的商品也会被删除，对应订单保留）', function(){
         ajaxPost('/admin1314/goods/delete', {ids: ids.join(',')}, function(res){
             alert(res.msg);
             if(res.code == 1) loadList(currentPage);
@@ -630,8 +628,8 @@ function toggleStatus(id, status){
     });
 }
 
-function del(id){
-    confirmDialog('删除后不可恢复，确定删除该商品吗？', function(){
+function del(id, sold){
+    confirmDialog(sold ? '该商品<b>已成交</b>，删除后商品和出价记录不可恢复（对应订单会保留，仍可正常支付、发货、售后）。确定删除吗？' : '删除后不可恢复，确定删除该商品吗？', function(){
         ajaxPost('/admin1314/goods/delete', {id:id}, function(res){
             alert(res.msg); if(res.code == 1) loadList(currentPage);
         });

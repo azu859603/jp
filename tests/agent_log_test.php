@@ -32,6 +32,9 @@ $pdo->exec("insert into goods(seller_id,category_id,title,cover,images,start_pri
 $G = (int)$pdo->lastInsertId();
 $pdo->exec("delete from agent_log where agent_id in ($AG,$AG2)");
 $sg = sess($AG); $sg2 = sess($AG2); $sa = sess(0, 'admin');
+// 余额调整受主后台「代理调整会员余额」开关控制：测试期间临时打开，结束后恢复，避免受本地设置影响
+$abBak = $pdo->query("select value from setting where name='agent_balance_adjust'")->fetchColumn();
+$pdo->exec("delete from setting where name='agent_balance_adjust'");
 try {
     echo "== 会员操作 ==\n";
     req($sg, 'POST', '/agent/member/setStatus', ['id' => $U, 'status' => 0, 'remark' => 'QA违规']);
@@ -89,6 +92,7 @@ try {
     ok('代理会话访问主后台代理日志接口被拒', $c != 200 || strpos($b, '"count"') === false, "HTTP $c " . mb_substr($b, 0, 80));
     ok('主后台管理员日志表未混入代理操作', (int)$pdo->query("select count(*) from admin_log where action like '%19999990642%'")->fetchColumn() === 0);
 } finally {
+    if ($abBak !== false) { $pdo->prepare("insert into setting(name,value,create_time,update_time) values('agent_balance_adjust',?,?,?)")->execute([$abBak, $T, $T]); }
     $pdo->exec("delete from agent_log where agent_id in ($AG,$AG2)");
     $pdo->exec("delete from balance_log where user_id=$U");
     $pdo->exec("delete from pay_account where user_id=$U");
