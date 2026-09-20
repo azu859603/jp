@@ -21,7 +21,9 @@ class Order extends Base
             $query = Db::name('order')->alias('o')
                 ->leftJoin('user u', 'o.buyer_id = u.id')
                 ->leftJoin('user s', 'o.seller_id = s.id')
-                ->field('o.*, u.account as buyer_mobile, u.nickname as buyer_name, u.is_virtual as buyer_virtual, s.account as seller_mobile, s.nickname as seller_name');
+                // sp：卖家的上级（邀请人），列表里显示在卖家账号下方
+                ->leftJoin('user sp', 's.pid = sp.id')
+                ->field('o.*, u.account as buyer_mobile, u.nickname as buyer_name, u.is_virtual as buyer_virtual, s.account as seller_mobile, s.nickname as seller_name, s.pid as seller_pid, sp.account as seller_parent, sp.nickname as seller_parent_name');
 
             if ($keyword !== '') {
                 $query->where(function ($q) use ($keyword) {
@@ -74,6 +76,26 @@ class Order extends Base
             'menu_active'=> '/admin1314/order/index',
         ]);
         return View::fetch();
+    }
+
+    /**
+     * 修改收货地址（已支付、待发货 / 待收货的订单）
+     */
+    public function editAddress()
+    {
+        if (!$this->request->isPost()) {
+            return json(['code' => 0, 'msg' => '请求方式错误']);
+        }
+        $r = update_order_address($this->request->post('id', 0), [
+            'name'    => $this->request->post('ship_name', ''),
+            'mobile'  => $this->request->post('ship_mobile', ''),
+            'address' => $this->request->post('ship_address', ''),
+        ]);
+        if (!$r['ok']) {
+            return json(['code' => 0, 'msg' => $r['msg']]);
+        }
+        admin_log('修改订单收货地址：' . $r['order']['order_no'] . '，' . $r['before'] . ' → ' . $r['after']);
+        return json(['code' => 1, 'msg' => $r['msg']]);
     }
 
     /**

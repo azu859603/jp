@@ -40,6 +40,23 @@
 </div>
 
 <!-- 完成支付（代买家余额支付） -->
+<!-- 修改收货地址（已支付、待发货 / 待收货） -->
+<div class="mask" id="addrMask">
+    <div class="dialog">
+        <div class="dialog-title">修改收货地址</div>
+        <div class="dialog-body">
+            <div class="tip" id="addrTip" style="margin:0 0 10px;line-height:1.7;"></div>
+            <div class="form-group"><label>收货人 <span class="req">*</span></label><input type="text" class="form-control" id="addrName" maxlength="50"></div>
+            <div class="form-group"><label>收货电话 <span class="req">*</span></label><input type="text" class="form-control" id="addrMobile" maxlength="20"></div>
+            <div class="form-group" style="margin-bottom:0;"><label>收货地址 <span class="req">*</span></label><input type="text" class="form-control" id="addrAddress" maxlength="255"></div>
+        </div>
+        <div class="dialog-footer">
+            <button class="btn" onclick="document.getElementById('addrMask').classList.remove('show')">取消</button>
+            <button class="btn btn-primary" onclick="doEditAddr()">保存</button>
+        </div>
+    </div>
+</div>
+
 <div class="mask" id="payMask">
     <div class="dialog">
         <div class="dialog-title">完成支付</div>
@@ -58,6 +75,7 @@
 </div>
 <script>
 var currentPage = 1;
+var orderRows = {};
 var orderStatusMap = {
     0: ['待付款','tag-orange'], 1: ['待发货','tag-blue'], 2: ['待收货','tag-purple'],
     3: ['已完成','tag-green'], 4: ['已取消','tag-gray'], 5: ['售后中','tag-red']
@@ -76,6 +94,7 @@ function loadList(page){
                 html = '<tr><td colspan="11" class="empty">暂无数据</td></tr>';
             } else {
                 res.data.forEach(function(o){
+                    orderRows[o.id] = o;   // 缓存整行，供「修改地址」弹窗回显
                     var st = orderStatusMap[o.order_status] || ['未知','tag-gray'];
                     var payHtml = o.pay_status == 1 ? '<span class="tag tag-green">已支付</span>' : '<span class="tag tag-orange">未支付</span>';
                     html += '<tr>'
@@ -83,7 +102,12 @@ function loadList(page){
                         + '<td>' + o.order_no + '</td>'
                         + '<td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + esc(o.goods_title) + '">' + esc(o.goods_title) + '</td>'
                         + '<td>' + esc(o.buyer_mobile || o.buyer_name || o.buyer_id) + (o.buyer_virtual == 1 ? '<div style="font-size:12px;color:#999;">（虚拟会员）</div>' : '') + '</td>'
-                        + '<td>' + esc(o.seller_mobile || o.seller_name || o.seller_id) + '</td>'
+                        + '<td>' + esc(o.seller_mobile || o.seller_name || o.seller_id)
+                            + '<div class="gray" style="font-size:12px;">上级：'
+                            + (o.seller_parent
+                                ? '<a href="/admin1314/member/detail?id=' + o.seller_pid + '" style="color:inherit;">' + esc(o.seller_parent) + '</a>'
+                                : (o.seller_pid > 0 ? '#' + o.seller_pid + '（已删除）' : '无'))
+                            + '</div></td>'
                         + '<td class="price">￥' + o.price + '</td>'
                         + '<td>￥' + o.commission + '</td>'
                         + '<td>' + payHtml + '</td>'
@@ -91,6 +115,7 @@ function loadList(page){
                         + '<td>' + (o.create_time ? fmtTime(o.create_time) : '-') + '</td>'
                         + '<td><a class="btn btn-sm" href="/admin1314/order/detail?id=' + o.id + '">详情</a>'
                         + (o.pay_status == 0 && o.order_status == 0 ? ' <a class="btn btn-sm btn-primary" href="javascript:;" onclick="openPay(' + o.id + ')">完成支付</a>' : '')
+                        + (o.pay_status == 1 && (o.order_status == 1 || o.order_status == 2) ? ' <a class="btn btn-sm" href="javascript:;" onclick="openAddr(' + o.id + ')">修改地址</a>' : '')
                         + '</td></tr>';
                 });
             }
@@ -128,6 +153,36 @@ function fmtTime(ts){
 
 loadList(1);
 var PAY_BASE = '/admin1314';
+// ---------- 修改收货地址 ----------
+var addrOrderId = 0;
+function openAddr(id){
+    var o = orderRows[id];
+    if (!o) { alert('请刷新列表后重试'); return; }
+    addrOrderId = id;
+    document.getElementById('addrTip').innerHTML =
+        '订单 <b>' + esc(o.order_no) + '</b>　' + esc(o.goods_title || '')
+        + (o.order_status == 2
+            ? '<br><span style="color:#b45309;">该订单已发货，修改后请与买家、卖家确认后续处理</span>'
+            : '<br><span style="color:#64748b;">修改后卖家发货时会看到最新地址</span>');
+    document.getElementById('addrName').value = o.ship_name || '';
+    document.getElementById('addrMobile').value = o.ship_mobile || '';
+    document.getElementById('addrAddress').value = o.ship_address || '';
+    document.getElementById('addrMask').classList.add('show');
+}
+function doEditAddr(){
+    var data = {
+        id: addrOrderId,
+        ship_name: document.getElementById('addrName').value.trim(),
+        ship_mobile: document.getElementById('addrMobile').value.trim(),
+        ship_address: document.getElementById('addrAddress').value.trim()
+    };
+    if (!data.ship_name || !data.ship_mobile || !data.ship_address) { alert('请填写收货人、电话和地址'); return; }
+    ajaxPost('/admin1314/order/editAddress', data, function(res){
+        alert(res.msg);
+        if (res.code == 1) { document.getElementById('addrMask').classList.remove('show'); loadList(typeof currentPage !== 'undefined' ? currentPage : 1); }
+    });
+}
+
 // ---------- 完成支付 ----------
 var payOrderId = 0, payVirtual = false;
 function openPay(id){

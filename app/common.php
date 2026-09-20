@@ -278,6 +278,51 @@ function get_setting($name, $default = '')
 }
 
 /**
+ * 后台 / 代理后台修改订单收货地址
+ * 只允许「已支付且尚未确认收货」的订单（待发货 / 待收货）：未付款的订单在「完成支付」时填地址，
+ * 已完成 / 已取消的订单改地址会让历史记录失真，一律不给改。
+ * @param int   $orderId
+ * @param array $ship ['name' => 收货人, 'mobile' => 电话, 'address' => 地址]
+ * @return array ['ok'=>bool, 'msg'=>string, 'order'=>?array, 'before'=>string, 'after'=>string]
+ */
+function update_order_address($orderId, array $ship)
+{
+    $fail    = function ($msg) { return ['ok' => false, 'msg' => $msg, 'order' => null, 'before' => '', 'after' => '']; };
+    $name    = trim((string)($ship['name'] ?? ''));
+    $mobile  = trim((string)($ship['mobile'] ?? ''));
+    $address = trim((string)($ship['address'] ?? ''));
+    if ($name === '' || $mobile === '' || $address === '') {
+        return $fail('请填写收货人、电话和地址');
+    }
+    if (mb_strlen($name) > 50 || mb_strlen($mobile) > 20 || mb_strlen($address) > 255) {
+        return $fail('收货人 / 电话 / 地址超出长度限制');
+    }
+    $order = Db::name('order')->where('id', (int)$orderId)->find();
+    if (!$order) {
+        return $fail('订单不存在');
+    }
+    if ((int)$order['pay_status'] !== 1) {
+        return $fail('订单未支付，不能修改收货地址');
+    }
+    if (!in_array((int)$order['order_status'], [1, 2], true)) {
+        return $fail('只有待发货 / 待收货的订单才能修改收货地址');
+    }
+    $before = trim($order['ship_name'] . ' ' . $order['ship_mobile'] . ' ' . $order['ship_address']);
+    $after  = $name . ' ' . $mobile . ' ' . $address;
+    if ($before === $after) {
+        return $fail('收货信息没有变化');
+    }
+    $now = time();
+    Db::name('order')->where('id', $order['id'])->update([
+        'ship_name'    => $name,
+        'ship_mobile'  => $mobile,
+        'ship_address' => $address,
+        'update_time'  => $now,
+    ]);
+    return ['ok' => true, 'msg' => '收货地址已修改', 'order' => $order, 'before' => $before, 'after' => $after];
+}
+
+/**
  * 主后台开关：前台会员绑定提现账户后能否自行修改（默认关闭 = 绑定后只能找客服改）
  */
 function pay_account_editable()

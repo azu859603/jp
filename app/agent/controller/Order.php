@@ -105,6 +105,27 @@ class Order extends Base
         return json(['code' => 1, 'msg' => $r['msg']]);
     }
 
+    /**
+     * 修改收货地址（已支付、待发货 / 待收货的订单；仅团队卖家的订单）
+     */
+    public function editAddress()
+    {
+        if (!$this->request->isPost()) {
+            return json(['code' => 0, 'msg' => '请求方式错误']);
+        }
+        $order = $this->assertMyOrder($this->request->post('id', 0));
+        $r = update_order_address($order['id'], [
+            'name'    => $this->request->post('ship_name', ''),
+            'mobile'  => $this->request->post('ship_mobile', ''),
+            'address' => $this->request->post('ship_address', ''),
+        ]);
+        if (!$r['ok']) {
+            return json(['code' => 0, 'msg' => $r['msg']]);
+        }
+        agent_log('修改订单收货地址：' . $r['order']['order_no'] . '，' . $r['before'] . ' → ' . $r['after']);
+        return json(['code' => 1, 'msg' => $r['msg']]);
+    }
+
     public function ship()
     {
         if (!$this->request->isPost()) {
