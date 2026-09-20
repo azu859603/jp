@@ -59,14 +59,14 @@
     <div class="dialog" style="width:520px;">
         <div class="dialog-title">批量添加虚拟会员</div>
         <div class="dialog-body">
-            <div class="tip" style="margin-bottom:12px;">账号自动生成为 <b>12 开头的 11 位数字</b>（真实手机号没有 12 号段，不会与真实用户冲突）；「注册方式」为邮箱时生成 <b>v + 9 位数字@virtual.local</b>，昵称为前缀加 4 位随机数字。</div>
+            <div class="tip" style="margin-bottom:12px;">账号自动生成为 <b>12 开头的 11 位数字</b>（真实手机号没有 12 号段，不会与真实用户冲突）；「注册方式」为邮箱时生成 <b>v + 9 位数字@virtual.local</b>，昵称留空时自动生成中文昵称（如 云水轩、王掌柜、江南藏家、资深藏家），填了前缀则为「前缀 + 4 位随机数字」。</div>
             <div class="form-group">
                 <label>数量 <span class="req">*</span>（每次最多 100 个）</label>
                 <input type="number" min="1" max="100" step="1" class="form-control" id="vbCount" value="10" placeholder="1 ~ 100">
             </div>
             <div class="form-group">
                 <label>昵称前缀</label>
-                <input type="text" class="form-control" id="vbPrefix" maxlength="20" placeholder="默认「用户」，生成如 用户3827">
+                <input type="text" class="form-control" id="vbPrefix" maxlength="20" placeholder="留空自动生成中文昵称，如 云水轩 / 王掌柜">
             </div>
             <div class="form-group">
                 <label>初始余额（元）</label>

@@ -872,7 +872,9 @@ class Member extends Base
         if ($balance < 0) {
             return json(['code' => 0, 'msg' => '初始余额不能为负数']);
         }
-        $prefix = $prefix === '' ? '用户' : mb_substr($prefix, 0, 20);
+        $prefix = mb_substr($prefix, 0, 20);
+        // 已有虚拟会员的昵称，用于同批次 + 历史去重（一次查询，后面都在内存里比对）
+        $usedNicks = array_flip(Db::name('user')->where('is_virtual', 1)->column('nickname'));
         $now    = time();
         $hash   = hash_password($password);
         $ip     = $this->request->ip();
@@ -883,7 +885,7 @@ class Member extends Base
                 // 注册方式为邮箱时，虚拟会员也生成邮箱账号
                 $byEmail  = register_mode() === 'email';
                 $mobile   = $byEmail ? generate_virtual_email() : generate_virtual_mobile();
-                $nickname = $prefix . str_pad((string)mt_rand(0, 9999), 4, '0', STR_PAD_LEFT);
+                $nickname = generate_virtual_nickname($prefix, $usedNicks);
                 $userId = Db::name('user')->insertGetId([
                     'mobile'       => $byEmail ? null : $mobile,
                     'email'        => $byEmail ? $mobile : null,
