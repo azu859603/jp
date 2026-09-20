@@ -18,6 +18,9 @@
 清空用户数据
 php think user:init --force
 
+更改虚拟用户昵称
+php think user:rename-virtual --force
+
 改了表结构（加字段/加表）后需 执行
 php think schema:clear
 
