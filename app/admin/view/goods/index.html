@@ -286,7 +286,12 @@ function loadList(page){
                         + '<td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + esc(g.title) + '">' + esc(g.title) + '</td>'
                         + '<td>' + esc(g.category_name || '-') + '</td>'
                         + '<td>' + esc(g.seller_name || ('ID:' + g.seller_id)) + '</td>'
-                        + '<td>' + esc(g.seller_mobile || '-') + '</td>'
+                        + '<td>' + esc(g.seller_mobile || '-')
+                            + '<div class="gray" style="font-size:12px;">上级：'
+                            + (g.seller_parent
+                                ? '<a href="/admin1314/member/detail?id=' + g.seller_pid + '" style="color:inherit;">' + esc(g.seller_parent) + '</a>'
+                                : (g.seller_pid > 0 ? '#' + g.seller_pid + '（已删除）' : '无'))
+                            + '</div></td>'
                         + '<td class="price">￥' + g.start_price + '</td>'
                         + '<td>' + (g.final_price > 0 ? '<span class="price">￥' + g.final_price + '</span>' : '￥' + g.start_price) + '</td>'
                         + '<td>￥' + g.deposit + '</td>'

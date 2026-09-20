@@ -137,7 +137,12 @@ function loadList(page){
                         + '<td>' + t.id + '</td>'
                         + '<td><div class="ab-goods"><img src="' + esc(t.cover || '') + '" onerror="this.style.visibility=\'hidden\'"><div style="min-width:0"><div class="t" title="' + esc(t.title) + '"><a href="' + PRE + 'goods/detail?id=' + t.goods_id + '" target="_blank">' + esc(t.title || ('拍品#' + t.goods_id)) + '</a></div><div class="s">ID ' + t.goods_id + ' · 加价 ¥' + num(t.raise_price) + ' · 共 ' + (t.goods_bid_count || 0) + ' 次出价' + gs + '</div></div></div></td>'
                         + '<td>' + esc(t.seller_text) + (t.creator_type == 'platform' ? '<br><span class="tag tag-blue">平台脚本</span>' : '') + '</td>'
-                        + '<td>' + esc(t.seller_mobile || '-') + '</td>'
+                        + '<td>' + esc(t.seller_mobile || '-')
+                            + '<div class="gray" style="font-size:12px;">上级：'
+                            + (t.seller_parent
+                                ? '<a href="/admin1314/member/detail?id=' + t.seller_pid + '" style="color:inherit;">' + esc(t.seller_parent) + '</a>'
+                                : (t.seller_pid > 0 ? '#' + t.seller_pid + '（已删除）' : '无'))
+                            + '</div></td>'
                         + '<td><span class="price">￥' + num(t.current_price) + '</span> / ￥' + num(t.max_price) + '</td>'
                         + '<td>' + t.interval_min + ' 分钟</td>'
                         + '<td>' + num1(t.stop_hours) + ' 小时</td>'

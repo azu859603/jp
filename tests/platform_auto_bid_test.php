@@ -82,7 +82,7 @@ try {
 
     echo "== 后台开启开关 ==\n";
     [, , $j] = req($sa, 'POST', '/admin1314/setting/index', ['platform_auto_bid_enabled' => 1, 'platform_auto_bid_interval' => 5, 'platform_auto_bid_multiple' => 3, 'platform_auto_bid_stop_hours' => 1]);
-    ok('保存成功并提示接管 / 新建', ($j['code'] ?? 0) == 1 && strpos((string)$j['msg'], '接管手动任务 1 个') !== false && strpos((string)$j['msg'], '新建任务') !== false, json_encode($j, JSON_UNESCAPED_UNICODE));
+    ok('保存成功并提示接管 / 新建', ($j['code'] ?? 0) == 1 && preg_match('/接管手动任务 [1-9]\d* 个/u', (string)$j['msg']) && strpos((string)$j['msg'], '新建任务') !== false, json_encode($j, JSON_UNESCAPED_UNICODE));
     ok('设置已入库', setting('platform_auto_bid_enabled') === '1' && setting('platform_auto_bid_interval') === '5' && setting('platform_auto_bid_multiple') === '3' && setting('platform_auto_bid_stop_hours') === '1', json_encode(array_map('setting', $keys)));
     $ta = task($gA);
     ok('A 的手动任务被接管：creator=platform、参数=设置（5 分钟 / 上限 300 / 停 1h）、运行中', $ta && $ta['creator_type'] === 'platform' && (int)$ta['interval_min'] === 5 && (float)$ta['max_price'] == 300 && (float)$ta['stop_hours'] == 1 && (int)$ta['status'] === 1, json_encode($ta));

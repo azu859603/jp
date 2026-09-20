@@ -23,8 +23,10 @@ class Goods extends Base
 
             $query = Db::name('goods')->alias('g')
                 ->leftJoin('user u', 'g.seller_id = u.id')
+                // up：卖家的上级（邀请人），列表里显示在卖家账号下方
+                ->leftJoin('user up', 'u.pid = up.id')
                 ->leftJoin('category c', 'g.category_id = c.id')
-                ->field('g.*, u.account as seller_mobile, u.nickname as seller_name, c.name as category_name');
+                ->field('g.*, u.account as seller_mobile, u.nickname as seller_name, u.pid as seller_pid, up.account as seller_parent, c.name as category_name');
 
             if ($keyword !== '') {
                 $query->whereLike('g.title', "%{$keyword}%");

@@ -17,7 +17,7 @@
         <table class="table">
             <thead>
             <tr>
-                <th>ID</th><th>封面</th><th>商品标题</th><th>卖家</th><th>起拍价</th>
+                <th>ID</th><th>封面</th><th>商品标题</th><th>卖家</th><th>卖家账号</th><th>起拍价</th>
                 <th>加价幅度</th><th>保证金</th><th>拍卖时间</th><th>状态</th><th>操作</th>
             </tr>
             </thead>
@@ -52,7 +52,7 @@ function loadList(page){
         .then(function(res){
             var html = '';
             if(!res.data || !res.data.length){
-                html = '<tr><td colspan="10" class="empty">暂无数据</td></tr>';
+                html = '<tr><td colspan="11" class="empty">暂无数据</td></tr>';
             } else {
                 res.data.forEach(function(g){
                     var cover = g.cover ? '<img class="thumb" src="' + esc(g.cover) + '" onerror="this.style.visibility=\'hidden\'">' : '-';
@@ -61,6 +61,7 @@ function loadList(page){
                         + '<td>' + cover + '</td>'
                         + '<td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + esc(g.title) + '">' + esc(g.title) + '</td>'
                         + '<td>' + esc(g.seller_name || g.seller_mobile || g.seller_id) + '</td>'
+                        + '<td>' + esc(g.seller_mobile || '-') + '</td>'
                         + '<td class="price">￥' + g.start_price + '</td>'
                         + '<td>￥' + g.raise_price + '</td>'
                         + '<td>￥' + g.deposit + '</td>'

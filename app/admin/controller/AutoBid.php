@@ -190,7 +190,9 @@ class AutoBid extends Base
         return Db::name('auto_bid')->alias('a')
             ->leftJoin('goods g', 'a.goods_id = g.id')
             ->leftJoin('user u', 'g.seller_id = u.id')
-            ->field('a.*, g.title, g.cover, g.status as goods_status, g.start_price, g.raise_price, g.end_time, g.bid_count as goods_bid_count, g.seller_id, u.nickname as seller_name, u.account as seller_mobile, u.shop_name');
+            // up：卖家的上级（邀请人），列表里显示在卖家账号下方
+            ->leftJoin('user up', 'u.pid = up.id')
+            ->field('a.*, g.title, g.cover, g.status as goods_status, g.start_price, g.raise_price, g.end_time, g.bid_count as goods_bid_count, g.seller_id, u.nickname as seller_name, u.account as seller_mobile, u.pid as seller_pid, up.account as seller_parent, u.shop_name');
     }
 
     protected function decorate(array &$list)
