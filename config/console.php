@@ -25,6 +25,8 @@ return [
         'bid:auto' => \app\command\BidAuto::class,
         // 平台自营（会员 ID 1）拍品自动出价：php think platform:auto-bid（每分钟，独立执行；只同步并跑平台自营任务）
         'platform:auto-bid' => \app\command\PlatformAutoBid::class,
+        // 把「用户」开头的虚拟会员昵称改成中文昵称（手动执行）：php think user:rename-virtual [--force] [--limit=N] [--all]
+        'user:rename-virtual' => \app\command\VirtualNickname::class,
         // 清理表结构缓存（数据库加字段后执行）
         'schema:clear'  => \app\command\SchemaClear::class,
     ],
