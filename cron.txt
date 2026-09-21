@@ -28,3 +28,6 @@ php think schema:clear
 chmod -R 777 public/uploads && chmod -R 777 runtime
 
 缓存驱动：redis / file（Redis 不可用时可临时改回 file）
+
+分配商品
+php think shop:self-split --from=1 --count=30 --include-from --force

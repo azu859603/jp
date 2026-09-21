@@ -3763,4 +3763,8 @@ ALTER TABLE `user`
   ADD UNIQUE KEY `uk_email` (`email`),
   ADD KEY `idx_account` (`account`);
 
+ALTER TABLE `user`
+  ADD COLUMN `is_self_shop` TINYINT(1) NOT NULL DEFAULT 0 COMMENT '自营店铺 1是 0否' AFTER `is_virtual`,
+  ADD KEY `idx_self_shop` (`is_self_shop`);
+
 SET FOREIGN_KEY_CHECKS = 1;
