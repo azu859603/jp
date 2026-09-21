@@ -34,7 +34,7 @@
     </div>
     <div class="o-foot">
         {if $o.order_status==1}
-        <a class="btn-sm solid-red" href="javascript:void(0)" data-name="{$o.ship_name}" data-mobile="{:htmlspecialchars(mask_mobile($o.ship_mobile), ENT_QUOTES)}" data-address="{$o.ship_address}" onclick="shipOrder({$o.id}, this)">{:lang('发货')}</a>
+        <a class="btn-sm solid-red" href="javascript:void(0)" {if $see_addr == 1}data-name="{$o.ship_name}" data-mobile="{:htmlspecialchars(mask_mobile($o.ship_mobile), ENT_QUOTES)}" data-address="{$o.ship_address}" {/if}onclick="shipOrder({$o.id}, this)">{:lang('发货')}</a>
         {/if}
     </div>
 </div>
@@ -49,12 +49,14 @@
 <div class="mask" id="shipMask" onclick="closeShip()"></div>
 <div class="sheet" id="shipSheet">
     <div class="s-title">{:lang('确认发货')} <span class="s-close" onclick="closeShip()">×</span></div>
+    {if $see_addr == 1}
     <div class="ship-addr" id="shipAddr">
         <div class="sa-title">{:lang('买家收货信息')}</div>
         <div class="sa-row"><span class="k">{:lang('收货人')}</span><span class="v" id="saName">-</span></div>
         <div class="sa-row"><span class="k">{:lang('联系电话')}</span><span class="v" id="saMobile">-</span></div>
         <div class="sa-row"><span class="k">{:lang('收货地址')}</span><span class="v" id="saAddress">-</span></div>
     </div>
+    {/if}
     <div class="form-card" style="margin:8px 12px 0;">
         <div class="form-row"><span class="fl">{:lang('快递公司')}</span><div class="fr"><input type="text" id="shipCompany" placeholder="{:lang('请输入快递公司')}"></div></div>
         <div class="form-row"><span class="fl">{:lang('快递单号')}</span><div class="fr"><input type="text" id="shipNo" placeholder="{:lang('请输入快递单号')}"></div></div>
@@ -78,9 +80,12 @@ function shipOrder(id, el) {
     shipOrderId = id;
     // 弹层里显示买家收货信息，方便核对后再填快递
     var d = (el && el.dataset) ? el.dataset : {};
-    document.getElementById('saName').textContent = d.name || '-';
-    document.getElementById('saMobile').textContent = d.mobile || '-';
-    document.getElementById('saAddress').textContent = d.address || '-';
+    // 后台关闭「卖家可见买家收货信息」时页面上没有这几个节点，跳过填充
+    if (document.getElementById('saName')) {
+        document.getElementById('saName').textContent = d.name || '-';
+        document.getElementById('saMobile').textContent = d.mobile || '-';
+        document.getElementById('saAddress').textContent = d.address || '-';
+    }
     document.getElementById('shipCompany').value = '';
     document.getElementById('shipNo').value = '';
     document.getElementById('shipMask').classList.add('show');

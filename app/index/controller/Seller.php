@@ -458,8 +458,19 @@ class Seller extends Base
             }
         }
         unset($o);
+        // 后台「卖家权限」关闭时：收货信息根本不下发到页面，只用样式隐藏挡不住查看源码
+        $seeAddr = seller_see_address();
+        if (!$seeAddr) {
+            foreach ($list as &$o) {
+                $o['ship_name'] = '';
+                $o['ship_mobile'] = '';
+                $o['ship_address'] = '';
+            }
+            unset($o);
+        }
 
         View::assign([
+            'see_addr'    => $seeAddr ? 1 : 0,
             'list'        => $list,
             'total'       => $total,
             'page'        => $page,

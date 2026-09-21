@@ -323,6 +323,15 @@ function update_order_address($orderId, array $ship)
 }
 
 /**
+ * 主后台开关：卖家发货时能否看到买家的收货信息（默认开启）
+ * 关闭后，收货人 / 电话 / 地址不会下发到卖家页面，由平台统一处理发货。
+ */
+function seller_see_address()
+{
+    return (string)get_setting('seller_see_address', '1') === '1';
+}
+
+/**
  * 主后台开关：前台会员绑定提现账户后能否自行修改（默认关闭 = 绑定后只能找客服改）
  */
 function pay_account_editable()
