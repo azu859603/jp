@@ -227,18 +227,13 @@
                 </div>
             </div>
             <div class="st-card">
-                <div class="sc-head"><div><h3>流拍自动上架</h3><p>指定卖家的流拍商品自动重新上架，由 <code>php think goods:auto-relist</code> 定时任务独立执行</p></div></div>
+                <div class="sc-head"><div><h3>流拍自动上架</h3><p>「自营店铺」卖家的流拍商品自动重新上架，由 <code>php think goods:auto-relist</code> 定时任务独立执行</p></div></div>
                 <div class="sc-body">
                     <div class="form-row">
                         <div class="form-group">
-                            <label>流拍自动上架的卖家</label>
-                            <div class="in-unit"><input type="number" min="0" step="1" class="form-control" name="auto_relist_seller_id" value="{$settings.auto_relist_seller_id}"><span>会员 ID</span></div>
-                            <div class="tip">只有这个卖家的商品流拍后会自动重新上架，默认 1（平台自营账号）</div>
-                        </div>
-                        <div class="form-group">
                             <label>流拍自动上架拍卖时长</label>
                             <div class="in-unit"><input type="number" min="0" step="0.5" class="form-control" name="auto_relist_hours" value="{$settings.auto_relist_hours}"><span>小时</span></div>
-                            <div class="tip">该卖家的商品流拍后由定时任务自动重新上架，截拍时间 = 上架时间 + 此时长，再每件随机延后 0~6 小时，避免同时截拍；填 0 表示不自动上架。由 <code>php think goods:auto-relist</code> 定时任务独立执行（每分钟），与结算脚本互不串联</div>
+                            <div class="tip">会员属性为<b>自营店铺</b>的卖家，其商品流拍后由定时任务自动重新上架（在「会员管理 › 会员列表 › 编辑会员 › 店铺属性」里设置，可在列表按店铺属性筛选）。截拍时间 = 上架时间 + 此时长，再每件随机延后 0~6 小时，避免同时截拍；填 0 表示不自动上架。由 <code>php think goods:auto-relist</code> 定时任务独立执行（每分钟），与结算脚本互不串联</div>
                         </div>
                     </div>
                 </div>
@@ -269,7 +264,7 @@
                 </div>
             </div>
             <div class="st-card">
-                <div class="sc-head"><div><h3>平台自营自动出价</h3><p>会员 ID 1（平台自营账号）拍品由虚拟会员自动出价的开关与参数，由 <code>php think platform:auto-bid</code> 定时任务独立执行</p></div></div>
+                <div class="sc-head"><div><h3>平台自营自动出价</h3><p>「自营店铺」卖家的拍品由虚拟会员自动出价的开关与参数，由 <code>php think platform:auto-bid</code> 定时任务独立执行</p></div></div>
                 <div class="sc-body">
                     <div class="form-row">
                         <div class="form-group">
@@ -278,7 +273,7 @@
                                 <input type="radio" name="platform_auto_bid_enabled" id="pab1" value="1" {if $settings.platform_auto_bid_enabled == '1'}checked{/if}><label for="pab1">开启</label>
                                 <input type="radio" name="platform_auto_bid_enabled" id="pab0" value="0" {if $settings.platform_auto_bid_enabled != '1'}checked{/if}><label for="pab0">关闭</label>
                             </div>
-                            <div class="tip">开启后，会员 ID 1（平台自营账号）发布的<b>所有拍卖中拍品</b>由脚本自动安排虚拟会员出价；后台 / 代理后台的「自动出价」不能再为这些拍品手动添加任务，之前添加过的任务会被脚本接管并按这里的参数执行。关闭后脚本任务停止，恢复可手动添加。由 <code>php think platform:auto-bid</code> 定时任务独立执行（每分钟）；后台 / 代理后台手动添加的任务由 <code>php think bid:auto</code> 独立执行，两者互不串联</div>
+                            <div class="tip">开启后，会员属性为<b>自营店铺</b>的卖家（在「会员管理 › 会员列表 › 编辑会员 › 店铺属性」里设置）发布的<b>所有拍卖中拍品</b>由脚本自动安排虚拟会员出价；后台 / 代理后台的「自动出价」不能再为这些拍品手动添加任务，之前添加过的任务会被脚本接管并按这里的参数执行。关闭后脚本任务停止，恢复可手动添加。由 <code>php think platform:auto-bid</code> 定时任务独立执行（每分钟）；后台 / 代理后台手动添加的任务由 <code>php think bid:auto</code> 独立执行，两者互不串联</div>
                         </div>
                         <div class="form-group">
                             <label>出价间隔</label>

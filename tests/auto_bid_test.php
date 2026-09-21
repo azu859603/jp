@@ -43,7 +43,7 @@ try {
     [, , $j] = req($gsid, 'POST', '/agent/auto_bid/edit', ['id' => $t3, 'interval_min' => 5, 'max_price' => 999, 'stop_hours' => 0]); ok('代理不能编辑团队外任务', ($j['code'] ?? 1) == 0 && task($t3)['max_price'] == 110, json_encode($j, JSON_UNESCAPED_UNICODE));
     [, , $j] = req($asid, 'GET', '/admin1314/auto_bid/index?page=1&limit=50&keyword=QA自动出价A&status=1'); $row = $j['data'][0] ?? null; ok('主后台列表按标题搜索，带当前价 110 与卖家', $row && $row['id'] == $t1 && (float)$row['current_price'] == 110 && strpos($row['seller_text'], 'QA团队卖家') !== false, json_encode($j, JSON_UNESCAPED_UNICODE));
     echo "== 脚本执行 ==\n";
-    $o = run('bid:auto'); ok('未到出价时间：脚本检查但不出价', strpos($o, '本次无需出价') !== false && bids($g1) == 1, $o);
+    $o = run('bid:auto'); ok('未到出价时间：脚本检查但不出价', strpos($o, "拍品#$g1") === false && strpos($o, "拍品#$g2") === false && strpos($o, "拍品#$g3") === false && bids($g1) == 1 && bids($g2) == 0 && bids($g3) == 0, $o);
     $pdo->exec("update auto_bid set next_time=$T-1 where id in ($t1,$t2,$t3)");
     $o = run('bid:auto'); $tb1 = top($g1); $tb2 = top($g2); $tb3 = top($g3);
     ok('到时间后三个任务各出一手', strpos($o, "拍品#$g1") !== false && strpos($o, "拍品#$g2") !== false && strpos($o, "拍品#$g3") !== false && bids($g1) == 2 && bids($g2) == 1 && bids($g3) == 1, $o);

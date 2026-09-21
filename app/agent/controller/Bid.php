@@ -70,9 +70,12 @@ class Bid extends Base
         $kw  = trim((string)$this->request->param('kw', ''));
         $now = time();
         $query = $this->goodsQuery()->where('status', 1)->where('end_time', '>', $now);
-        // 自动出价场景：平台自营自动出价开启时，会员 ID 1 的拍品由脚本出价，不列出
-        if ($this->request->param('scene') === 'auto_bid' && platform_auto_bid_enabled()) {
-            $query->where('seller_id', '<>', 1);
+        // 自动出价场景：平台自营自动出价开启时，「自营店铺」卖家的拍品由脚本出价，不列出
+        if ($this->request->param('scene') === 'auto_bid') {
+            $pab = platform_auto_bid_config();
+            if ($pab['enabled'] && $pab['seller_ids']) {
+                $query->whereNotIn('seller_id', $pab['seller_ids']);
+            }
         }
         if ($kw !== '') {
             if (ctype_digit($kw)) {

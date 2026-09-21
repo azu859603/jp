@@ -539,7 +539,8 @@ function release_goods_bids($goodsId, $reason = '商品下架')
 /**
  * 把指定卖家的流拍商品自动重新上架
  *
- * 后台设置 auto_relist_seller_id（卖家 ID，默认 1）、auto_relist_hours（重新上架后的拍卖时长，小时；0 为关闭）。
+ * 范围：会员属性为「自营店铺」（user.is_self_shop=1）的全部卖家，不再由后台指定单个卖家 ID。
+ * 后台设置 auto_relist_hours（重新上架后的拍卖时长，小时；0 为关闭）。
  * 每件商品：清空旧出价记录、出价数 / 得标人 / 成交价归零，开拍时间为当前时间，
  * 截拍时间 = 当前时间 + 拍卖时长 + 随机 0~6 小时（每件各自随机，避免同时截拍）。
  * 由 php think goods:auto-relist 与 php think settle 调用，单次最多处理 $limit 件，避免积压过多时单次执行过久。
@@ -548,14 +549,14 @@ function release_goods_bids($goodsId, $reason = '商品下架')
  */
 function auto_relist_failed_goods($limit = 500)
 {
-    $sellerId = (int)get_setting('auto_relist_seller_id', 1);
-    $hours    = round((float)get_setting('auto_relist_hours', 0), 2);
-    $now      = time();
-    $result   = ['enabled' => $hours > 0 && $sellerId > 0, 'seller_id' => $sellerId, 'hours' => $hours, 'end_time' => $now + (int)round($hours * 3600), 'ids' => []];
-    if (!$result['enabled']) {
+    $hours     = round((float)get_setting('auto_relist_hours', 0), 2);
+    $now       = time();
+    $sellerIds = $hours > 0 ? self_shop_seller_ids() : [];
+    $result    = ['enabled' => $hours > 0, 'seller_ids' => $sellerIds, 'hours' => $hours, 'end_time' => $now + (int)round($hours * 3600), 'ids' => []];
+    if (!$result['enabled'] || empty($sellerIds)) {
         return $result;
     }
-    $ids = Db::name('goods')->where('seller_id', $sellerId)->where('status', 3)->order('end_time', 'asc')->limit((int)$limit)->column('id');
+    $ids = Db::name('goods')->whereIn('seller_id', $sellerIds)->where('status', 3)->order('end_time', 'asc')->limit((int)$limit)->column('id');
     if (empty($ids)) {
         return $result;
     }
@@ -585,7 +586,7 @@ function auto_relist_failed_goods($limit = 500)
         }
     }
     if (!empty($result['ids'])) {
-        admin_log('自动上架流拍商品：卖家 ' . $sellerId . '，' . count($result['ids']) . ' 件，拍卖时长 ' . $hours . ' 小时', 0);
+        admin_log('自动上架流拍商品：自营店铺卖家 ' . count($result['seller_ids']) . ' 个，' . count($result['ids']) . ' 件，拍卖时长 ' . $hours . ' 小时', 0);
     }
     return $result;
 }
@@ -662,9 +663,19 @@ function seller_auto_open()
     return (int)get_setting('seller_check', 1) !== 1;
 }
 /**
- * 平台自营自动出价：会员 ID 1（平台自营账号）发布的所有拍卖中拍品，由脚本按后台参数安排虚拟会员出价
+ * 会员属性为「自营店铺」的会员 ID（主后台「会员列表 › 编辑会员 › 店铺属性」设置）
+ * @return int[]
+ */
+function self_shop_seller_ids()
+{
+    return array_map('intval', Db::name('user')->where('is_self_shop', 1)->column('id'));
+}
+
+/**
+ * 平台自营自动出价：会员属性为「自营店铺」（user.is_self_shop=1）的全部卖家发布的所有拍卖中拍品，
+ * 由脚本按后台参数安排虚拟会员出价（店铺属性在主后台「会员管理 › 会员列表 › 编辑会员」里设置）
  * 配置直接读库（不走 site_settings() 的请求内缓存），保证后台刚保存的开关立即生效
- * @return array ['enabled'=>bool,'seller_id'=>int,'interval'=>int(分钟),'multiple'=>float(起拍价倍数),'stop_hours'=>float]
+ * @return array ['enabled'=>bool,'seller_ids'=>int[],'interval'=>int(分钟),'multiple'=>float(起拍价倍数),'stop_hours'=>float]
  */
 function platform_auto_bid_config()
 {
@@ -672,7 +683,8 @@ function platform_auto_bid_config()
     $v = Db::name('setting')->whereIn('name', $names)->column('value', 'name');
     return [
         'enabled'    => (int)($v['platform_auto_bid_enabled'] ?? 0) === 1,
-        'seller_id'  => 1,
+        // 范围：会员属性为「自营店铺」的全部卖家，不再固定会员 1
+        'seller_ids' => self_shop_seller_ids(),
         'interval'   => max(1, min(1440, (int)($v['platform_auto_bid_interval'] ?? 30))),
         'multiple'   => max(1, round((float)($v['platform_auto_bid_multiple'] ?? 2), 2)),
         'stop_hours' => max(0, min(720, round((float)($v['platform_auto_bid_stop_hours'] ?? 1), 2))),
@@ -689,31 +701,32 @@ function platform_auto_bid_enabled()
 
 /**
  * 后台 / 代理后台手动添加自动出价任务时的黑名单卖家：
- * 平台自营自动出价开启时，会员 ID 1 的拍品由脚本统一出价，不允许再手动挂任务；关闭时不限制
+ * 平台自营自动出价开启时，「自营店铺」卖家的拍品由脚本统一出价，不允许再手动挂任务；关闭时不限制
  * @param int $sellerId
  * @return bool
  */
 function auto_bid_blocked_seller($sellerId)
 {
-    return (int)$sellerId === 1 && platform_auto_bid_enabled();
+    $cfg = platform_auto_bid_config();
+    return $cfg['enabled'] && in_array((int)$sellerId, $cfg['seller_ids'], true);
 }
 
 /**
  * 同步平台自营自动出价任务（php think platform:auto-bid 每轮开头、后台保存开关/参数时调用）
  *
  * 开启时：
- *   1. 会员 1 拍品上所有非脚本创建的任务 → 改由脚本接管（creator_type=platform），以脚本参数为准；
- *   2. 会员 1 每件拍卖中的拍品若没有任务 → 新建脚本任务；已有脚本任务 → 参数同步为最新设置，
+ *   1. 自营店铺卖家拍品上所有非脚本创建的任务 → 改由脚本接管（creator_type=platform），以脚本参数为准；
+ *   2. 自营店铺卖家每件拍卖中的拍品若没有任务 → 新建脚本任务；已有脚本任务 → 参数同步为最新设置，
  *      已结束 / 已停用但拍品仍满足条件的 → 重新运行。
  * 关闭时：脚本创建的运行中任务全部停用（手动添加的任务不受影响）。
  *
- * @return array ['enabled'=>bool,'taken'=>int[],'created'=>int[],'resumed'=>int[],'updated'=>int,'stopped'=>int[]]
+ * @return array ['enabled'=>bool,'seller_ids'=>int[],'taken'=>int[],'created'=>int[],'resumed'=>int[],'updated'=>int,'stopped'=>int[]]
  */
 function platform_auto_bid_sync()
 {
     $cfg    = platform_auto_bid_config();
     $now    = time();
-    $result = ['enabled' => $cfg['enabled'], 'taken' => [], 'created' => [], 'resumed' => [], 'updated' => 0, 'stopped' => [], 'errors' => []];
+    $result = ['enabled' => $cfg['enabled'], 'seller_ids' => $cfg['enabled'] ? $cfg['seller_ids'] : [], 'taken' => [], 'created' => [], 'resumed' => [], 'updated' => 0, 'stopped' => [], 'errors' => []];
 
     if (!$cfg['enabled']) {
         $ids = Db::name('auto_bid')->where('creator_type', 'platform')->where('status', 1)->column('id');
@@ -724,16 +737,20 @@ function platform_auto_bid_sync()
         return $result;
     }
 
-    // 1. 接管会员 1 拍品上的手动任务
+    if (empty($cfg['seller_ids'])) {
+        return $result;   // 没有自营店铺会员，什么都不做
+    }
+
+    // 1. 接管自营店铺卖家拍品上的手动任务
     $manual = Db::name('auto_bid')->alias('a')->leftJoin('goods g', 'a.goods_id = g.id')
-        ->where('g.seller_id', $cfg['seller_id'])->where('a.creator_type', '<>', 'platform')->column('a.id');
+        ->whereIn('g.seller_id', $cfg['seller_ids'])->where('a.creator_type', '<>', 'platform')->column('a.id');
     if ($manual) {
         Db::name('auto_bid')->whereIn('id', $manual)->update(['creator_type' => 'platform', 'creator_id' => 0, 'update_time' => $now]);
         $result['taken'] = array_map('intval', $manual);
     }
 
-    // 2. 会员 1 拍卖中的拍品：没有任务的新建，有任务的同步参数 / 恢复
-    $goodsList = Db::name('goods')->where('seller_id', $cfg['seller_id'])->where('status', 1)
+    // 2. 自营店铺卖家拍卖中的拍品：没有任务的新建，有任务的同步参数 / 恢复
+    $goodsList = Db::name('goods')->whereIn('seller_id', $cfg['seller_ids'])->where('status', 1)
         ->where('start_time', '<=', $now)->where('end_time', '>', $now)->select()->toArray();
     if (!$goodsList) {
         return $result;
@@ -807,6 +824,9 @@ function platform_auto_bid_sync_summary(array $sync)
 {
     if (!$sync['enabled']) {
         return $sync['stopped'] ? '平台自营自动出价已关闭，停止了 ' . count($sync['stopped']) . ' 个脚本任务' : '平台自营自动出价已关闭';
+    }
+    if (empty($sync['seller_ids'])) {
+        return '平台自营自动出价已开启，但没有「自营店铺」会员，未安排任何任务（在主后台会员列表的编辑会员里设置店铺属性）';
     }
     $parts = [];
     if ($sync['taken']) {

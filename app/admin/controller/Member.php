@@ -35,6 +35,11 @@ class Member extends Base
             if ($isAgent !== '') {
                 $query->where('is_agent', (int)$isAgent);
             }
+            // 自营店铺筛选：1 自营，0 非自营
+            $isSelfShop = $this->request->param('is_self_shop', '');
+            if ($isSelfShop !== '') {
+                $query->where('is_self_shop', (int)$isSelfShop);
+            }
             $isVirtual = $this->request->param('is_virtual', '');
             if ($isVirtual !== '') {
                 $query->where('is_virtual', (int)$isVirtual);
@@ -56,7 +61,7 @@ class Member extends Base
             }
 
             $total = $query->count();
-            $list = $query->order('id', 'desc')->page($page, $limit)->field('id,account as mobile,nickname,avatar,invite_code,pid,is_seller,is_agent,is_virtual,seller_check,balance,freeze_balance,points,commission_rate,total_buy,total_sell,status,status_remark,can_withdraw,shop_name,seller_intro,deposit,shop_score,credit_score,fans_count,reg_ip,reg_time,last_login_time,create_time')->select()->toArray();
+            $list = $query->order('id', 'desc')->page($page, $limit)->field('id,account as mobile,nickname,avatar,invite_code,pid,is_seller,is_agent,is_virtual,seller_check,balance,freeze_balance,points,commission_rate,total_buy,total_sell,status,status_remark,can_withdraw,is_self_shop,shop_name,seller_intro,deposit,shop_score,credit_score,fans_count,reg_ip,reg_time,last_login_time,create_time')->select()->toArray();
 
             // 上级会员信息（列表展示用）
             $pids = array_values(array_unique(array_filter(array_column($list, 'pid'))));
@@ -675,6 +680,7 @@ class Member extends Base
         $isAgent   = $this->request->has('is_agent', 'post') ? ((int)$this->request->post('is_agent') === 1 ? 1 : 0) : (int)$user['is_agent'];
         $isVirtual = $this->request->has('is_virtual', 'post') ? ((int)$this->request->post('is_virtual') === 1 ? 1 : 0) : (int)$user['is_virtual'];
         $canWithdraw = $this->request->has('can_withdraw', 'post') ? ((int)$this->request->post('can_withdraw') === 1 ? 1 : 0) : (int)$user['can_withdraw'];
+        $isSelfShop  = $this->request->has('is_self_shop', 'post') ? ((int)$this->request->post('is_self_shop') === 1 ? 1 : 0) : (int)$user['is_self_shop'];
         if ($password !== '' && strlen($password) < 6) {
             return json(['code' => 0, 'msg' => '密码至少6位']);
         }
@@ -736,6 +742,10 @@ class Member extends Base
         if ($canWithdraw !== (int)$user['can_withdraw']) {
             $data['can_withdraw'] = $canWithdraw;
             $logs[] = $canWithdraw ? '开启提现' : '关闭提现';
+        }
+        if ($isSelfShop !== (int)$user['is_self_shop']) {
+            $data['is_self_shop'] = $isSelfShop;
+            $logs[] = $isSelfShop ? '设为自营店铺' : '设为非自营店铺';
         }
         if (!$data) {
             return json(['code' => 1, 'msg' => '没有需要修改的内容']);

@@ -8,14 +8,14 @@ use think\console\Input;
 use think\console\Output;
 
 /**
- * 平台自营（会员 ID 1）拍品自动出价
+ * 平台自营（会员属性为「自营店铺」的卖家）拍品自动出价
  *
  * 用法：php think platform:auto-bid
  * 部署：每分钟执行一次（独立命令，不与 settle / bid:auto 串联）。
  *       只同步并执行平台自营任务；后台 / 代理后台手动添加的任务由 php think bid:auto 负责。
  *
  * 后台「系统设置 › 基础设置 › 平台自营自动出价」控制：
- *   - 开关：开启后会员 1 发布的所有拍卖中拍品由脚本安排虚拟会员出价；后台 / 代理后台不能再为这些拍品手动添加任务，
+ *   - 开关：开启后自营店铺卖家发布的所有拍卖中拍品由脚本安排虚拟会员出价；后台 / 代理后台不能再为这些拍品手动添加任务，
  *           之前添加过的任务被脚本接管；关闭后脚本任务停止，恢复可手动添加。
  *   - 出价间隔（分钟）、最高出价（起拍价的倍数）、截拍前停止时间（小时）。
  * 同步逻辑 platform_auto_bid_sync()、出价逻辑 auto_bid_run() 都在 app/common.php。
@@ -25,7 +25,7 @@ class PlatformAutoBid extends Command
 {
     protected function configure()
     {
-        $this->setName('platform:auto-bid')->setDescription('平台自营（会员 ID 1）拍品由虚拟会员自动出价');
+        $this->setName('platform:auto-bid')->setDescription('平台自营（自营店铺卖家）拍品由虚拟会员自动出价');
     }
 
     protected function execute(Input $input, Output $output)

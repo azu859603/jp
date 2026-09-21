@@ -53,7 +53,7 @@ class AutoBid extends Base
             return json(['code' => 0, 'msg' => '拍品不存在']);
         }
         if (auto_bid_blocked_seller($goods['seller_id'])) {
-            return json(['code' => 0, 'msg' => '该拍品属于会员 ID 1 的卖家（平台自营），已由系统脚本统一自动出价，不能手动添加任务']);
+            return json(['code' => 0, 'msg' => '该拍品属于「自营店铺」卖家，已由平台自营自动出价脚本统一出价，不能手动添加任务']);
         }
         if (Db::name('auto_bid')->where('goods_id', $goodsId)->count()) {
             return json(['code' => 0, 'msg' => '该拍品已有自动出价任务，请直接编辑']);
@@ -106,7 +106,7 @@ class AutoBid extends Base
             return json(['code' => 0, 'msg' => '拍品不存在']);
         }
         if (auto_bid_blocked_seller($goods['seller_id'])) {
-            return json(['code' => 0, 'msg' => '该拍品属于会员 ID 1 的卖家（平台自营），已由系统脚本统一自动出价，不能手动添加任务']);
+            return json(['code' => 0, 'msg' => '该拍品属于「自营店铺」卖家，已由平台自营自动出价脚本统一出价，不能手动添加任务']);
         }
         [$interval, $maxPrice, $stopHours] = $this->readParams();
         $err = auto_bid_validate($goods, $interval, $maxPrice, $stopHours);

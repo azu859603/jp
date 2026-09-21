@@ -15,7 +15,7 @@ class Setting extends Base
             $fields = [
                 'site_name', 'site_logo', 'site_url', 'commission_rate', 'admin_google_auth',
                 'seller_check', 'goods_check', 'invite_required', 'withdraw_fee', 'service_phone',
-                'service_qq', 'service_link', 'auction_delay', 'auto_relist_seller_id', 'auto_relist_hours', 'user_protocol', 'privacy_policy', 'publish_protocol',
+                'service_qq', 'service_link', 'auction_delay', 'auto_relist_hours', 'user_protocol', 'privacy_policy', 'publish_protocol',
                 'platform_auto_bid_enabled', 'platform_auto_bid_interval', 'platform_auto_bid_multiple', 'platform_auto_bid_stop_hours',
                 'user_protocol_tw', 'user_protocol_en', 'privacy_policy_tw', 'privacy_policy_en', 'publish_protocol_tw', 'publish_protocol_en',
                 'withdraw_min', 'withdraw_max', 'agent_balance_adjust',
@@ -33,9 +33,6 @@ class Setting extends Base
                 $value = trim($this->request->post($field, ''));
                 if (in_array($field, ['commission_rate', 'withdraw_fee', 'withdraw_min', 'withdraw_max', 'auto_relist_hours'])) {
                     $value = (string)max(0, (float)$value);
-                }
-                if ($field === 'auto_relist_seller_id') {
-                    $value = (string)max(0, (int)$value);
                 }
                 if ($field === 'platform_auto_bid_enabled' || $field === 'agent_balance_adjust' || $field === 'auto_view_enabled' || $field === 'pay_account_editable' || $field === 'seller_see_address') {
                     $value = (string)$value === '1' ? '1' : '0';
@@ -101,7 +98,7 @@ class Setting extends Base
                 }
             }
             site_settings_refresh();
-            // 值有变化才同步任务（开启 → 接管会员 1 拍品上的手动任务并建任务；关闭 → 停止脚本任务）
+            // 值有变化才同步任务（开启 → 接管「自营店铺」卖家拍品上的手动任务并建任务；关闭 → 停止脚本任务）
             $syncMsg = '';
             if ($pabChanged) {
                 $syncMsg = platform_auto_bid_sync_summary(platform_auto_bid_sync());
@@ -117,7 +114,7 @@ class Setting extends Base
             'site_name' => '', 'site_logo' => '', 'site_url' => '', 'admin_google_auth' => '0',
             'commission_rate' => '0', 'seller_check' => '1', 'goods_check' => '1', 'invite_required' => '1',
             'withdraw_fee' => '0', 'service_phone' => '',
-            'service_qq' => '', 'service_link' => '', 'auction_delay' => '0', 'auto_relist_seller_id' => '1', 'auto_relist_hours' => '0', 'user_protocol' => '',
+            'service_qq' => '', 'service_link' => '', 'auction_delay' => '0', 'auto_relist_hours' => '0', 'user_protocol' => '',
             'platform_auto_bid_enabled' => '0', 'platform_auto_bid_interval' => '30', 'platform_auto_bid_multiple' => '2', 'platform_auto_bid_stop_hours' => '1', 'privacy_policy' => '', 'publish_protocol' => '',
             'user_protocol_tw' => '', 'user_protocol_en' => '', 'privacy_policy_tw' => '', 'privacy_policy_en' => '', 'publish_protocol_tw' => '', 'publish_protocol_en' => '',
             'withdraw_min' => '0', 'withdraw_max' => '0', 'agent_balance_adjust' => '1',

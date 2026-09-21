@@ -38,7 +38,8 @@ class Shop extends Base
         $enterpriseAuth = $seller['auth_status'] == 2 && !empty($seller['company_name']);
 
         // 粉丝数
-        $fans = Db::name('seller_follow')->where('seller_id', $id)->count();
+//        $fans = Db::name('seller_follow')->where('seller_id', $id)->count();
+        $fans = $seller['fans_count'];
 
         // 是否已关注
         $followed = 0;

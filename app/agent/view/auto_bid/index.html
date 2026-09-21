@@ -36,7 +36,7 @@
 <div class="ab-note">
     定时脚本每分钟检查一次任务：到了出价时间就随机挑一个<b>虚拟会员</b>（排除卖家和当前最高价者）按一个加价幅度出价，出价不冻结保证金。
     当前价达到「最高出价金额」、或距截拍不足「停止提前量」时任务自动结束；真人买家被超过时会收到出局通知。只能为您团队卖家拍卖中的拍品添加任务。
-    {if $platform_auto_bid_on}<span style="color:#c2410c;font-weight:600">「平台自营自动出价」已开启：会员 ID 1 的拍品由系统脚本统一出价（标记为「平台脚本」的任务不能在此修改），此处不能再为其添加任务；参数在「系统设置 › 基础设置」调整。</span><br>{/if}
+    {if $platform_auto_bid_on}<span style="color:#c2410c;font-weight:600">「平台自营自动出价」已开启：「自营店铺」卖家的拍品由系统脚本统一出价（标记为「平台脚本」的任务不能在此修改），此处不能再为其添加任务；参数在「系统设置 › 基础设置」调整。</span><br>{/if}
     当前启用的虚拟会员：<b>{$virtual_count}</b> 个{if $virtual_count == 0}，<span style="color:#dc2626">请先到会员管理添加虚拟会员，否则任务不会出价</span>{/if}。
     注意：停止时段内若无真人出价，最后一手仍可能是虚拟会员中标，产生无人付款的订单，请合理设置停止提前量并开启「待付款超时」。
 </div>
@@ -75,7 +75,7 @@
         <div class="dialog-body">
             <input type="hidden" id="taskId" value="0">
             <div class="form-group" style="margin-bottom:12px;" id="goodsGroup">
-                <label>拍品 <span class="tip" style="display:inline">（输入拍品 ID 或标题关键词搜索，只列拍卖中的拍品{if $platform_auto_bid_on}；会员 ID 为 1 的卖家的拍品由平台脚本出价，不能添加{/if}）</span></label>
+                <label>拍品 <span class="tip" style="display:inline">（输入拍品 ID 或标题关键词搜索，只列拍卖中的拍品{if $platform_auto_bid_on}；「自营店铺」卖家的拍品由平台脚本出价，不能添加{/if}）</span></label>
                 <div class="picker" id="goodsPicker">
                     <input type="text" class="form-control" id="goodsKw" placeholder="拍品 ID / 标题关键词" autocomplete="off">
                     <input type="hidden" id="taskGoods" value="">
