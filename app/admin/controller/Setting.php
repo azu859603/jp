@@ -73,6 +73,17 @@ class Setting extends Base
                 return json(['code' => 0, 'msg' => '提现最低金额不能大于最高金额']);
             }
 
+            // 平台自营自动出价的四个字段：写库前记下旧值，只有真的变了才跑同步（同步会扫全部平台自营拍品，不能每次保存都跑）
+            $pabFields = ['platform_auto_bid_enabled', 'platform_auto_bid_interval', 'platform_auto_bid_multiple', 'platform_auto_bid_stop_hours'];
+            $pabOld = Db::name('setting')->whereIn('name', $pabFields)->column('value', 'name');
+            $pabChanged = false;
+            foreach ($pabFields as $k) {
+                if (isset($data[$k]) && (string)$data[$k] !== (string)($pabOld[$k] ?? '')) {
+                    $pabChanged = true;
+                    break;
+                }
+            }
+
             $now = time();
             foreach ($data as $name => $value) {
                 $exists = Db::name('setting')->where('name', $name)->find();
@@ -90,13 +101,14 @@ class Setting extends Base
                 }
             }
             site_settings_refresh();
-            // 平台自营自动出价的开关 / 参数有提交：立即同步任务（开启 → 接管会员 1 拍品上的手动任务并建任务；关闭 → 停止脚本任务）
+            // 值有变化才同步任务（开启 → 接管会员 1 拍品上的手动任务并建任务；关闭 → 停止脚本任务）
             $syncMsg = '';
-            if (isset($data['platform_auto_bid_enabled']) || isset($data['platform_auto_bid_interval']) || isset($data['platform_auto_bid_multiple']) || isset($data['platform_auto_bid_stop_hours'])) {
+            if ($pabChanged) {
                 $syncMsg = platform_auto_bid_sync_summary(platform_auto_bid_sync());
             }
             admin_log('修改系统设置' . ($syncMsg !== '' ? '（' . $syncMsg . '）' : ''));
-            return json(['code' => 1, 'msg' => '设置已保存' . ($syncMsg !== '' ? '；' . $syncMsg : '')]);
+            // 同步结果只记进操作日志，页面提示保持简洁
+            return json(['code' => 1, 'msg' => '设置已保存']);
         }
 
         $settings = Db::name('setting')->column('value', 'name');

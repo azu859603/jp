@@ -82,7 +82,8 @@ try {
 
     echo "== 后台开启开关 ==\n";
     [, , $j] = req($sa, 'POST', '/admin1314/setting/index', ['platform_auto_bid_enabled' => 1, 'platform_auto_bid_interval' => 5, 'platform_auto_bid_multiple' => 3, 'platform_auto_bid_stop_hours' => 1]);
-    ok('保存成功并提示接管 / 新建', ($j['code'] ?? 0) == 1 && preg_match('/接管手动任务 [1-9]\d* 个/u', (string)$j['msg']) && strpos((string)$j['msg'], '新建任务') !== false, json_encode($j, JSON_UNESCAPED_UNICODE));
+    $syncLog = (string)$pdo->query("select action from admin_log order by id desc limit 1")->fetchColumn();
+    ok('保存只提示「设置已保存」，接管 / 新建写进操作日志', ($j['code'] ?? 0) == 1 && (string)$j['msg'] === '设置已保存' && preg_match('/接管手动任务 [1-9]\d* 个/u', $syncLog) && strpos($syncLog, '新建任务') !== false, json_encode($j, JSON_UNESCAPED_UNICODE));
     ok('设置已入库', setting('platform_auto_bid_enabled') === '1' && setting('platform_auto_bid_interval') === '5' && setting('platform_auto_bid_multiple') === '3' && setting('platform_auto_bid_stop_hours') === '1', json_encode(array_map('setting', $keys)));
     $ta = task($gA);
     ok('A 的手动任务被接管：creator=platform、参数=设置（5 分钟 / 上限 300 / 停 1h）、运行中', $ta && $ta['creator_type'] === 'platform' && (int)$ta['interval_min'] === 5 && (float)$ta['max_price'] == 300 && (float)$ta['stop_hours'] == 1 && (int)$ta['status'] === 1, json_encode($ta));
@@ -145,7 +146,8 @@ try {
 
     echo "== 关闭开关 ==\n";
     [, , $j] = req($sa, 'POST', '/admin1314/setting/index', ['platform_auto_bid_enabled' => 0]);
-    ok('关闭：脚本任务全部停用', ($j['code'] ?? 0) == 1 && strpos((string)$j['msg'], '停止了') !== false && (int)$pdo->query("select count(*) from auto_bid where goods_id in ($gA,$gD,$gE) and status=1")->fetchColumn() === 0 && task($gA)['stop_reason'] === '平台自营自动出价已关闭', json_encode([$j, task($gA)], JSON_UNESCAPED_UNICODE));
+    $syncLog = (string)$pdo->query("select action from admin_log order by id desc limit 1")->fetchColumn();
+    ok('关闭：脚本任务全部停用（停止条数记在操作日志里）', ($j['code'] ?? 0) == 1 && (string)$j['msg'] === '设置已保存' && strpos($syncLog, '停止了') !== false && (int)$pdo->query("select count(*) from auto_bid where goods_id in ($gA,$gD,$gE) and status=1")->fetchColumn() === 0 && task($gA)['stop_reason'] === '平台自营自动出价已关闭', json_encode([$j, task($gA)], JSON_UNESCAPED_UNICODE));
     [, , $j] = req($sa, 'GET', '/admin1314/bid/searchGoods?scene=auto_bid&kw=QAPA');
     ok('关闭后自动出价场景又能搜到会员 1 拍品', in_array($gA, idsOf($j)), json_encode(idsOf($j)));
     [, , $j] = req($sa, 'POST', '/admin1314/auto_bid/add', ['goods_id' => $gB, 'interval_min' => 5, 'max_price' => 500, 'stop_hours' => 0]);
