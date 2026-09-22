@@ -20,14 +20,14 @@ class Bid extends Base
             $query = Db::name('bid_record')->alias('b')
                 ->leftJoin('goods g', 'b.goods_id = g.id')
                 ->leftJoin('user u', 'b.user_id = u.id')
-                ->field('b.*, g.title as goods_title, u.account as mobile, u.nickname');
+                ->leftJoin('user su', 'g.seller_id = su.id')
+                ->field('b.*, g.title as goods_title, su.account as seller_mobile, u.account as mobile, u.nickname');
 
             if ($keyword !== '') {
                 $query->where(function ($q) use ($keyword) {
-                    // 拍品标题 / 买家手机号 / 买家昵称
+                    // 只按拍品标题 / 卖家账号检索：买家账号在列表里是脱敏的，买家昵称也不参与
                     $q->whereLike('g.title', "%{$keyword}%")
-                        ->whereOr('u.account', 'like', "%{$keyword}%")
-                        ->whereOr('u.nickname', 'like', "%{$keyword}%");
+                        ->whereOr('su.account', 'like', "%{$keyword}%");
                 });
             }
             if ($goodsId !== '') {
@@ -36,6 +36,11 @@ class Bid extends Base
 
             $total = $query->count();
             $list = $query->order('b.id', 'desc')->page($page, $limit)->select()->toArray();
+            // 买家账号脱敏；卖家账号原样返回，后台要按它检索
+            foreach ($list as &$b) {
+                $b['mobile'] = mask_mobile($b['mobile']);
+            }
+            unset($b);
 
             return json(['code' => 0, 'msg' => '', 'count' => $total, 'data' => $list]);
         }

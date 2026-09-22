@@ -26,7 +26,7 @@
 <div class="search-bar">
     <div class="search-input">
         <svg class="s-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/></svg>
-        <input type="text" class="form-control" id="keyword" placeholder="拍品标题 / 买家账号 / 昵称">
+        <input type="text" class="form-control" id="keyword" placeholder="拍品标题 / 卖家账号">
     </div>
     <button class="btn btn-primary" onclick="loadList(1)">查询</button>
     <button class="btn" onclick="resetSearch()">重置</button>
@@ -38,7 +38,7 @@
         <table class="table">
             <thead>
             <tr>
-                <th>ID</th><th>拍品</th><th>出价人</th><th>账号</th><th>出价金额</th><th>状态</th><th>是否得标</th><th>归属</th><th>时间</th><th>操作</th>
+                <th>ID</th><th>拍品</th><th>卖家账号</th><th>出价人</th><th>买家账号</th><th>出价金额</th><th>状态</th><th>是否得标</th><th>归属</th><th>时间</th><th>操作</th>
             </tr>
             </thead>
             <tbody id="tbody"></tbody>
@@ -91,7 +91,7 @@ function loadList(page){
         .then(function(res){
             var html = '';
             if(!res.data || !res.data.length){
-                html = '<tr><td colspan="10" class="empty">暂无数据</td></tr>';
+                html = '<tr><td colspan="11" class="empty">暂无数据</td></tr>';
             } else {
                 res.data.forEach(function(b){
                     var stHtml = b.status == 1 ? '<span class="tag tag-green">成交</span>'
@@ -100,6 +100,7 @@ function loadList(page){
                     html += '<tr>'
                         + '<td>' + b.id + '</td>'
                         + '<td style="max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + esc(b.goods_title) + '">' + esc(b.goods_title || '商品#' + b.goods_id) + '</td>'
+                        + '<td>' + esc(b.seller_mobile || '-') + '</td>'
                         + '<td>' + esc(b.nickname || ('ID:' + b.user_id)) + '</td>'
                         + '<td>' + esc(b.mobile || '-') + '</td>'
                         + '<td class="price">￥' + b.price + '</td>'

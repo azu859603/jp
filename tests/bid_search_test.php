@@ -13,12 +13,17 @@ $sa = md5('bsa' . $T); $a = $pdo->query('select * from admin_user order by id as
 $sg = md5('bsg' . $T); $u = $pdo->query("select * from user where id=$AG")->fetch(PDO::FETCH_ASSOC); unset($u['password']); file_put_contents("$root/runtime/session/sess_$sg", serialize(['user' => $u]));
 try {
     foreach ([['主后台', $sa, '/admin1314'], ['代理后台', $sg, '/agent']] as [$tag, $sid, $pre]) {
-        foreach (['QABS出价' => '拍品标题', '19999990502' => '买家手机号', 'QA出价买家昵称' => '昵称'] as $kw => $what) {
+        // 搜索口径只有两项：拍品标题 / 卖家账号（买家账号已脱敏、买家昵称也不参与检索）
+        foreach (['QABS出价' => '拍品标题', '19999990501' => '卖家账号'] as $kw => $what) {
             $j = req($sid, "$pre/bid/index?page=1&limit=50&keyword=" . urlencode($kw));
             ok("$tag 按{$what}搜到出价记录", in_array($bid, ids($j)), json_encode(ids($j)));
         }
         $ch = curl_init("http://localhost$pre/bid/index"); curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => 1, CURLOPT_COOKIE => 'PHPSESSID=' . $sid, CURLOPT_HTTPHEADER => ['Accept: text/html']]); $h = curl_exec($ch); curl_close($ch);
-        ok("$tag 占位文案", strpos($h, 'placeholder="拍品标题 / 买家账号 / 昵称"') !== false, '');
+        ok("$tag 占位文案", strpos($h, 'placeholder="拍品标题 / 卖家账号"') !== false, '');
+        $j = req($sid, "$pre/bid/index?page=1&limit=50&keyword=19999990502");
+        ok("$tag 买家账号不参与检索", !in_array($bid, ids($j)), json_encode(ids($j)));
+        $j = req($sid, "$pre/bid/index?page=1&limit=50&keyword=" . urlencode('QA出价买家昵称'));
+        ok("$tag 买家昵称不参与检索", !in_array($bid, ids($j)), json_encode(ids($j)));
     }
 } finally {
     $pdo->exec("delete from bid_record where id=$bid"); $pdo->exec("delete from goods where id=$g"); $pdo->exec("delete from user where id in ($AG,$S,$B)");

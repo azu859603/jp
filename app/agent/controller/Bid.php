@@ -30,7 +30,8 @@ class Bid extends Base
             $query = Db::name('bid_record')->alias('b')
                 ->leftJoin('goods g', 'b.goods_id = g.id')
                 ->leftJoin('user u', 'b.user_id = u.id')
-                ->field('b.*, g.title as goods_title, g.seller_id, u.account as mobile, u.nickname')
+                ->leftJoin('user su', 'g.seller_id = su.id')
+                ->field('b.*, g.title as goods_title, g.seller_id, su.account as seller_mobile, u.account as mobile, u.nickname')
                 // 团队范围：拍品卖家是我的下级，或出价人是我的下级
                 ->where(function ($q) use ($ids) {
                     $q->whereIn('g.seller_id', $ids)->whereOr('b.user_id', 'in', $ids);
@@ -38,9 +39,9 @@ class Bid extends Base
 
             if ($keyword !== '') {
                 $query->where(function ($q) use ($keyword) {
+                    // 只按拍品标题 / 卖家账号检索：买家账号在列表里是脱敏的，买家昵称也不参与
                     $q->whereLike('g.title', "%{$keyword}%")
-                        ->whereOr('u.account', 'like', "%{$keyword}%")
-                        ->whereOr('u.nickname', 'like', "%{$keyword}%");
+                        ->whereOr('su.account', 'like', "%{$keyword}%");
                 });
             }
             if ($goodsId !== '') {
@@ -53,6 +54,8 @@ class Bid extends Base
             foreach ($list as &$b) {
                 $b['seller_in_team'] = isset($set[(int)$b['seller_id']]) ? 1 : 0;
                 $b['buyer_in_team']  = isset($set[(int)$b['user_id']]) ? 1 : 0;
+                // 买家账号脱敏；卖家账号原样返回，代理要按它检索
+                $b['mobile']         = mask_mobile($b['mobile']);
             }
             unset($b);
             return json(['code' => 0, 'msg' => '', 'count' => $total, 'data' => $list]);
