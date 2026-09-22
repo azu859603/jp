@@ -5,6 +5,7 @@
  *  - 后台设置的拍卖时长是一个区间「最短 ~ 最长」，最长填 0 表示关闭
  *  - 每件商品在区间内各自随机一个时长，截拍时间 = 上架时间 + 随机时长；上架时清空旧出价
  *  - 老配置只有 auto_relist_hours 时按「旧值 ~ 旧值+6」兼容，页面也这样回显
+ *  - 上架时若「平台自营自动出价」开着，按它的参数当场建好自动出价任务
  *  - settle 只负责结算为流拍，上架由本命令独立完成
  */
 $root = 'D:/phpstudy_pro/WWW/jp'; $php = 'D:/phpstudy_pro/Extensions/php/php8.0.2nts/php.exe';
@@ -40,6 +41,10 @@ if ($realSelf) { $pdo->exec('update user set is_self_shop=0 where id in (' . imp
 // 原有设置，结束时还原
 $origHours = $pdo->query("select value from setting where name='auto_relist_hours'")->fetchColumn();
 $origMin   = $pdo->query("select value from setting where name='auto_relist_hours_min'")->fetchColumn();
+$pabKeys   = ['platform_auto_bid_enabled', 'platform_auto_bid_interval', 'platform_auto_bid_multiple', 'platform_auto_bid_stop_hours'];
+$origPab   = []; foreach ($pabKeys as $k) { $origPab[$k] = $pdo->query("select value from setting where name='$k'")->fetchColumn(); }
+function task($gid) { global $pdo; return $pdo->query("select * from auto_bid where goods_id=$gid")->fetch(PDO::FETCH_ASSOC) ?: null; }
+function taskCount($gid) { global $pdo; return (int)$pdo->query("select count(*) from auto_bid where goods_id=$gid")->fetchColumn(); }
 $origMax   = $pdo->query("select value from setting where name='auto_relist_hours_max'")->fetchColumn();
 
 $asid = md5('ar' . $T); $a = $pdo->query('select * from admin_user where id=1')->fetch(PDO::FETCH_ASSOC); file_put_contents("$root/runtime/session/sess_$asid", serialize(['admin' => $a]));
@@ -113,10 +118,51 @@ try {
         && $pdo->query("select value from setting where name='auto_relist_hours_max'")->fetchColumn() === '24');
     [, , $j] = req($asid, 'POST', '/admin1314/setting/index', ['site_name' => $pdo->query("select value from setting where name='site_name'")->fetchColumn()]);
     ok('只提交其它字段时不影响该设置', $pdo->query("select value from setting where name='auto_relist_hours_max'")->fetchColumn() === '24');
+    echo "== 上架时按「平台自营自动出价」建任务 ==\n";
+    // 开关关着：只上架，不建任务
+    setv('platform_auto_bid_enabled', '0');
+    setRange('4', '6');
+    $p1 = mkGoods($qa, 'QA建任务1', 3, $T - 3600); $ids .= ",$p1";
+    $o = run('goods:auto-relist');
+    ok('开关关闭时只上架、不建任务', g($p1)['status'] == 1 && taskCount($p1) === 0 && strpos($o, '建自动出价任务') === false, $o);
+
+    // 开关打开：上架时按配置建任务（起拍价 100 × 倍数 3 = 上限 300）
+    setv('platform_auto_bid_enabled', '1');
+    setv('platform_auto_bid_interval', '5');
+    setv('platform_auto_bid_multiple', '3');
+    setv('platform_auto_bid_stop_hours', '1');
+    $p2 = mkGoods($qa, 'QA建任务2', 3, $T - 3600);
+    $p3 = mkGoods($qa2, 'QA建任务3', 3, $T - 1800);
+    $ids .= ",$p2,$p3";
+    $o = run('goods:auto-relist');
+    ok('开关打开时上架并建任务', g($p2)['status'] == 1 && g($p3)['status'] == 1 && strpos($o, '建自动出价任务 2 个') !== false, $o);
+    $t2 = task($p2);
+    ok('  任务参数按后台配置：间隔 5 分钟、上限 100×3=300、截拍前停 1 小时', $t2 && (int)$t2['interval_min'] === 5
+        && (float)$t2['max_price'] == 300 && (float)$t2['stop_hours'] == 1, json_encode($t2));
+    ok('  标记为平台脚本任务且运行中', $t2['creator_type'] === 'platform' && (int)$t2['creator_id'] === 0 && (int)$t2['status'] === 1);
+    ok('  首次出价时间在 1 ~ 5 分钟之后', (int)$t2['next_time'] > $T && (int)$t2['next_time'] <= $T + 5 * 60 + 120, $t2['next_time'] - $T);
+    ok('  每件拍品只有一条任务', taskCount($p2) === 1 && taskCount($p3) === 1);
+    ok('  操作日志里带任务数', (int)$pdo->query("select count(*) from admin_log where action like '%建自动出价任务 2 个%' and create_time>=$T")->fetchColumn() === 1);
+
+    // 已经有任务的拍品不会重复建
+    $pdo->exec("update goods set status=3 where id=$p2");
+    $o = run('goods:auto-relist');
+    ok('已有任务的拍品重新上架时不重复建', g($p2)['status'] == 1 && taskCount($p2) === 1 && strpos($o, '建自动出价任务') === false, $o);
+
+    // 拍卖时长短于「截拍前停止」时长：照常上架，但建不了任务
+    setRange('0.5', '0.5');
+    $p4 = mkGoods($qa, 'QA建任务4', 3, $T - 3600); $ids .= ",$p4";
+    $o = run('goods:auto-relist');
+    ok('拍卖时长不够停止提前量时只上架、不建任务', g($p4)['status'] == 1 && taskCount($p4) === 0, $o);
+
+    // 非自营卖家的商品本来就不会被上架，也不会有任务
+    ok('非自营卖家的流拍商品仍未上架、无任务', g($g4)['status'] == 3 && taskCount($g4) === 0);
 } finally {
     foreach ([['auto_relist_hours', $origHours], ['auto_relist_hours_min', $origMin], ['auto_relist_hours_max', $origMax]] as [$n, $v]) {
         if ($v === false) { delv($n); } else { setv($n, $v); }
     }
+    foreach ($origPab as $n => $v) { if ($v === false) { delv($n); } else { setv($n, $v); } }
+    $pdo->exec("delete from auto_bid where goods_id in ($ids)");
     if ($realSelf) { $pdo->exec('update user set is_self_shop=1 where id in (' . implode(',', $realSelf) . ')'); }   // 还原真实的自营会员
     $pdo->exec("delete from bid_record where goods_id in ($ids)");
     $pdo->exec("delete from goods where id in ($ids)");

@@ -542,6 +542,7 @@ function release_goods_bids($goodsId, $reason = '商品下架')
  * 范围：会员属性为「自营店铺」（user.is_self_shop=1）的全部卖家，不再由后台指定单个卖家 ID。
  * 后台设置 auto_relist_hours_min / auto_relist_hours_max（重新上架后的拍卖时长区间，小时；最长为 0 表示关闭）。
  * 每件商品在这个区间内随机取一个时长，避免同一批商品同时截拍。
+ * 上架后若「平台自营自动出价」是开启的，当场按它的参数给拍品建好自动出价任务。
  * 每件商品：清空旧出价记录、出价数 / 得标人 / 成交价归零，开拍时间为当前时间，
  * 截拍时间 = 当前时间 + 拍卖时长 + 随机 0~6 小时（每件各自随机，避免同时截拍）。
  * 由 php think goods:auto-relist 与 php think settle 调用，单次最多处理 $limit 件，避免积压过多时单次执行过久。
@@ -588,12 +589,15 @@ function auto_relist_failed_goods($limit = 500)
         'end_min'    => $now + (int)round($hoursMin * 3600),
         'end_max'    => $now + (int)round($hoursMax * 3600),
         'ids'        => [],
+        'tasks'      => [],
     ];
     if (!$result['enabled'] || empty($sellerIds)) {
         return $result;
     }
     $secMin = (int)round($hoursMin * 3600);
     $secMax = (int)round($hoursMax * 3600);
+    // 上架后顺手建自动出价任务用，循环外取一次配置
+    $pabCfg = platform_auto_bid_config();
     $ids = Db::name('goods')->whereIn('seller_id', $sellerIds)->where('status', 3)->order('end_time', 'asc')->limit((int)$limit)->column('id');
     if (empty($ids)) {
         return $result;
@@ -608,16 +612,25 @@ function auto_relist_failed_goods($limit = 500)
                 continue;
             }
             Db::name('bid_record')->where('goods_id', $gid)->delete();
+            // 每件在区间内随机一个时长，同一批不会同时截拍
+            $endTime = $now + mt_rand($secMin, $secMax);
             Db::name('goods')->where('id', $gid)->update([
                 'status'      => 1,
                 'start_time'  => $now,
-                // 每件在区间内随机一个时长，同一批不会同时截拍
-                'end_time'    => $now + mt_rand($secMin, $secMax),
+                'end_time'    => $endTime,
                 'bid_count'   => 0,
                 'winner_id'   => 0,
                 'final_price' => 0,
                 'update_time' => $now,
             ]);
+            // 上架完当场按后台「平台自营自动出价」的参数建任务，不用等下一轮 platform:auto-bid
+            $goods['status']     = 1;
+            $goods['start_time'] = $now;
+            $goods['end_time']   = $endTime;
+            $goods['bid_count']  = 0;
+            if (platform_auto_bid_make_task($goods, $pabCfg, $now)) {
+                $result['tasks'][] = (int)$gid;
+            }
             Db::commit();
             $result['ids'][] = (int)$gid;
         } catch (\Throwable $e) {
@@ -625,7 +638,8 @@ function auto_relist_failed_goods($limit = 500)
         }
     }
     if (!empty($result['ids'])) {
-        admin_log('自动上架流拍商品：自营店铺卖家 ' . count($result['seller_ids']) . ' 个，' . count($result['ids']) . ' 件，拍卖时长 ' . auto_relist_hours_text($hoursMin, $hoursMax), 0);
+        admin_log('自动上架流拍商品：自营店铺卖家 ' . count($result['seller_ids']) . ' 个，' . count($result['ids']) . ' 件，拍卖时长 ' . auto_relist_hours_text($hoursMin, $hoursMax)
+            . ($result['tasks'] ? '，建自动出价任务 ' . count($result['tasks']) . ' 个' : ''), 0);
     }
     return $result;
 }
@@ -799,6 +813,63 @@ function auto_bid_blocked_seller($sellerId)
 }
 
 /**
+ * 按后台「平台自营自动出价」的配置，组装一条脚本任务的入库数据
+ * 上限 = 起拍价 × 倍数，封顶到字段能存的最大值（decimal(10,2)）
+ *
+ * @param array $goods 拍品行
+ * @param array $cfg   platform_auto_bid_config() 的结果
+ * @param int   $now
+ * @return array
+ */
+function platform_auto_bid_task_row(array $goods, array $cfg, $now)
+{
+    return [
+        'goods_id'     => (int)$goods['id'],
+        'interval_min' => $cfg['interval'],
+        'max_price'    => min(round((float)$goods['start_price'] * $cfg['multiple'], 2), MONEY_MAX),
+        'stop_hours'   => $cfg['stop_hours'],
+        'status'       => 1,
+        'stop_reason'  => '',
+        'next_time'    => $now + mt_rand(60, max(60, $cfg['interval'] * 60)),
+        'last_time'    => 0,
+        'bid_count'    => 0,
+        'creator_type' => 'platform',
+        'creator_id'   => 0,
+        'create_time'  => $now,
+        'update_time'  => $now,
+    ];
+}
+
+/**
+ * 给一件拍品建「平台自营自动出价」的脚本任务
+ *
+ * 流拍自动上架时调用，上架完当场就有任务，不用等下一轮 php think platform:auto-bid。
+ * 开关没开、卖家不是「自营店铺」、这件拍品已经有任务、或拍品本身不满足条件
+ *（已截拍、距截拍不足停止提前量、上限不够出一手等）都会跳过，返回 0。
+ *
+ * @param array      $goods 拍品行，必须是上架后的最新数据（status / start_time / end_time）
+ * @param array|null $cfg   platform_auto_bid_config() 的结果，批量调用时传进来避免重复查库
+ * @param int        $now
+ * @return int 新任务 ID；没建返回 0
+ */
+function platform_auto_bid_make_task(array $goods, array $cfg = null, $now = 0)
+{
+    $cfg = $cfg ?: platform_auto_bid_config();
+    $now = $now ?: time();
+    if (!$cfg['enabled'] || !in_array((int)$goods['seller_id'], $cfg['seller_ids'], true)) {
+        return 0;
+    }
+    if (Db::name('auto_bid')->where('goods_id', (int)$goods['id'])->count()) {
+        return 0;
+    }
+    $row = platform_auto_bid_task_row($goods, $cfg, $now);
+    if (auto_bid_validate($goods, $cfg['interval'], $row['max_price'], $cfg['stop_hours']) !== '') {
+        return 0;
+    }
+    return (int)Db::name('auto_bid')->insertGetId($row);
+}
+
+/**
  * 同步平台自营自动出价任务（php think platform:auto-bid 每轮开头、后台保存开关/参数时调用）
  *
  * 开启时：
@@ -857,21 +928,7 @@ function platform_auto_bid_sync()
                 if (!$qualifies()) {
                     continue;
                 }
-                $id = Db::name('auto_bid')->insertGetId([
-                    'goods_id'     => $goods['id'],
-                    'interval_min' => $cfg['interval'],
-                    'max_price'    => $maxPrice,
-                    'stop_hours'   => $cfg['stop_hours'],
-                    'status'       => 1,
-                    'stop_reason'  => '',
-                    'next_time'    => $now + mt_rand(60, max(60, $cfg['interval'] * 60)),
-                    'last_time'    => 0,
-                    'bid_count'    => 0,
-                    'creator_type' => 'platform',
-                    'creator_id'   => 0,
-                    'create_time'  => $now,
-                    'update_time'  => $now,
-                ]);
+                $id = Db::name('auto_bid')->insertGetId(platform_auto_bid_task_row($goods, $cfg, $now));
                 $result['created'][] = (int)$id;
                 continue;
             }

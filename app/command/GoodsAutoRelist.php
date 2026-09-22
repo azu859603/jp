@@ -19,6 +19,7 @@ use think\console\Output;
  *   auto_relist_hours_max  重新上架后的拍卖时长上限（小时），填 0 为不自动上架
  *
  * 截拍时间 = 上架时间 + 在「下限 ~ 上限」之间随机的时长（每件各自随机，避免同时截拍）；
+ * 「平台自营自动出价」开着的话，上架时按它的参数给拍品建好自动出价任务；
  * 上架逻辑在 app/common.php 的 auto_relist_failed_goods()。
  * 心跳 runtime/auto_relist.heartbeat；有商品被上架或出错时写 runtime/log/auto_relist.log。
  */
@@ -68,7 +69,9 @@ class GoodsAutoRelist extends Command
         }
         $line = $stamp . '自营店铺卖家 ' . count($result['seller_ids']) . ' 个，自动上架 ' . count($result['ids']) . ' 件，拍卖时长 '
               . auto_relist_hours_text($result['hours_min'], $result['hours_max']) . '，截拍 '
-              . date('Y-m-d H:i', $result['end_min']) . ' ~ ' . date('Y-m-d H:i', $result['end_max']) . ' 之间随机 ids=' . implode(',', $result['ids']);
+              . date('Y-m-d H:i', $result['end_min']) . ' ~ ' . date('Y-m-d H:i', $result['end_max']) . ' 之间随机'
+              . ($result['tasks'] ? '，建自动出价任务 ' . count($result['tasks']) . ' 个' : '')
+              . ' ids=' . implode(',', $result['ids']);
         $output->writeln($line);
         @file_put_contents($logFile, $line . PHP_EOL, FILE_APPEND);
         return 0;
