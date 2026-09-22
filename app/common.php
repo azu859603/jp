@@ -540,22 +540,60 @@ function release_goods_bids($goodsId, $reason = '商品下架')
  * 把指定卖家的流拍商品自动重新上架
  *
  * 范围：会员属性为「自营店铺」（user.is_self_shop=1）的全部卖家，不再由后台指定单个卖家 ID。
- * 后台设置 auto_relist_hours（重新上架后的拍卖时长，小时；0 为关闭）。
+ * 后台设置 auto_relist_hours_min / auto_relist_hours_max（重新上架后的拍卖时长区间，小时；最长为 0 表示关闭）。
+ * 每件商品在这个区间内随机取一个时长，避免同一批商品同时截拍。
  * 每件商品：清空旧出价记录、出价数 / 得标人 / 成交价归零，开拍时间为当前时间，
  * 截拍时间 = 当前时间 + 拍卖时长 + 随机 0~6 小时（每件各自随机，避免同时截拍）。
  * 由 php think goods:auto-relist 与 php think settle 调用，单次最多处理 $limit 件，避免积压过多时单次执行过久。
  *
  * @return array ['enabled' => bool, 'seller_id' => int, 'hours' => float, 'end_time' => int（截拍窗口起点）, 'ids' => int[]]
  */
+/**
+ * 流拍自动上架的拍卖时长区间（小时）
+ * 后台填「最短 ~ 最长」，最长为 0 表示关闭；最短会被钳制到 [0, 最长]。
+ * 兼容老配置：只存过 auto_relist_hours 时，按「旧值 ~ 旧值+6」换算，与改版前的行为一致。
+ * @return float[] [最短, 最长]
+ */
+function auto_relist_hours_range()
+{
+    $settings = site_settings();
+    $hasNew   = isset($settings['auto_relist_hours_min']) || isset($settings['auto_relist_hours_max']);
+    if (!$hasNew) {
+        $old = round((float)get_setting('auto_relist_hours', 0), 2);
+        return $old > 0 ? [$old, round($old + 6, 2)] : [0.0, 0.0];
+    }
+    $max = max(0, round((float)get_setting('auto_relist_hours_max', 0), 2));
+    $min = max(0, round((float)get_setting('auto_relist_hours_min', 0), 2));
+    return [min($min, $max), $max];
+}
+
+/**
+ * 时长区间的中文描述：相等时只显示一个值
+ */
+function auto_relist_hours_text($min, $max)
+{
+    return $min == $max ? $max . ' 小时' : $min . ' ~ ' . $max . ' 小时';
+}
+
 function auto_relist_failed_goods($limit = 500)
 {
-    $hours     = round((float)get_setting('auto_relist_hours', 0), 2);
+    [$hoursMin, $hoursMax] = auto_relist_hours_range();
     $now       = time();
-    $sellerIds = $hours > 0 ? self_shop_seller_ids() : [];
-    $result    = ['enabled' => $hours > 0, 'seller_ids' => $sellerIds, 'hours' => $hours, 'end_time' => $now + (int)round($hours * 3600), 'ids' => []];
+    $sellerIds = $hoursMax > 0 ? self_shop_seller_ids() : [];
+    $result    = [
+        'enabled'    => $hoursMax > 0,
+        'seller_ids' => $sellerIds,
+        'hours_min'  => $hoursMin,
+        'hours_max'  => $hoursMax,
+        'end_min'    => $now + (int)round($hoursMin * 3600),
+        'end_max'    => $now + (int)round($hoursMax * 3600),
+        'ids'        => [],
+    ];
     if (!$result['enabled'] || empty($sellerIds)) {
         return $result;
     }
+    $secMin = (int)round($hoursMin * 3600);
+    $secMax = (int)round($hoursMax * 3600);
     $ids = Db::name('goods')->whereIn('seller_id', $sellerIds)->where('status', 3)->order('end_time', 'asc')->limit((int)$limit)->column('id');
     if (empty($ids)) {
         return $result;
@@ -573,7 +611,8 @@ function auto_relist_failed_goods($limit = 500)
             Db::name('goods')->where('id', $gid)->update([
                 'status'      => 1,
                 'start_time'  => $now,
-                'end_time'    => $result['end_time'] + mt_rand(0, 6 * 3600),
+                // 每件在区间内随机一个时长，同一批不会同时截拍
+                'end_time'    => $now + mt_rand($secMin, $secMax),
                 'bid_count'   => 0,
                 'winner_id'   => 0,
                 'final_price' => 0,
@@ -586,7 +625,7 @@ function auto_relist_failed_goods($limit = 500)
         }
     }
     if (!empty($result['ids'])) {
-        admin_log('自动上架流拍商品：自营店铺卖家 ' . count($result['seller_ids']) . ' 个，' . count($result['ids']) . ' 件，拍卖时长 ' . $hours . ' 小时', 0);
+        admin_log('自动上架流拍商品：自营店铺卖家 ' . count($result['seller_ids']) . ' 个，' . count($result['ids']) . ' 件，拍卖时长 ' . auto_relist_hours_text($hoursMin, $hoursMax), 0);
     }
     return $result;
 }

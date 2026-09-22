@@ -15,7 +15,7 @@ class Setting extends Base
             $fields = [
                 'site_name', 'site_logo', 'site_url', 'commission_rate', 'admin_google_auth',
                 'seller_check', 'goods_check', 'invite_required', 'withdraw_fee', 'service_phone',
-                'service_qq', 'service_link', 'auction_delay', 'auto_relist_hours', 'user_protocol', 'privacy_policy', 'publish_protocol',
+                'service_qq', 'service_link', 'auction_delay', 'auto_relist_hours_min', 'auto_relist_hours_max', 'user_protocol', 'privacy_policy', 'publish_protocol',
                 'platform_auto_bid_enabled', 'platform_auto_bid_interval', 'platform_auto_bid_multiple', 'platform_auto_bid_stop_hours',
                 'user_protocol_tw', 'user_protocol_en', 'privacy_policy_tw', 'privacy_policy_en', 'publish_protocol_tw', 'publish_protocol_en',
                 'withdraw_min', 'withdraw_max', 'agent_balance_adjust',
@@ -31,7 +31,7 @@ class Setting extends Base
                     continue;
                 }
                 $value = trim($this->request->post($field, ''));
-                if (in_array($field, ['commission_rate', 'withdraw_fee', 'withdraw_min', 'withdraw_max', 'auto_relist_hours'])) {
+                if (in_array($field, ['commission_rate', 'withdraw_fee', 'withdraw_min', 'withdraw_max', 'auto_relist_hours_min', 'auto_relist_hours_max'])) {
                     $value = (string)max(0, (float)$value);
                 }
                 if ($field === 'platform_auto_bid_enabled' || $field === 'agent_balance_adjust' || $field === 'auto_view_enabled' || $field === 'pay_account_editable' || $field === 'seller_see_address') {
@@ -68,6 +68,10 @@ class Setting extends Base
             if (isset($data['withdraw_min'], $data['withdraw_max'])
                 && (float)$data['withdraw_max'] > 0 && (float)$data['withdraw_min'] > (float)$data['withdraw_max']) {
                 return json(['code' => 0, 'msg' => '提现最低金额不能大于最高金额']);
+            }
+            if (isset($data['auto_relist_hours_min'], $data['auto_relist_hours_max'])
+                && (float)$data['auto_relist_hours_max'] > 0 && (float)$data['auto_relist_hours_min'] > (float)$data['auto_relist_hours_max']) {
+                return json(['code' => 0, 'msg' => '流拍自动上架的最短时长不能大于最长时长']);
             }
 
             // 平台自营自动出价的四个字段：写库前记下旧值，只有真的变了才跑同步（同步会扫全部平台自营拍品，不能每次保存都跑）
@@ -109,12 +113,14 @@ class Setting extends Base
         }
 
         $settings = Db::name('setting')->column('value', 'name');
+        // 老配置只存过 auto_relist_hours：页面按兼容规则回显区间，避免「页面显示 0 而脚本仍在跑」
+        $relistLegacy = !isset($settings['auto_relist_hours_min']) && !isset($settings['auto_relist_hours_max']);
         // 补默认值，避免新增配置未入库时模板访问报错
         $defaults = [
             'site_name' => '', 'site_logo' => '', 'site_url' => '', 'admin_google_auth' => '0',
             'commission_rate' => '0', 'seller_check' => '1', 'goods_check' => '1', 'invite_required' => '1',
             'withdraw_fee' => '0', 'service_phone' => '',
-            'service_qq' => '', 'service_link' => '', 'auction_delay' => '0', 'auto_relist_hours' => '0', 'user_protocol' => '',
+            'service_qq' => '', 'service_link' => '', 'auction_delay' => '0', 'auto_relist_hours_min' => '0', 'auto_relist_hours_max' => '0', 'user_protocol' => '',
             'platform_auto_bid_enabled' => '0', 'platform_auto_bid_interval' => '30', 'platform_auto_bid_multiple' => '2', 'platform_auto_bid_stop_hours' => '1', 'privacy_policy' => '', 'publish_protocol' => '',
             'user_protocol_tw' => '', 'user_protocol_en' => '', 'privacy_policy_tw' => '', 'privacy_policy_en' => '', 'publish_protocol_tw' => '', 'publish_protocol_en' => '',
             'withdraw_min' => '0', 'withdraw_max' => '0', 'agent_balance_adjust' => '1',
@@ -124,6 +130,11 @@ class Setting extends Base
             'about_dept' => '', 'about_dept_tw' => '', 'about_dept_en' => '',
         ];
         $settings = array_merge($defaults, $settings);
+        if ($relistLegacy) {
+            [$rMin, $rMax] = auto_relist_hours_range();
+            $settings['auto_relist_hours_min'] = (string)$rMin;
+            $settings['auto_relist_hours_max'] = (string)$rMax;
+        }
         View::assign(['settings' => $settings, 'menu_active' => '/admin1314/setting/index']);
         return View::fetch();
     }

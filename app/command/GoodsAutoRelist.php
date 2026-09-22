@@ -15,9 +15,11 @@ use think\console\Output;
  *
  * 范围：会员属性为「自营店铺」的全部卖家（主后台「会员列表 › 编辑会员 › 店铺属性」设置）。
  * 后台「基础设置 › 流拍自动上架」配置：
- *   auto_relist_hours      重新上架后的拍卖时长（小时），0 为不自动上架
+ *   auto_relist_hours_min  重新上架后的拍卖时长下限（小时）
+ *   auto_relist_hours_max  重新上架后的拍卖时长上限（小时），填 0 为不自动上架
  *
- * 截拍时间 = 上架时间 + 拍卖时长 + 每件随机 0~6 小时；上架逻辑在 app/common.php 的 auto_relist_failed_goods()。
+ * 截拍时间 = 上架时间 + 在「下限 ~ 上限」之间随机的时长（每件各自随机，避免同时截拍）；
+ * 上架逻辑在 app/common.php 的 auto_relist_failed_goods()。
  * 心跳 runtime/auto_relist.heartbeat；有商品被上架或出错时写 runtime/log/auto_relist.log。
  */
 class GoodsAutoRelist extends Command
@@ -53,7 +55,7 @@ class GoodsAutoRelist extends Command
         @file_put_contents($heartbeat, date('Y-m-d H:i:s') . ' ok count=' . count($result['ids']));
 
         if (!$result['enabled']) {
-            $output->writeln($stamp . '未开启（拍卖时长为 0），跳过');
+            $output->writeln($stamp . '未开启（拍卖时长上限为 0），跳过');
             return 0;
         }
         if (empty($result['seller_ids'])) {
@@ -64,8 +66,9 @@ class GoodsAutoRelist extends Command
             $output->writeln($stamp . '自营店铺卖家 ' . count($result['seller_ids']) . ' 个，没有流拍商品');
             return 0;
         }
-        $line = $stamp . '自营店铺卖家 ' . count($result['seller_ids']) . ' 个，自动上架 ' . count($result['ids']) . " 件，拍卖时长 {$result['hours']} 小时，截拍 "
-              . date('Y-m-d H:i', $result['end_time']) . ' 起 0~6 小时内随机 ids=' . implode(',', $result['ids']);
+        $line = $stamp . '自营店铺卖家 ' . count($result['seller_ids']) . ' 个，自动上架 ' . count($result['ids']) . ' 件，拍卖时长 '
+              . auto_relist_hours_text($result['hours_min'], $result['hours_max']) . '，截拍 '
+              . date('Y-m-d H:i', $result['end_min']) . ' ~ ' . date('Y-m-d H:i', $result['end_max']) . ' 之间随机 ids=' . implode(',', $result['ids']);
         $output->writeln($line);
         @file_put_contents($logFile, $line . PHP_EOL, FILE_APPEND);
         return 0;
