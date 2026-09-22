@@ -216,22 +216,38 @@ function settle_goods($goodsId)
             ->select()
             ->toArray();
 
-        // 无出价 或 最高价低于保留价 → 流拍（虚拟会员与真实会员一样可以中标）
+        // 无出价 或 最高价低于保留价 → 流拍
         $top = $bids[0] ?? null;
         $fail = !$top || ($goods['reserve_price'] > 0 && $top['price'] < $goods['reserve_price']);
 
+        // 「自营店铺」卖家的拍品：最高出价者是虚拟买家时也按流拍处理。
+        // 虚拟买家不会真的付款，让它中标只会让订单一直卡在待付款、最后超时取消；
+        // 只有真实买家中标才生成订单、等买家付款。非自营卖家不受影响（虚拟会员照常中标）。
+        $selfShop   = is_self_shop_seller($goods['seller_id']);
+        $virtualWin = !$fail && $selfShop && is_virtual_user($top['user_id']);
+        if ($virtualWin) {
+            $fail = true;
+        }
+
         if ($fail) {
             foreach ($bids as $b) {
-                Db::name('bid_record')->where('id', $b['id'])->update(['status' => 2]);
                 if ($b['deposit'] > 0) {
                     refund_deposit($b['user_id'], $b['deposit'], '拍卖流拍，保证金退回（' . $goods['title'] . '）');
+                }
+            }
+            if ($selfShop) {
+                // 「自营店铺」卖家的流拍商品会被反复重新上架，出价记录 / 自动出价任务 / 未付款订单一并清掉
+                purge_failed_goods_records($goodsId);
+            } else {
+                foreach ($bids as $b) {
+                    Db::name('bid_record')->where('id', $b['id'])->update(['status' => 2]);
                 }
             }
             if (Db::name('goods')->where('id', $goodsId)->where('status', 1)->update(['status' => 3, 'update_time' => time()]) !== 1) {
                 throw new \RuntimeException(lang('商品状态已变化'));
             }
             Db::commit();
-            return '流拍';
+            return $virtualWin ? '流拍(虚拟)' : '流拍';
         }
 
         // 成交
@@ -379,6 +395,10 @@ function cancel_unpaid_order($orderId, $reason, $mode = 'forfeit_platform')
         Db::name('bid_record')->where('goods_id', $order['goods_id'])->where('is_winner', 1)->update([
             'status' => 2, 'is_winner' => 0,
         ]);
+        // 「自营店铺」卖家：商品回到流拍后不留痕迹，出价记录 / 自动出价任务 / 这张已取消的订单都删掉
+        if (is_self_shop_seller($order['seller_id'])) {
+            purge_failed_goods_records($order['goods_id']);
+        }
 
         Db::name('sys_message')->insertAll([
             ['user_id' => $order['buyer_id'], 'admin_id' => 0, 'title' => '订单取消通知',

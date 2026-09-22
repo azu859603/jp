@@ -702,6 +702,54 @@ function seller_auto_open()
     return (int)get_setting('seller_check', 1) !== 1;
 }
 /**
+ * 清掉一件商品的竞拍痕迹：出价记录、自动出价任务、未付款的订单
+ *
+ * 只给「自营店铺」卖家的流拍商品用：这些商品会被 goods:auto-relist 反复重新上架，
+ * 旧的出价 / 任务 / 订单留着既没用，还会在前台显示历史出价、越堆越多。
+ * 调用方必须先处理完保证金退回等资金动作，这里只删记录，不碰余额。
+ * 已付款的订单不会删（流拍商品理论上不会有，留着防止误删真实成交的对账数据）。
+ *
+ * @param int $goodsId
+ * @return array ['bids'=>int, 'tasks'=>int, 'orders'=>int] 各删了多少条
+ */
+function purge_failed_goods_records($goodsId)
+{
+    $goodsId = (int)$goodsId;
+    $n = [
+        'bids'   => Db::name('bid_record')->where('goods_id', $goodsId)->delete(),
+        'tasks'  => Db::name('auto_bid')->where('goods_id', $goodsId)->delete(),
+        'orders' => Db::name('order')->where('goods_id', $goodsId)->where('pay_status', 0)->delete(),
+    ];
+    Db::name('goods')->where('id', $goodsId)->update([
+        'bid_count'   => 0,
+        'winner_id'   => 0,
+        'final_price' => 0,
+        'order_id'    => 0,
+    ]);
+    return $n;
+}
+
+/**
+ * 某个会员是不是「自营店铺」卖家
+ * @param int $userId
+ * @return bool
+ */
+function is_self_shop_seller($userId)
+{
+    return (int)Db::name('user')->where('id', (int)$userId)->value('is_self_shop') === 1;
+}
+
+/**
+ * 某个会员是不是虚拟会员（后台 / 代理后台批量创建的假买家）
+ * @param int $userId
+ * @return bool
+ */
+function is_virtual_user($userId)
+{
+    return (int)Db::name('user')->where('id', (int)$userId)->value('is_virtual') === 1;
+}
+
+/**
  * 会员属性为「自营店铺」的会员 ID（主后台「会员列表 › 编辑会员 › 店铺属性」设置）
  * @return int[]
  */

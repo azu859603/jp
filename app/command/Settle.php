@@ -14,6 +14,8 @@ use think\console\Output;
  * 部署：每分钟执行一次（Linux crontab / Windows 计划任务）
  * 只负责结算；流拍自动上架、自动出价、平台自营出价分别由各自的命令独立执行，互不串联。
  *
+ * 「自营店铺」卖家的拍品若最高出价者是虚拟买家，按流拍处理，不生成订单。
+ *
  * 结算逻辑本身在 app/index/common.php 的 settle_goods() / settle_expired_goods()，
  * 这里只负责按时调用、输出结果、写心跳，不复制业务规则。
  *
@@ -58,7 +60,9 @@ class Settle extends Command
         $cost  = round((microtime(true) - $start) * 1000);
         $total = count($results);
         $deal  = count(array_filter($results, function ($r) { return $r === '成交'; }));
-        $fail  = count(array_filter($results, function ($r) { return $r === '流拍'; }));
+        $fail  = count(array_filter($results, function ($r) { return $r === '流拍' || $r === '流拍(虚拟)'; }));
+        // 自营店铺拍品因为最高出价者是虚拟买家而转流拍的件数，单独提示一下
+        $vfail = count(array_filter($results, function ($r) { return $r === '流拍(虚拟)'; }));
         $err   = $total - $deal - $fail;   // settle_goods 返回 false 的（并发已被处理 / 事务失败）
 
         @file_put_contents($heartbeat, date('Y-m-d H:i:s') . " ok total={$total}");
@@ -67,6 +71,7 @@ class Settle extends Command
             $output->writeln('[' . date('Y-m-d H:i:s') . "] 无到期商品（{$cost}ms）");
         } else {
             $line = '[' . date('Y-m-d H:i:s') . "] 结算 {$total} 件：成交 {$deal}，流拍 {$fail}"
+                  . ($vfail > 0 ? "（其中自营拍品虚拟买家中标转流拍 {$vfail}）" : '')
                   . ($err > 0 ? "，未处理 {$err}" : '') . "（{$cost}ms） ids=" . implode(',', array_keys($results));
             $output->writeln($line);
             @file_put_contents($logFile, $line . PHP_EOL, FILE_APPEND);
