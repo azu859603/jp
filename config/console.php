@@ -27,8 +27,10 @@ return [
         'platform:auto-bid' => \app\command\PlatformAutoBid::class,
         // 把「用户」开头的虚拟会员昵称改成中文昵称（手动执行）：php think user:rename-virtual [--force] [--limit=N] [--all]
         'user:rename-virtual' => \app\command\VirtualNickname::class,
-        // 批量创建自营店铺卖家并平分某个卖家的商品（手动执行）：php think shop:self-split [--count=30] [--from=1] [--force]
-        'shop:self-split' => \app\command\SelfShopSplit::class,
+        // 批量创建「自营店铺」卖家会员（手动执行，只建会员）：php think shop:self-create [--count=30] [--force]
+        'shop:self-create' => \app\command\SelfShopCreate::class,
+        // 把某个卖家的商品平分给全部自营店铺会员（手动执行，只动商品）：php think shop:self-assign --from=1 [--force]
+        'shop:self-assign' => \app\command\SelfShopAssign::class,
         // 清理表结构缓存（数据库加字段后执行）
         'schema:clear'  => \app\command\SchemaClear::class,
     ],

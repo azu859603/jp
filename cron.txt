@@ -29,5 +29,8 @@ chmod -R 777 public/uploads && chmod -R 777 runtime
 
 缓存驱动：redis / file（Redis 不可用时可临时改回 file）
 
+创建自营卖家
+php think shop:self-create --count=30 --force
+
 分配商品
-php think shop:self-split --from=1 --count=30 --include-from --force
+php think shop:self-assign --from=1 --force
