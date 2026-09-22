@@ -251,9 +251,14 @@ class Goods extends Base
         }
 
         if ($action === 'pass') {
+            // 审核通过 = 这一轮拍卖真正开始，开拍时间刷新为当前
+            // （首页「最新」按 start_time 排序，否则等了几天才过审的商品一上架就排到很后面）
+            $now = time();
             Db::name('goods')->where('id', $id)->update([
                 'status'         => 1,
                 'refuse_reason'  => '',
+                'start_time'     => $now,
+                'update_time'    => $now,
             ]);
             admin_log('通过商品审核：' . $goods['title']);
             return json(['code' => 1, 'msg' => '已通过审核，商品进入拍卖中']);

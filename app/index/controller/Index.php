@@ -76,11 +76,14 @@ class Index extends Base
                 $list = $query->order('g.start_price', 'desc')->order('g.id', 'desc')->page($page, $limit)->select()->toArray();
                 break;
             case 'new':
-                // 分类轮流混排：同分类内按最新排名，排名相同的不同分类交替出现，
-                // 避免整批导入的同类商品在首页扎堆。
-                // 排名在 PHP 里算：只取 id/category_id 两列（几千行、毫秒级），
+                // 分类轮流混排：同分类内按「开拍时间」从新到旧排名，排名相同的不同分类交替出现，
+                // 避免整批导入 / 同一批重新上架的同类商品在首页扎堆。
+                // start_time 在审核通过、重新上架（含流拍自动上架）时都会刷新为当时的时间，
+                // 所以它就是「这一轮什么时候上架的」。
+                // 排名在 PHP 里算：只取 id/category_id/start_time 三列（几千行、毫秒级），
                 // 原来的逐行 COUNT 子查询在商品多时是 O(n²)，首页要 2 秒以上。
-                $rows = (clone $query)->field('g.id, g.category_id')->order('g.id', 'desc')->select()->toArray();
+                $rows = (clone $query)->field('g.id, g.category_id, g.start_time')
+                    ->order('g.start_time', 'desc')->order('g.id', 'desc')->select()->toArray();
                 $rankInCate = [];
                 foreach ($rows as &$r) {
                     $c = (int)$r['category_id'];
@@ -89,7 +92,9 @@ class Index extends Base
                 }
                 unset($r);
                 usort($rows, function ($a, $b) {
-                    return $a['cate_rank'] <=> $b['cate_rank'] ?: $b['id'] <=> $a['id'];
+                    // 先比组内名次，名次相同的按开拍时间从新到旧（时间也相同再按 ID 兜底，保证顺序稳定）
+                    return $a['cate_rank'] <=> $b['cate_rank']
+                        ?: ($b['start_time'] <=> $a['start_time'] ?: $b['id'] <=> $a['id']);
                 });
                 $pageIds = array_column(array_slice($rows, ($page - 1) * $limit, $limit), 'id');
                 $list = [];
