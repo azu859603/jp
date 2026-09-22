@@ -188,9 +188,11 @@ class Index extends Base
         $categories = $this->dropMissingImages(active_categories());
 
         // 首页数据条：在拍拍品 / 累计成交 / 注册会员
+        // 累计成交只算订单状态为「已完成」(order_status=3) 的订单：待付款 / 待发货 / 待收货 /
+        // 已取消 / 售后中都不算，避免拍下不付款也被计进成交数
         $stats = [
             'hot'     => (int)Db::name('goods')->where('status', 1)->where('start_time', '<=', $now)->where('end_time', '>', $now)->count(),
-            'deals'   => (int)Db::name('goods')->where('status', 2)->count(),
+            'deals'   => (int)Db::name('order')->where('order_status', 3)->count(),
             'members' => (int)Db::name('user')->count(),
         ];
 
