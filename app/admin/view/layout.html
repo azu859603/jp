@@ -270,14 +270,94 @@ function ajaxPost(url, data, cb, errMsg){
 }
 </script>
 <script>
-// 在线客服菜单角标：每 30 秒刷新一次未回复数
+// 在线客服未读提醒：菜单角标 + 声音 + 右上角提示条
+// 每 30 秒查一次未读数；未读数比上次多时响铃并提示（客服页每 8 秒刷新时也会调用 svcUnread）
 (function(){
-    var b = document.getElementById('svcMenuBadge');
-    if (!b) return;
+    var KEY = 'svc_unread_last';   // 用 sessionStorage 记上次的未读数，换页面不会误报
+    var actx = null, muted = localStorage.getItem('svc_mute') === '1';
+
+    // 提示音：不依赖音频文件，用 Web Audio 合成两声「叮咚」
+    function beep(){
+        if (muted) return;
+        try {
+            if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)();
+            if (actx.state === 'suspended') actx.resume();
+            [[880, 0], [1174.66, 0.18]].forEach(function(p){
+                var o = actx.createOscillator(), g = actx.createGain(), t = actx.currentTime + p[1];
+                o.type = 'sine';
+                o.frequency.value = p[0];
+                o.connect(g); g.connect(actx.destination);
+                g.gain.setValueAtTime(0.0001, t);
+                g.gain.exponentialRampToValueAtTime(0.25, t + 0.02);
+                g.gain.exponentialRampToValueAtTime(0.0001, t + 0.35);
+                o.start(t); o.stop(t + 0.36);
+            });
+        } catch (e) {}
+    }
+    // 浏览器不允许页面未经交互就出声，首次点击 / 按键时把音频上下文解锁
+    ['click', 'keydown'].forEach(function(ev){
+        document.addEventListener(ev, function(){
+            try {
+                if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)();
+                if (actx.state === 'suspended') actx.resume();
+            } catch (e) {}
+        }, {once: true});
+    });
+
+    function toast(n){
+        var d = document.getElementById('svcToast');
+        if (!d) {
+            d = document.createElement('div');
+            d.id = 'svcToast';
+            d.style.cssText = 'position:fixed;top:20px;right:20px;z-index:9999;max-width:300px;background:#fff;'
+                + 'border:1px solid #fed7aa;border-left:4px solid #ea580c;border-radius:8px;padding:12px 14px;'
+                + 'box-shadow:0 8px 24px rgba(0,0,0,.12);font-size:14px;color:#1f2937;line-height:1.7;display:none';
+            document.body.appendChild(d);
+        }
+        d.innerHTML = '<b style="color:#ea580c">您有新的客服消息未查看</b>'
+            + '<div style="font-size:12px;color:#6b7280">当前未读 ' + n + ' 条</div>'
+            + '<div style="margin-top:8px;font-size:12px">'
+            + '<a href="/admin1314/service/index" style="color:#ea580c;font-weight:600">前往处理</a>'
+            + '<a href="javascript:;" id="svcToastMute" style="color:#9ca3af;margin-left:14px">' + (muted ? '取消静音' : '静音') + '</a>'
+            + '<a href="javascript:;" id="svcToastClose" style="color:#9ca3af;margin-left:14px">关闭</a>'
+            + '</div>';
+        d.style.display = '';
+        // 静音是个开关：静音后提示条照样弹，方便随时点回来
+        document.getElementById('svcToastMute').onclick = function(){
+            muted = !muted;
+            if (muted) { localStorage.setItem('svc_mute', '1'); } else { localStorage.removeItem('svc_mute'); beep(); }
+            this.textContent = muted ? '取消静音' : '静音';
+            clearTimeout(d._t);
+            d._t = setTimeout(function(){ d.style.display = 'none'; }, 10000);
+        };
+        document.getElementById('svcToastClose').onclick = function(){ d.style.display = 'none'; };
+        clearTimeout(d._t);
+        d._t = setTimeout(function(){ d.style.display = 'none'; }, 10000);
+    }
+
+    // 供本文件的轮询与客服页共用：更新角标，未读变多时响铃 + 提示
+    window.svcUnread = function(n){
+        n = parseInt(n, 10) || 0;
+        var b = document.getElementById('svcMenuBadge');
+        if (b) {
+            b.textContent = n > 99 ? '99+' : n;
+            b.style.display = n > 0 ? '' : 'none';
+        }
+        var last = parseInt(sessionStorage.getItem(KEY), 10);
+        if (isNaN(last)) { last = n; }       // 本次会话第一次拿到数字，只记录不提醒
+        if (n > last) { beep(); toast(n); }
+        sessionStorage.setItem(KEY, n);
+    };
+
+    var badge = document.getElementById('svcMenuBadge');
+    if (!badge) return;
+    if (sessionStorage.getItem(KEY) === null) {
+        sessionStorage.setItem(KEY, parseInt(badge.textContent, 10) || 0);
+    }
     setInterval(function(){
         fetch('/admin1314/service/unread', {headers:{'X-Requested-With':'XMLHttpRequest'}})
             .then(function(r){ return r.json(); })
-            .then(function(res){ if (res.code == 1) { var n = res.unread || 0; b.textContent = n > 99 ? '99+' : n; b.style.display = n > 0 ? '' : 'none'; } })
+            .then(function(res){ if (res.code == 1) { window.svcUnread(res.unread || 0); } })
             .catch(function(){});
     }, 30000);
 })();
