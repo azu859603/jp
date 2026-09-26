@@ -2,7 +2,7 @@
 * * * * *   cd /www/wwwroot/jp && /usr/bin/php think settle            >> runtime/log/cron_settle.log 2>&1
 # 每分钟 虚拟用户自动出价定时任务
 * * * * *   cd /www/wwwroot/jp && /usr/bin/php think bid:auto          >> runtime/log/cron_bid_auto.log 2>&1
-# 每分钟 平台自营（会员 ID 1）拍品自动出价
+# 每分钟 平台自营拍品自动出价
 * * * * *   cd /www/wwwroot/jp && /usr/bin/php think platform:auto-bid >> runtime/log/cron_platform_auto_bid.log 2>&1
 # 每分钟 指定卖家流拍商品自动重新上架
 * * * * *   cd /www/wwwroot/jp && /usr/bin/php think goods:auto-relist >> runtime/log/cron_auto_relist.log 2>&1

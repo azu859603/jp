@@ -269,6 +269,75 @@ function ajaxPost(url, data, cb, errMsg){
         .catch(function(){ alert(errMsg || '网络错误，请重试'); });
 }
 </script>
+<style>
+/* 屏幕正中的浮层提示（替代浏览器 alert）：深色圆角卡片 + 状态图标，多条时往下堆叠 */
+#adminToasts{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:9999;display:flex;flex-direction:column;align-items:center;gap:12px;width:max-content;max-width:min(440px,calc(100vw - 40px));pointer-events:none}
+#adminToasts .atoast{pointer-events:auto;display:flex;align-items:center;gap:12px;background:rgba(17,24,39,.92);color:#fff;border-radius:14px;padding:16px 24px;font-size:15px;line-height:1.5;box-shadow:0 16px 40px rgba(0,0,0,.28),0 0 0 1px rgba(255,255,255,.06) inset;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);white-space:pre-line;word-break:break-all;cursor:pointer;opacity:0;transform:translateY(8px) scale(.94);transition:opacity .22s ease,transform .22s cubic-bezier(.2,.8,.3,1.2)}
+#adminToasts .atoast.show{opacity:1;transform:none}
+#adminToasts .atoast i{flex:none;width:24px;height:24px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-style:normal;font-size:14px;font-weight:700;color:#fff;background:#3b82f6;box-shadow:0 0 0 4px rgba(59,130,246,.22)}
+#adminToasts .atoast.ok i{background:#22c55e;box-shadow:0 0 0 4px rgba(34,197,94,.22)}
+#adminToasts .atoast.err i{background:#ef4444;box-shadow:0 0 0 4px rgba(239,68,68,.22)}
+</style>
+<script>
+// 全局提示：屏幕正中的浮层，成功 3 秒 / 出错 4 秒自动消失，点一下也能关，不用再点「确定」。
+// 页面里所有 alert(...) 都走这里（confirm 不动，那是要用户做选择的）。
+(function(){
+    var PEND = 'admin_toast_pending';
+    var box = document.createElement('div');
+    box.id = 'adminToasts';
+    document.body.appendChild(box);
+
+    // 按文案粗略分个色：成功类绿边，出错 / 校验不通过类红边，其余用主题橙
+    function kind(msg){
+        if (/失败|错误|异常|不能|不可|不是|不足|无效|不存在|不允许|不支持|超过|超出|请先|请选择|请输入|请填写|请上传|至少|需为|必须|已被|已存在|已结束|已变化|已过期|重复|非法|拒绝/.test(msg)) return 'err';
+        if (/成功|已保存|已通过|已提交|已删除|已添加|已更新|已取消|已开启|已关闭|已上架|已下架|已发货|已完成|已处理|已发送|已修改|已解除|已恢复|已启用|已停用|完成/.test(msg)) return 'ok';
+        return '';
+    }
+    window.showToast = function(msg, type, ms){
+        msg = String(msg == null ? '' : msg);
+        if (msg === '') return null;
+        var k  = type || kind(msg);
+        var d  = document.createElement('div');
+        d.className = 'atoast ' + k;
+        var ic = document.createElement('i');
+        ic.textContent = k === 'ok' ? '\u2713' : (k === 'err' ? '!' : 'i');
+        var sp = document.createElement('span');
+        sp.textContent = msg;   // textContent：提示里可能带会员输入的内容，不能当 HTML 解析
+        d.appendChild(ic);
+        d.appendChild(sp);
+        box.appendChild(d);
+        void d.offsetWidth;   // 先让浏览器把初始状态（透明、偏右）画出来，再加 show 才有滑入动画；比 requestAnimationFrame 稳，标签页在后台时也能显示
+        d.classList.add('show');
+        var gone = false;
+        function close(){
+            if (gone) return;
+            gone = true;
+            d.classList.remove('show');
+            setTimeout(function(){ if (d.parentNode) d.parentNode.removeChild(d); }, 200);
+            try { sessionStorage.removeItem(PEND); } catch (e) {}
+        }
+        d.onclick = close;
+        setTimeout(close, ms || (k === 'err' ? 4000 : 3000));   // 出错的多留一秒给人看
+        return d;
+    };
+    // 接管 alert。原来的 alert 是阻塞的，很多地方写成 alert('保存成功'); location.reload();
+    // 换成浮层后 reload 会立刻执行、提示一闪而过，所以先记到 sessionStorage，新页面加载时补显示一次
+    window.alert = function(msg){
+        msg = String(msg == null ? '' : msg);
+        try { sessionStorage.setItem(PEND, JSON.stringify({m: msg, t: Date.now()})); } catch (e) {}
+        window.showToast(msg);
+    };
+    try {
+        var p = sessionStorage.getItem(PEND);
+        if (p) {
+            sessionStorage.removeItem(PEND);
+            p = JSON.parse(p);
+            // 只补显示 3 秒内的：就是 alert 后紧跟 reload / 跳转的情况；更早的说明提示已经完整展示过
+            if (p && p.m && Date.now() - p.t < 3000) window.showToast(p.m);
+        }
+    } catch (e) {}
+})();
+</script>
 <script>
 // 在线客服未读提醒：菜单角标 + 声音 + 右上角提示条
 // 每 30 秒查一次未读数；未读数比上次多时响铃并提示（客服页每 8 秒刷新时也会调用 svcUnread）
@@ -309,7 +378,7 @@ function ajaxPost(url, data, cb, errMsg){
         if (!d) {
             d = document.createElement('div');
             d.id = 'svcToast';
-            d.style.cssText = 'position:fixed;top:20px;right:20px;z-index:9999;max-width:300px;background:#fff;'
+            d.style.cssText = 'position:fixed;top:20px;right:20px;z-index:9998;max-width:300px;background:#fff;'
                 + 'border:1px solid #fed7aa;border-left:4px solid #ea580c;border-radius:8px;padding:12px 14px;'
                 + 'box-shadow:0 8px 24px rgba(0,0,0,.12);font-size:14px;color:#1f2937;line-height:1.7;display:none';
             document.body.appendChild(d);
