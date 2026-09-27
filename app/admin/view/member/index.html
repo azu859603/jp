@@ -231,7 +231,7 @@
         </div>
         <div class="dialog-footer">
             <button class="btn" onclick="document.getElementById('balanceMask').classList.remove('show')">取消</button>
-            <button class="btn btn-primary" onclick="doAdjustBalance()">确定</button>
+            <button class="btn btn-primary" id="balanceSubmit" onclick="doAdjustBalance()">确定</button>
         </div>
     </div>
 </div>
@@ -538,20 +538,32 @@ function openBalance(id){
     currentId = id;
     document.getElementById('balanceAmount').value = '';
     document.getElementById('balanceRemark').value = '';
+    balanceLock(false);
     document.getElementById('balanceMask').classList.add('show');
 }
 
+// 提交中把「确定」锁住：连点、双击都只发一次请求，避免重复增减
+var balanceSubmitting = false;
+function balanceLock(on){
+    balanceSubmitting = on;
+    var b = document.getElementById('balanceSubmit');
+    if (!b) return;
+    b.disabled = on;
+    b.textContent = on ? '处理中…' : '确定';
+}
 function doAdjustBalance(){
+    if (balanceSubmitting) return;
     var amount = document.getElementById('balanceAmount').value;
     var remark = document.getElementById('balanceRemark').value.trim();
     if(!amount || amount == 0){ alert('请输入调整金额'); return; }
+    balanceLock(true);
     ajaxPost('/admin1314/member/adjustBalance', {id:currentId, amount:amount, remark:remark}, function(res){
         alert(res.msg);
         if(res.code == 1){
             document.getElementById('balanceMask').classList.remove('show');
             loadList(currentPage);
         }
-    });
+    }, null, function(){ balanceLock(false); });   // 成功已关窗；失败解锁让人改完再提交
 }
 
 function setRadio(name, v){ var els = document.getElementsByName(name); for(var i = 0; i < els.length; i++){ els[i].checked = (els[i].value == v); } }

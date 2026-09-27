@@ -509,6 +509,14 @@ class Member extends Base
             return json(['code' => 0, 'msg' => '调整后余额超过系统上限（最大 ' . money_max_text() . '）']);
         }
 
+        // 防重复提交：前端已把「确定」锁住，这里兜底——同一管理员对同一会员、同样的金额和备注，5 秒内只认第一次
+        // （双击、连点、两个标签页同时提交都会被挡下来）
+        $dupKey = 'balance_adjust:admin:' . (int)($this->admin['id'] ?? 0) . ':' . md5($id . '|' . $amount . '|' . $remark);
+        if (\think\facade\Cache::has($dupKey)) {
+            return json(['code' => 0, 'msg' => '5 秒内已提交过同样的调整，请勿重复操作']);
+        }
+        \think\facade\Cache::set($dupKey, 1, 5);
+
         $newBalance = round($user['balance'] + $amount, 2);
         Db::startTrans();
         try {

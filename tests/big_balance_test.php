@@ -24,6 +24,9 @@ function bal($id) { global $pdo; return (float)$pdo->query("select balance from 
 $AG = mk('19999990590', 'QA大额代理', 0, 1); $U = mk('19999990591', 'QA大额会员', $AG);
 $sa = sess(0, 'admin'); $sg = sess($AG);
 try {
+    // 代理端调整余额受主后台开关控制，本测试只验证金额上限：临时开启，结束还原
+    $origSw = $pdo->query("select value from setting where name='agent_balance_adjust'")->fetchColumn();
+    $pdo->exec("delete from setting where name='agent_balance_adjust'");
     echo "== 主后台 ==\n";
     [, , $j] = req($sa, 'POST', '/admin1314/member/adjustBalance', ['id' => $U, 'amount' => 10000001, 'remark' => 'QA']);
     ok('单次加 10,000,001 被拒（最多 10,000,000）', ($j['code'] ?? 1) == 0 && strpos($j['msg'] ?? '', '10,000,000') !== false && bal($U) == 0, json_encode($j, JSON_UNESCAPED_UNICODE));
@@ -43,6 +46,7 @@ try {
     [$c, $h] = req($su, 'GET', '/user/center', null, false);
     ok('个人中心完整显示 ¥99,000,000.00（缩小字号，不截断）', $c == 200 && strpos($h, '<b class="n3"><small>¥</small>99,000,000.00</b>') !== false, "HTTP $c");
 } finally {
+    if (isset($origSw) && $origSw !== false) { $pdo->exec("insert into setting(name,value,create_time) values('agent_balance_adjust','$origSw'," . time() . ") on duplicate key update value='$origSw'"); }
     $pdo->exec("delete from balance_log where user_id=$U");
     $pdo->exec("delete from agent_log where agent_id=$AG");
     $pdo->exec("delete from user where id in ($U,$AG)");

@@ -275,11 +275,13 @@ function submitForm(formId, url, successMsg, failMsg){
 }
 
 // ajax 请求
-function ajaxPost(url, data, cb, errMsg){
+// done：可选，请求结束后不管成功失败都会调一次（用来给「提交中」的按钮解锁）
+function ajaxPost(url, data, cb, errMsg, done){
     fetch(url, {method:'POST', headers:{'X-Requested-With':'XMLHttpRequest','Content-Type':'application/x-www-form-urlencoded'}, body:new URLSearchParams(data)})
         .then(function(r){ return r.json(); })
         .then(function(res){ cb(res); })
-        .catch(function(){ alert(errMsg || '网络错误，请重试'); });
+        .catch(function(){ alert(errMsg || '网络错误，请重试'); })
+        .then(function(){ if (typeof done === 'function') done(); });
 }
 </script>
 <script>
