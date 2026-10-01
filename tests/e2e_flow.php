@@ -509,9 +509,9 @@ if ($o5) {
     $creditBefore = (int)val('select credit_score from user where id=?', [$seller['id']]);
     $out = think('order:remind');
     ok('催发货：卖家收到站内信', val('select count(*) from sys_message where user_id=? and title=?', [$seller['id'], '发货提醒']) >= 1, trim($out));
-    ok('催发货：信誉分扣 1', (int)val('select credit_score from user where id=?', [$seller['id']]) == $creditBefore - 1, '');
+    ok('催发货：信誉分不再自动扣（只能后台手动改）', (int)val('select credit_score from user where id=?', [$seller['id']]) == $creditBefore, '');
     think('order:remind');
-    ok('24 小时内不重复扣分', (int)val('select credit_score from user where id=?', [$seller['id']]) == $creditBefore - 1, '');
+    ok('24 小时内不重复提醒，信誉分仍不变', (int)val('select credit_score from user where id=?', [$seller['id']]) == $creditBefore && val('select count(*) from sys_message where user_id=? and title=?', [$seller['id'], '发货提醒']) == 1, '');
     $S->post('/seller/ship', ['id' => $o5['id'], 'ship_company' => '中通', 'ship_no' => 'ZT1']);
     q('update `order` set ship_time=? where id=?', [time() - 3 * 86400, $o5['id']]);
     $out = think('order:confirm');

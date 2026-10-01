@@ -483,21 +483,12 @@ function remind_unshipped_order($orderId)
     }
     $waited = max(1, (int)floor(($now - (int)$order['pay_time']) / 86400));
 
-    // 卖家信誉分：每次催发货扣 1 分（同一订单 24 小时内只提醒一次，即每天最多扣 1 分），最低 0 分
-    $credit = Db::name('user')->where('id', $order['seller_id'])->value('credit_score');
-    $creditText = '';
-    if ($credit !== null) {
-        $newCredit = max(0, (int)$credit - 1);
-        if ($newCredit !== (int)$credit) {
-            Db::name('user')->where('id', $order['seller_id'])->update(['credit_score' => $newCredit, 'update_time' => $now]);
-        }
-        $creditText = '因未按时发货，您的信誉分已扣 1 分，当前 ' . $newCredit . ' 分。';
-    }
+    // 信誉分不再自动扣（原来每次催发货扣 1 分），只在主后台 / 代理后台「编辑店铺资料」里手动改
 
     Db::name('sys_message')->insert([
         'user_id' => $order['seller_id'], 'admin_id' => 0, 'title' => '发货提醒',
         'content' => '订单 ' . $order['order_no'] . '（' . $order['goods_title'] . '）买家已于 '
-                   . date('m-d H:i', (int)$order['pay_time']) . ' 付款，至今 ' . $waited . ' 天未发货，请尽快处理。' . $creditText,
+                   . date('m-d H:i', (int)$order['pay_time']) . ' 付款，至今 ' . $waited . ' 天未发货，请尽快处理。',
         'is_read' => 0, 'create_time' => $now,
     ]);
     return 'sent';
