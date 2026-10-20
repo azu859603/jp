@@ -34,3 +34,24 @@ php think shop:self-create --count=30 --force
 
 分配商品
 php think shop:self-assign --from=1 --force
+
+伪静态
+location / {
+    if (!-e $request_filename) {
+        rewrite ^(.*)$ /index.php?s=/$1 last;
+    }
+}
+location ^~ /uploads/ {
+    deny all;
+    autoindex off;
+    location ~* \.(jpe?g|png|gif|webp)$ {
+        allow all;
+        # 按扩展名给出类型，并禁止浏览器嗅探成别的类型执行
+        add_header X-Content-Type-Options "nosniff" always;
+        expires 30d;
+        access_log off;
+    }
+}
+location ^~ /tests/ {
+    deny all;
+}

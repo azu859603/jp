@@ -1,6 +1,8 @@
-# ---------- 上传目录：白名单策略 ----------
-# 只允许直接读取图片文件；其它任何扩展名（php / py / sh / pl / cgi / html / js / svg / 无扩展名 …）一律 403，
-# 也不会被交给 fastcgi 执行。上传接口本身只放行 jpg/jpeg/png/gif/webp，这里是纵深防御。
+location / {
+    if (!-e $request_filename) {
+        rewrite ^(.*)$ /index.php?s=/$1 last;
+    }
+}
 location ^~ /uploads/ {
     deny all;
     autoindex off;
@@ -12,14 +14,6 @@ location ^~ /uploads/ {
         access_log off;
     }
 }
-
-
 location ^~ /tests/ {
     deny all;
-}
-
-location / {
-    if (!-e $request_filename) {
-        rewrite ^(.*)$ /index.php?s=/$1 last;
-    }
 }
