@@ -79,7 +79,7 @@
     </div>
     <div class="s-ops">
         <a class="s-op yellow" href="javascript:void(0)" id="followBtn" onclick="toggleFollow()">{if $is_followed}{:lang('已关注')}{else}{:lang('关注')}{/if}</a>
-        <a class="s-op blue" href="/chat/detail?goods_id={$goods.id}&seller_id={$goods.seller_id}">{:lang('咨询')}</a>
+        {if $consult_enabled}<a class="s-op blue" href="/chat/detail?goods_id={$goods.id}&seller_id={$goods.seller_id}">{:lang('咨询')}</a>{/if}
     </div>
 </div>
 

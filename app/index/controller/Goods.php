@@ -131,6 +131,8 @@ class Goods extends Base
             'now'           => time(),
             'is_faved'      => $isFaved,
             'is_followed'   => $isFollowed,
+            // 后台开关：是否显示「咨询」按钮
+            'consult_enabled' => buyer_consult_enabled() ? 1 : 0,
             'page_title'    => $goods['title'],
             'page_class'    => 'detail-page',
             'tab_active'    => 'index',

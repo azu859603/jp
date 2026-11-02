@@ -907,4 +907,7 @@ return [
     '请输入账号' => 'Enter your account',
     '为保证信息准确，请手动输入，不支持粘贴' => 'Please type it in manually. Pasting is not allowed',
     '1-3个工作日' => '1-3 business days',
+    '填写以下资料申请成为卖家，审核通过后可发布拍品参与竞拍' => 'Fill in the info below to apply; you can publish items after approval',
+    '店铺资料' => 'Shop Info',
+    '平台已关闭咨询功能' => 'Consultation is currently disabled',
 ];

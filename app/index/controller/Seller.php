@@ -27,6 +27,8 @@ class Seller extends Base
             'apply'      => $apply,
             'user'       => $this->user,
             'seller_auto'=> seller_auto_open() ? 1 : 0,
+            // 后台开关：是否展示企业名称 / 企业资料两项
+            'company_fields' => seller_company_fields() ? 1 : 0,
             'lic_list'   => !empty($this->user['license_img']) ? explode(',', $this->user['license_img']) : [],
             'page_title' => lang('卖家入驻'),
             'center_tab' => 'seller',
@@ -116,7 +118,13 @@ class Seller extends Base
             $licenseImgs = implode(',', array_values(array_filter($licenseImgs)));
         }
         $licenseImgs = trim($licenseImgs, ',');
-        if ($shopName === '' || $companyName === '') {
+        // 后台关闭「企业名称 / 企业资料」展示时，这两项不校验也不写入（页面上没有这两项）
+        $companyFields = seller_company_fields();
+        if (!$companyFields) {
+            $companyName = '';
+            $licenseImgs = '';
+        }
+        if ($shopName === '' || ($companyFields && $companyName === '')) {
             return json(['code' => 0, 'msg' => lang('请填写完整信息')]);
         }
         $licArr = $licenseImgs === '' ? [] : explode(',', $licenseImgs);
@@ -138,11 +146,13 @@ class Seller extends Base
         $data = [
             'real_name'    => $realName,
             'shop_name'    => $shopName,
-            'company_name' => $companyName,
-            'license_img'  => $licenseImgs,
             'seller_intro' => mb_substr($sellerIntro, 0, 200),
             'update_time'  => time(),
         ];
+        if ($companyFields) {
+            $data['company_name'] = $companyName;
+            $data['license_img']  = $licenseImgs;
+        }
         // 首次提交（待审核/未入驻）与审核被拒后重新提交：重新进入审核流程
         if ($this->user['seller_check'] == 0 || $this->user['seller_check'] == 2) {
             $data['seller_check'] = $needCheck ? 0 : 1;

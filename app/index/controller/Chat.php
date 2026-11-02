@@ -12,6 +12,10 @@ class Chat extends Base
      */
     public function detail()
     {
+        // 后台关闭「买家咨询卖家」时，聊天页整体不可用
+        if (!buyer_consult_enabled()) {
+            return redirect('/');
+        }
         $uid = session('user.id');
         if (!$uid) {
             return redirect('/user/login');
@@ -86,6 +90,9 @@ class Chat extends Base
         $uid = session('user.id');
         if (!$uid) {
             return json(['code' => -1, 'msg' => lang('请先登录')]);
+        }
+        if (!buyer_consult_enabled()) {
+            return json(['code' => 0, 'msg' => lang('平台已关闭咨询功能')]);
         }
         $goodsId = (int)Request::post('goods_id', 0);
         $sellerId = (int)Request::post('seller_id', 0);

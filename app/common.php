@@ -332,6 +332,24 @@ function seller_see_address()
 }
 
 /**
+ * 主后台开关：前台「卖家入驻」页是否展示并要求填写企业名称 / 企业资料（默认展示）
+ * 关闭后这两项从页面隐藏，提交时也不再校验、不写入。
+ */
+function seller_company_fields()
+{
+    return (string)get_setting('seller_company_fields', '1') !== '0';
+}
+
+/**
+ * 主后台开关：买家能否在商品页咨询卖家（默认开启）
+ * 关闭后商品页不显示「咨询」按钮，聊天页面与发消息接口同时拒绝。
+ */
+function buyer_consult_enabled()
+{
+    return (string)get_setting('buyer_consult_seller', '1') !== '0';
+}
+
+/**
  * 主后台开关：前台会员绑定提现账户后能否自行修改（默认关闭 = 绑定后只能找客服改）
  */
 function pay_account_editable()
