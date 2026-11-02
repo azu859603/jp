@@ -27,7 +27,7 @@
         <div class="step on"><div class="dot">3</div><div class="lbl">{:lang('入驻成功')}</div></div>
     </div>
     <div class="ap-submit">
-        <a class="btn btn-red" href="/seller/goods_add">{:lang('去发布拍品')}</a>
+        {if $publish_enabled}<a class="btn btn-red" href="/seller/goods_add">{:lang('去发布拍品')}</a>{else}<a class="btn btn-red" href="/seller/goods_list">{:lang('我的商品')}</a>{/if}
     </div>
     {elseif $apply && $apply.status==2}
     <div class="ap-st">

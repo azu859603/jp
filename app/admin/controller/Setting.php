@@ -18,7 +18,7 @@ class Setting extends Base
                 'service_qq', 'service_link', 'auction_delay', 'auto_relist_hours_min', 'auto_relist_hours_max', 'user_protocol', 'privacy_policy', 'publish_protocol',
                 'platform_auto_bid_enabled', 'platform_auto_bid_interval', 'platform_auto_bid_multiple', 'platform_auto_bid_stop_hours',
                 'user_protocol_tw', 'user_protocol_en', 'privacy_policy_tw', 'privacy_policy_en', 'publish_protocol_tw', 'publish_protocol_en',
-                'withdraw_min', 'withdraw_max', 'agent_balance_adjust', 'agent_login_as', 'agent_reset_password', 'seller_company_fields', 'buyer_consult_seller',
+                'withdraw_min', 'withdraw_max', 'agent_balance_adjust', 'agent_login_as', 'agent_reset_password', 'seller_company_fields', 'buyer_consult_seller', 'seller_publish_enabled',
                 'auto_view_enabled', 'auto_view_amount', 'auto_view_float', 'pay_account_editable', 'register_mode', 'seller_see_address',
                 'order_pay_timeout_hours', 'order_timeout_deposit', 'order_auto_confirm_days', 'order_ship_remind_days',
                 'about_us', 'about_us_tw', 'about_us_en', 'about_us_image',
@@ -34,7 +34,7 @@ class Setting extends Base
                 if (in_array($field, ['commission_rate', 'withdraw_fee', 'withdraw_min', 'withdraw_max', 'auto_relist_hours_min', 'auto_relist_hours_max'])) {
                     $value = (string)max(0, (float)$value);
                 }
-                if ($field === 'platform_auto_bid_enabled' || $field === 'agent_balance_adjust' || $field === 'auto_view_enabled' || $field === 'pay_account_editable' || $field === 'seller_see_address' || $field === 'seller_company_fields' || $field === 'buyer_consult_seller' || $field === 'agent_login_as' || $field === 'agent_reset_password') {
+                if ($field === 'platform_auto_bid_enabled' || $field === 'agent_balance_adjust' || $field === 'auto_view_enabled' || $field === 'pay_account_editable' || $field === 'seller_see_address' || $field === 'seller_company_fields' || $field === 'buyer_consult_seller' || $field === 'agent_login_as' || $field === 'agent_reset_password' || $field === 'seller_publish_enabled') {
                     $value = (string)$value === '1' ? '1' : '0';
                 }
                 if ($field === 'register_mode') {
@@ -123,7 +123,7 @@ class Setting extends Base
             'service_qq' => '', 'service_link' => '', 'auction_delay' => '0', 'auto_relist_hours_min' => '0', 'auto_relist_hours_max' => '0', 'user_protocol' => '',
             'platform_auto_bid_enabled' => '0', 'platform_auto_bid_interval' => '30', 'platform_auto_bid_multiple' => '2', 'platform_auto_bid_stop_hours' => '1', 'privacy_policy' => '', 'publish_protocol' => '',
             'user_protocol_tw' => '', 'user_protocol_en' => '', 'privacy_policy_tw' => '', 'privacy_policy_en' => '', 'publish_protocol_tw' => '', 'publish_protocol_en' => '',
-            'withdraw_min' => '0', 'withdraw_max' => '0', 'agent_balance_adjust' => '1', 'agent_login_as' => '0', 'agent_reset_password' => '1', 'seller_company_fields' => '1', 'buyer_consult_seller' => '1',
+            'withdraw_min' => '0', 'withdraw_max' => '0', 'agent_balance_adjust' => '1', 'agent_login_as' => '0', 'agent_reset_password' => '1', 'seller_company_fields' => '1', 'buyer_consult_seller' => '1', 'seller_publish_enabled' => '1',
             'auto_view_enabled' => '0', 'auto_view_amount' => '5', 'auto_view_float' => '50', 'pay_account_editable' => '0', 'register_mode' => 'mobile', 'seller_see_address' => '1',
             'order_pay_timeout_hours' => '0', 'order_timeout_deposit' => 'forfeit_platform', 'order_auto_confirm_days' => '0', 'order_ship_remind_days' => '0',
             'about_us' => '', 'about_us_tw' => '', 'about_us_en' => '', 'about_us_image' => '',

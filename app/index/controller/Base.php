@@ -51,6 +51,8 @@ class Base extends BaseController
             'settings' => $settings,
             'site_name'=> !empty($settings['site_name']) ? $settings['site_name'] : lang('竞拍商城'),
             'current_lang' => Lang::getLangSet(),
+            // 后台开关：卖家能否发布新拍品（控制底部「发布」入口等）
+            'publish_enabled' => seller_publish_enabled() ? 1 : 0,
         ]);
     }
 

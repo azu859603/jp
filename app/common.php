@@ -350,6 +350,15 @@ function buyer_consult_enabled()
 }
 
 /**
+ * 主后台开关：卖家能否在前台发布新拍品（默认开启）
+ * 关闭后前台「发布」入口隐藏，发布页面与提交接口同时拒绝；已有商品的上下架 / 重新上架不受影响。
+ */
+function seller_publish_enabled()
+{
+    return (string)get_setting('seller_publish_enabled', '1') !== '0';
+}
+
+/**
  * 主后台开关：前台会员绑定提现账户后能否自行修改（默认关闭 = 绑定后只能找客服改）
  */
 function pay_account_editable()

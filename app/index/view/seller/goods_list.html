@@ -14,7 +14,7 @@
 </div>
 {/if}
 {if empty($list)}
-<div class="empty"><div class="e-ico">📦</div><div>{:lang('暂无拍品')}</div><a class="e-btn" href="/seller/goods_add">{:lang('发布拍品')}</a></div>
+<div class="empty"><div class="e-ico">📦</div><div>{:lang('暂无拍品')}</div>{if $publish_enabled}<a class="e-btn" href="/seller/goods_add">{:lang('发布拍品')}</a>{/if}</div>
 {else}
 {foreach $list as $g}
 <div class="gmanage">

@@ -910,4 +910,5 @@ return [
     '填写以下资料申请成为卖家，审核通过后可发布拍品参与竞拍' => 'Fill in the info below to apply; you can publish items after approval',
     '店铺资料' => 'Shop Info',
     '平台已关闭咨询功能' => 'Consultation is currently disabled',
+    '平台已暂停发布新拍品' => 'Publishing new items is currently suspended',
 ];

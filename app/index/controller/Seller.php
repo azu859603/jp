@@ -170,6 +170,10 @@ class Seller extends Base
     public function goods_add()
     {
         $this->checkSeller();
+        // 后台关闭「卖家发布商品」时，页面与提交一并拒绝
+        if (!seller_publish_enabled()) {
+            return $this->error(lang('平台已暂停发布新拍品'), '/seller/goods_list');
+        }
         if ($this->request->isPost()) {
             $title = trim($this->request->post('title', ''));
             $categoryId = (int)$this->request->post('category_id', 0);
