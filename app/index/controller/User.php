@@ -189,6 +189,7 @@ class User extends Base
         \think\facade\Session::regenerate(true);
         session('user', safe_session_user($user));
         session('login_as_admin', (int)($data['admin_id'] ?? 0));
+        session('login_as_agent', (int)($data['agent_id'] ?? 0));   // 代理后台「登录会员」签发的令牌
         return redirect('/user/center');
     }
     /**

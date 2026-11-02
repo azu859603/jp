@@ -202,6 +202,22 @@
                         </div>
                         <div class="tip">开启：代理后台「我的会员」列表显示「余额」按钮，代理可给团队会员加减余额；关闭：按钮隐藏，接口同时拒绝调整；代理「添加会员」「批量添加虚拟会员」的初始余额也只能为 0。默认开启，保存后立即生效</div>
                     </div>
+                    <div class="form-group">
+                        <label>代理登录会员</label>
+                        <div class="seg">
+                            <input type="radio" name="agent_login_as" id="ala1" value="1" {if $settings.agent_login_as == '1'}checked{/if}><label for="ala1">开启</label>
+                            <input type="radio" name="agent_login_as" id="ala0" value="0" {if $settings.agent_login_as != '1'}checked{/if}><label for="ala0">关闭</label>
+                        </div>
+                        <div class="tip">开启：代理后台「我的会员」列表显示「登录会员」按钮，代理可在新标签页以团队会员身份登录前台；关闭：按钮隐藏，接口同时拒绝。默认关闭</div>
+                    </div>
+                    <div class="form-group">
+                        <label>代理修改会员密码</label>
+                        <div class="seg">
+                            <input type="radio" name="agent_reset_password" id="arp1" value="1" {if $settings.agent_reset_password != '0'}checked{/if}><label for="arp1">开启</label>
+                            <input type="radio" name="agent_reset_password" id="arp0" value="0" {if $settings.agent_reset_password == '0'}checked{/if}><label for="arp0">关闭</label>
+                        </div>
+                        <div class="tip">开启：代理后台「编辑会员」弹窗里可重置团队会员的登录密码；关闭：该输入框隐藏，接口同时拒绝改密码，其他编辑项不受影响。默认开启</div>
+                    </div>
                 </div>
             </div>
             <div class="st-card">

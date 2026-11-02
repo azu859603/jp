@@ -366,6 +366,22 @@ function agent_balance_adjust_enabled()
 }
 
 /**
+ * 主后台开关：是否允许代理后台以团队会员身份登录前台（默认关闭）
+ */
+function agent_login_as_enabled()
+{
+    return (string)get_setting('agent_login_as', '0') === '1';
+}
+
+/**
+ * 主后台开关：是否允许代理后台重置团队会员的登录密码（默认开启）
+ */
+function agent_reset_password_enabled()
+{
+    return (string)get_setting('agent_reset_password', '1') !== '0';
+}
+
+/**
  * 竞拍中商品自动增加浏览量（php think goods:auto-views 每次执行调用一次）
  *
  * 后台「基础设置 › 浏览量自动增加」：

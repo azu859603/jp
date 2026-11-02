@@ -120,7 +120,7 @@
     <div class="dialog">
         <div class="dialog-title" id="editDialogTitle">编辑会员</div>
         <div class="dialog-body">
-            <div class="form-group">
+            <div class="form-group"{if empty($agent_reset_password)} style="display:none;"{/if}>
                 <label>重置密码</label>
                 <input type="text" class="form-control" id="editPwd" placeholder="留空表示不修改；至少 6 位" autocomplete="off">
             </div>
@@ -301,6 +301,7 @@ function loadList(page){
                         + (BALANCE_ADJUST ? ' <a class="btn btn-sm" href="javascript:;" onclick="openBalance(' + u.id + ')">余额</a>' : '')
                         + ' <a class="btn btn-sm btn-primary" href="javascript:;" onclick="openEdit(' + u.id + ')">编辑</a>'
                         + ((u.is_seller == 1 && u.seller_check == 1) ? ' <a class="btn btn-sm btn-primary" href="javascript:;" onclick="openShopEdit(' + u.id + ')">编辑店铺</a>' : '')
+                        + ((LOGIN_AS && u.status == 1) ? ' <a class="btn btn-sm btn-green" href="javascript:;" onclick="loginAs(' + u.id + ')" title="在新标签页打开前台并以该会员身份登录">登录会员</a>' : '')
                         + (u.status == 1
                             ? ' <a class="btn btn-sm btn-danger" href="javascript:;" onclick="toggleStatus(' + u.id + ',0)">禁用</a>'
                             : ' <a class="btn btn-sm btn-green" href="javascript:;" onclick="toggleStatus(' + u.id + ',1)">启用</a>')
@@ -344,8 +345,27 @@ function openEdit(id){
     document.getElementById('editMask').classList.add('show');
 }
 
+var LOGIN_AS = {$agent_login_as|default=0} == 1;              // 主后台「代理登录会员」开关
+var RESET_PWD = {$agent_reset_password|default=1} == 1;       // 主后台「代理修改会员密码」开关
+function loginAs(id){
+    if (!LOGIN_AS) { alert('平台已关闭代理登录会员功能'); return; }
+    var u = memberRows[id] || {};
+    confirmDialog('将在新标签页打开前台并以会员 <b>' + esc(u.mobile || ('#' + id)) + '</b> 的身份登录，确定？<br><span style="color:#94a3b8;font-size:12px;">你当前浏览器的前台登录状态会被替换为该会员，操作会记入代理日志。</span>', function(){
+        // 先同步打开空白标签页，避免异步回调里 window.open 被浏览器拦截
+        var win = window.open('', '_blank');
+        ajaxPost('/agent/member/loginAs', {id: id}, function(res){
+            if(res.code == 1){
+                win.location.href = res.url;
+            } else {
+                if(win) win.close();
+                alert(res.msg);
+            }
+        });
+    });
+}
+
 function doEditSave(){
-    var pwd = document.getElementById('editPwd').value.trim();
+    var pwd = RESET_PWD ? document.getElementById('editPwd').value.trim() : '';
     if(pwd !== '' && pwd.length < 6){ alert('密码至少6位'); return; }
     var data = {id: editId, password: pwd, is_seller: getRadio('editSeller'), is_agent: getRadio('editAgent'), is_virtual: getRadio('editVirtual'), can_withdraw: getRadio('editWithdraw')};
     ajaxPost('/agent/member/editSave', data, function(res){

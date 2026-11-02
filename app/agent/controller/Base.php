@@ -115,6 +115,8 @@ class Base extends BaseController
             'menus'                => $this->menus,
             'site_name'            => $this->siteName(),
             'agent_balance_adjust' => agent_balance_adjust_enabled() ? 1 : 0,
+            'agent_login_as'       => agent_login_as_enabled() ? 1 : 0,
+            'agent_reset_password' => agent_reset_password_enabled() ? 1 : 0,
         ]);
     }
 

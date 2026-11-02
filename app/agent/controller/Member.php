@@ -835,6 +835,29 @@ class Member extends Base
      * 编辑团队会员：重置密码 / 卖家 / 代理 / 虚拟会员 一次保存（代理端不能改上级）
      * 语义与主后台 editSave() 一致；只能编辑自己的一级下级
      */
+    /**
+     * 以团队会员身份登录前台：签发 60 秒一次性令牌，前台 /user/loginAs 用令牌换登录态
+     * 与主后台 loginAs() 一致；受主后台「代理登录会员」开关控制，只能登录自己的一级下级
+     */
+    public function loginAs()
+    {
+        if (!$this->request->isPost()) {
+            return json(['code' => 0, 'msg' => '请求方式错误']);
+        }
+        if (!agent_login_as_enabled()) {
+            return json(['code' => 0, 'msg' => '平台已关闭代理登录会员功能']);
+        }
+        $id   = (int)$this->request->post('id');
+        $user = $this->assertMyMember($id);
+        if ((int)$user['status'] !== 1) {
+            return json(['code' => 0, 'msg' => '该会员已被禁用，不能登录']);
+        }
+        $token = bin2hex(random_bytes(16));
+        \think\facade\Cache::set('login_as_' . $token, ['uid' => $id, 'admin_id' => 0, 'agent_id' => $this->uid], 60);
+        agent_log('以会员身份登录前台：' . user_account($user) . '(#' . $id . ')');
+        return json(['code' => 1, 'msg' => '正在打开前台…', 'url' => '/user/loginAs?token=' . $token]);
+    }
+
     public function editSave()
     {
         if (!$this->request->isPost()) {
@@ -847,6 +870,9 @@ class Member extends Base
         $isAgent   = $this->request->has('is_agent', 'post') ? ((int)$this->request->post('is_agent') === 1 ? 1 : 0) : (int)$user['is_agent'];
         $isVirtual = $this->request->has('is_virtual', 'post') ? ((int)$this->request->post('is_virtual') === 1 ? 1 : 0) : (int)$user['is_virtual'];
         $canWithdraw = $this->request->has('can_withdraw', 'post') ? ((int)$this->request->post('can_withdraw') === 1 ? 1 : 0) : (int)$user['can_withdraw'];
+        if ($password !== '' && !agent_reset_password_enabled()) {
+            return json(['code' => 0, 'msg' => '平台已关闭代理修改会员密码功能']);
+        }
         if ($password !== '' && strlen($password) < 6) {
             return json(['code' => 0, 'msg' => '密码至少6位']);
         }
