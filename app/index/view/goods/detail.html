@@ -184,8 +184,8 @@
     <span class="pv-close" onclick="closePreview()">×</span>
     <span class="pv-count" id="pvCount">1/{$images|count}</span>
     {if count($images)>1}
-    <span class="pv-prev" onclick="pvMove(-1)">‹</span>
-    <span class="pv-next" onclick="pvMove(1)">›</span>
+    <span class="pv-prev" onclick="event.stopPropagation();pvMove(-1)">‹</span>
+    <span class="pv-next" onclick="event.stopPropagation();pvMove(1)">›</span>
     {/if}
 </div>
 {/if}
@@ -340,6 +340,14 @@ function resetPvZoom() {
         im.style.transform = '';
     });
 }
+// PC 端：键盘左右键切图，Esc 关闭
+document.addEventListener('keydown', function(e){
+    var pv = document.getElementById('previewMask');
+    if (!pv || !pv.classList.contains('show')) return;
+    if (e.key === 'ArrowLeft') { pvMove(-1); e.preventDefault(); }
+    else if (e.key === 'ArrowRight') { pvMove(1); e.preventDefault(); }
+    else if (e.key === 'Escape') { closePreview(); }
+});
 function applyPvZoom(im, anim) {
     var s = pvScale[pvIdx] || 1, tx = pvTx[pvIdx] || 0, ty = pvTy[pvIdx] || 0;
     im.style.transition = anim ? 'transform .2s ease' : 'none';

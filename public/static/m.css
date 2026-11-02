@@ -992,7 +992,7 @@ input:focus,textarea:focus,select:focus{outline:none;}
   /* 鼠标环境：卡片悬停轻微上浮 */
   .goods-grid .grid-item:hover{transform:translateY(-2px);box-shadow:var(--shadow-hover);}
   .goods-grid .grid-item:active{transform:scale(.985);}
-  a,button,.grid-item,.o-item a,.sv-grid a{cursor:pointer;}
+  a,button,.grid-item,.o-item a,.sv-grid a,.pv-prev,.pv-next,.pv-close{cursor:pointer;}
 }
 @media (min-width: 600px){
   /* 抽屉收起时要完全移出列外（否则 -100% 只退到列左侧仍在屏幕内） */
