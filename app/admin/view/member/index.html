@@ -42,6 +42,7 @@
     <span class="spacer"></span>
     <button class="btn btn-green" onclick="openAdd()">＋ 添加会员</button>
     <button class="btn" onclick="openBatchVirtual()">批量添加虚拟会员</button>
+    <button class="btn btn-green" onclick="openBatchBalance()">批量增减虚拟会员余额</button>
 </div>
 
 <div class="card">
@@ -49,6 +50,7 @@
         <table class="table">
             <thead>
             <tr>
+                <th style="width:36px;"><input type="checkbox" id="checkAll" title="全选本页虚拟会员" onclick="toggleCheckAll(this.checked)" style="width:16px;height:16px;vertical-align:middle;"></th>
                 <th>ID</th><th>会员</th><th>账号</th><th>上级</th><th>类型</th><th>店铺属性</th><th>代理</th>
                 <th>余额</th><th>冻结</th><th>成交(买/卖)</th><th>状态</th><th>注册时间</th><th>操作</th>
             </tr>
@@ -59,6 +61,34 @@
     <div class="pagination" id="pagination"></div>
 </div>
 
+<!-- 批量增减虚拟会员余额弹层 -->
+<div class="mask" id="bbMask">
+    <div class="dialog" style="width:480px;">
+        <div class="dialog-title">批量增减虚拟会员余额</div>
+        <div class="dialog-body">
+            <div class="tip" style="margin-bottom:12px;">只对<b>虚拟会员</b>生效，每人增减相同金额并各记一条余额流水；扣减时余额不够扣的会员会自动跳过。</div>
+            <div class="form-group">
+                <label>调整范围</label>
+                <div style="display:flex;gap:18px;align-items:center;margin-top:4px;">
+                    <label style="display:flex;align-items:center;gap:6px;font-weight:normal;cursor:pointer;"><input type="radio" name="bbScope" value="selected" checked> 本页勾选的虚拟会员（<span id="bbSelCount">0</span> 个）</label>
+                    <label style="display:flex;align-items:center;gap:6px;font-weight:normal;cursor:pointer;"><input type="radio" name="bbScope" value="all"> 全部虚拟会员</label>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>调整金额（正数增加，负数扣减）</label>
+                <input type="number" step="0.01" class="form-control" id="bbAmount" placeholder="例如：100 或 -50">
+            </div>
+            <div class="form-group" style="margin-bottom:0;">
+                <label>备注</label>
+                <input type="text" class="form-control" id="bbRemark" maxlength="50" placeholder="写入每人的余额流水（可不填）">
+            </div>
+        </div>
+        <div class="dialog-footer">
+            <button class="btn" onclick="document.getElementById('bbMask').classList.remove('show')">取消</button>
+            <button class="btn btn-primary" id="bbSubmit" onclick="doBatchBalance()">确定</button>
+        </div>
+    </div>
+</div>
 <!-- 批量添加虚拟会员弹层 -->
 <div class="mask" id="vbMask">
     <div class="dialog" style="width:520px;">
@@ -334,7 +364,7 @@ function loadList(page){
         .then(function(res){
             var html = '';
             if(!res.data || !res.data.length){
-                html = '<tr><td colspan="13" class="empty">暂无数据</td></tr>';
+                html = '<tr><td colspan="14" class="empty">暂无数据</td></tr>';
             } else {
                 res.data.forEach(function(u){
                     memberRows[u.id] = u;
@@ -342,6 +372,8 @@ function loadList(page){
                     if(u.is_virtual == 1) typeHtml += '<div style="font-size:12px;color:#8b5cf6;margin-top:3px;">（虚拟会员）</div>';
                     var statusHtml = u.status == 1 ? '<span class="tag tag-green">正常</span>' : '<span class="tag tag-red">禁用</span>' + (u.status_remark ? '<div class="gray" style="font-size:12px;max-width:160px;white-space:normal;" title="' + esc(u.status_remark) + '">备注：' + esc(u.status_remark) + '</div>' : '');
                     html += '<tr>'
+                        // 只有虚拟会员可勾选（供「批量增减虚拟会员余额」使用）
+                        + '<td>' + (u.is_virtual == 1 ? '<input type="checkbox" class="rowCheck" value="' + u.id + '" onclick="syncCheckAll()" style="width:16px;height:16px;vertical-align:middle;">' : '') + '</td>'
                         + '<td>' + u.id + '</td>'
                         + '<td>' + esc(u.nickname || '-') + '</td>'
                         + '<td>' + esc(u.mobile) + '</td>'
@@ -369,6 +401,7 @@ function loadList(page){
                 });
             }
             document.getElementById('tbody').innerHTML = html;
+            syncCheckAll();
             renderPagination(res.count, page);
         });
 }
@@ -398,6 +431,52 @@ function resetSearch(){
     loadList(1);
 }
 
+
+// ---- 批量增减虚拟会员余额 ----
+function rowChecks(){ return Array.prototype.slice.call(document.querySelectorAll('#tbody .rowCheck')); }
+function checkedIds(){ return rowChecks().filter(function(c){ return c.checked; }).map(function(c){ return c.value; }); }
+function toggleCheckAll(on){ rowChecks().forEach(function(c){ c.checked = on; }); syncCheckAll(); }
+function syncCheckAll(){
+    var all = rowChecks(), box = document.getElementById('checkAll');
+    if (box) box.checked = all.length > 0 && all.every(function(c){ return c.checked; });
+}
+function openBatchBalance(){
+    var n = checkedIds().length;
+    document.getElementById('bbSelCount').textContent = n;
+    setRadio('bbScope', n > 0 ? 'selected' : 'all');
+    document.getElementById('bbAmount').value = '';
+    document.getElementById('bbRemark').value = '';
+    bbLock(false);
+    document.getElementById('bbMask').classList.add('show');
+    setTimeout(function(){ document.getElementById('bbAmount').focus(); }, 50);
+}
+var bbSubmitting = false;
+function bbLock(on){
+    bbSubmitting = on;
+    var b = document.getElementById('bbSubmit');
+    b.disabled = on;
+    b.textContent = on ? '处理中…' : '确定';
+}
+function doBatchBalance(){
+    if (bbSubmitting) return;
+    var scope = getRadio('bbScope');
+    var ids = checkedIds();
+    var amount = document.getElementById('bbAmount').value;
+    var remark = document.getElementById('bbRemark').value.trim();
+    if(!amount || amount == 0){ alert('请输入调整金额'); return; }
+    if(scope === 'selected' && !ids.length){ alert('请先勾选要调整的虚拟会员'); return; }
+    var target = scope === 'all' ? '全部虚拟会员' : '勾选的 ' + ids.length + ' 个虚拟会员';
+    var act = parseFloat(amount) > 0 ? '增加' : '扣减';
+    if(!confirm('确定给' + target + '每人' + act + ' ' + Math.abs(parseFloat(amount)).toFixed(2) + ' 元？')) return;
+    bbLock(true);
+    ajaxPost('/admin1314/member/batchAdjustVirtualBalance', {scope: scope, ids: ids.join(','), amount: amount, remark: remark}, function(res){
+        alert(res.msg);
+        if(res.code == 1){
+            document.getElementById('bbMask').classList.remove('show');
+            loadList(currentPage);
+        }
+    }, null, function(){ bbLock(false); });
+}
 
 function openBatchVirtual(){
     document.getElementById('vbCount').value = '10';

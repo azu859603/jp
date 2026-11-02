@@ -540,6 +540,90 @@ class Member extends Base
     }
 
     /**
+     * 批量增减虚拟会员余额
+     * scope=selected：只处理 ids（逗号分隔）中的虚拟会员；scope=all：全部虚拟会员
+     * 扣减时余额不够扣的会员跳过并计数，其余照常处理；每人一条余额流水
+     */
+    public function batchAdjustVirtualBalance()
+    {
+        if (!$this->request->isPost()) {
+            return json(['code' => 0, 'msg' => '请求方式错误']);
+        }
+        $scope  = $this->request->post('scope', 'selected') === 'all' ? 'all' : 'selected';
+        $amount = round((float)$this->request->post('amount', 0), 2);
+        $remark = mb_substr(trim((string)$this->request->post('remark', '')), 0, 50);
+
+        if ($amount == 0) {
+            return json(['code' => 0, 'msg' => '调整金额不能为0']);
+        }
+        if (abs($amount) > ADJUST_MAX) {
+            return json(['code' => 0, 'msg' => '单次调整金额最多 ' . number_format(ADJUST_MAX)]);
+        }
+
+        $query = Db::name('user')->where('is_virtual', 1);
+        if ($scope === 'selected') {
+            $ids = array_values(array_unique(array_filter(array_map('intval', explode(',', (string)$this->request->post('ids', ''))))));
+            if (empty($ids)) {
+                return json(['code' => 0, 'msg' => '请先勾选要调整的虚拟会员']);
+            }
+            if (count($ids) > 500) {
+                return json(['code' => 0, 'msg' => '一次最多勾选 500 个会员']);
+            }
+            $query->whereIn('id', $ids);
+        }
+        $targetIds = array_map('intval', $query->column('id'));
+        if (empty($targetIds)) {
+            return json(['code' => 0, 'msg' => $scope === 'all' ? '当前没有虚拟会员' : '勾选的会员中没有虚拟会员']);
+        }
+
+        // 防重复提交：同一管理员、同样的范围 + 金额 + 备注，5 秒内只认第一次
+        $dupKey = 'balance_adjust_batch:admin:' . (int)($this->admin['id'] ?? 0) . ':' . md5($scope . '|' . implode(',', $targetIds) . '|' . $amount . '|' . $remark);
+        if (\think\facade\Cache::has($dupKey)) {
+            return json(['code' => 0, 'msg' => '5 秒内已提交过同样的批量调整，请勿重复操作']);
+        }
+        \think\facade\Cache::set($dupKey, 1, 5);
+
+        $now     = time();
+        $done    = 0;
+        $skipped = [];   // 余额不够扣 / 超上限 的会员ID
+        Db::startTrans();
+        try {
+            foreach ($targetIds as $uid) {
+                $user = Db::name('user')->where('id', $uid)->where('is_virtual', 1)->lock(true)->field('id,balance')->find();
+                if (!$user) {
+                    continue;
+                }
+                $newBalance = round($user['balance'] + $amount, 2);
+                if ($newBalance < 0 || money_over_max($newBalance)) {
+                    $skipped[] = $uid;
+                    continue;
+                }
+                Db::name('user')->where('id', $uid)->update(['balance' => $newBalance, 'update_time' => $now]);
+                Db::name('balance_log')->insert([
+                    'user_id'     => $uid,
+                    'type'        => $amount > 0 ? 'recharge' : 'refund',
+                    'amount'      => $amount,
+                    'balance'     => $newBalance,
+                    'remark'      => $remark,
+                    'create_time' => $now,
+                ]);
+                $done++;
+            }
+            Db::commit();
+        } catch (\Throwable $e) {
+            Db::rollback();
+            return json(['code' => 0, 'msg' => '操作失败：' . $e->getMessage()]);
+        }
+
+        $msg = '已' . ($amount > 0 ? '增加' : '扣减') . ' ' . $done . ' 个虚拟会员余额，每人 ' . number_format(abs($amount), 2) . ' 元';
+        if (!empty($skipped)) {
+            $msg .= '；' . count($skipped) . ' 个会员' . ($amount < 0 ? '余额不足' : '超过余额上限') . '已跳过（ID: ' . implode(',', array_slice($skipped, 0, 20)) . (count($skipped) > 20 ? '…' : '') . '）';
+        }
+        admin_log('批量调整虚拟会员余额（' . ($scope === 'all' ? '全部' : '勾选') . '）' . $amount . '：成功 ' . $done . '，跳过 ' . count($skipped));
+        return json(['code' => 1, 'msg' => $msg, 'data' => ['done' => $done, 'skipped' => $skipped]]);
+    }
+
+    /**
      * 修改会员密码
      */
     public function resetPassword()
