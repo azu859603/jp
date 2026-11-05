@@ -53,6 +53,8 @@ class Base extends BaseController
             'current_lang' => Lang::getLangSet(),
             // 后台开关：卖家能否发布新拍品（控制底部「发布」入口等）
             'publish_enabled' => seller_publish_enabled() ? 1 : 0,
+            // 后台开关：卖家能否自行下架竞拍中的商品
+            'offshelf_enabled' => seller_offshelf_enabled() ? 1 : 0,
         ]);
     }
 

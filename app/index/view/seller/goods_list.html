@@ -55,7 +55,7 @@
         {if $g.status==4}
         <a class="btn-sm solid-red" href="javascript:void(0)" onclick="putOnSale({$g.id})">{:lang('上架')}</a>
         {elseif $g.status==1}
-        <a class="btn-sm gray" href="javascript:void(0)" onclick="takeOff({$g.id}, {$g.bid_count|default=0})">{:lang('下架')}</a>
+        {if $offshelf_enabled}<a class="btn-sm gray" href="javascript:void(0)" onclick="takeOff({$g.id}, {$g.bid_count|default=0})">{:lang('下架')}</a>{/if}
         {elseif $g.status==3}
         <a class="btn-sm solid-red" href="javascript:void(0)" onclick="openResale({$g.id})">{:lang('重新上架')}</a>
         {elseif $g.status==5}

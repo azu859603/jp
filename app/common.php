@@ -359,6 +359,15 @@ function seller_publish_enabled()
 }
 
 /**
+ * 后台开关：卖家能否自行下架竞拍中的商品（默认开启）。
+ * 关闭后前台「下架」按钮隐藏，下架接口同时拒绝；上架 / 重新上架不受影响。
+ */
+function seller_offshelf_enabled()
+{
+    return (string)get_setting('seller_offshelf_enabled', '1') !== '0';
+}
+
+/**
  * 主后台开关：前台会员绑定提现账户后能否自行修改（默认关闭 = 绑定后只能找客服改）
  */
 function pay_account_editable()

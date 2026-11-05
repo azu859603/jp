@@ -360,6 +360,10 @@ class Seller extends Base
         if (!in_array($status, [1, 4])) {
             return json(['code' => 0, 'msg' => lang('参数错误')]);
         }
+        // 后台关闭「卖家下架商品」后，卖家不能自行下架
+        if ($status == 4 && !seller_offshelf_enabled()) {
+            return json(['code' => 0, 'msg' => lang('平台已关闭卖家自行下架功能')]);
+        }
         if ($goods['status'] == 2) {
             return json(['code' => 0, 'msg' => lang('已成交的商品不能操作')]);
         }
