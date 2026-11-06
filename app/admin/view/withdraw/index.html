@@ -109,7 +109,7 @@ function renderPagination(total, page){
 function audit(id, action){
     confirmDialog('打款后将扣减会员余额，请确认已线下打款给会员。确定打款吗？', function(){
         ajaxPost('/admin1314/withdraw/audit', {id:id, action:action}, function(res){
-            alert(res.msg); if(res.code == 1) loadList(currentPage);
+            alert(res.msg); if(res.code == 1){ loadList(currentPage); if (window.refreshMenuBadges) refreshMenuBadges(); }
         });
     });
 }
@@ -128,6 +128,7 @@ function doReject(){
         if(res.code == 1){
             document.getElementById('rejectMask').classList.remove('show');
             loadList(currentPage);
+            if (window.refreshMenuBadges) refreshMenuBadges();
         }
     });
 }

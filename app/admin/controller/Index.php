@@ -7,6 +7,14 @@ use think\facade\View;
 class Index extends Base
 {
     /**
+     * 菜单角标数量（布局页每 30 秒轮询，审核操作后也会主动调用）
+     */
+    public function badges()
+    {
+        return json(['code' => 1, 'badges' => $this->menuBadgeCounts()]);
+    }
+
+    /**
      * 数据中心（系统概览）
      */
     public function index()

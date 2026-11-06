@@ -103,7 +103,7 @@ function loadSessions(){
 // 角标与提醒统一走 layout 里的 svcUnread()：未读变多时会响铃并弹出「您有新的客服消息未查看」
 function updateMenuBadge(n){
     if (typeof window.svcUnread === 'function') { window.svcUnread(n); return; }
-    var b = document.getElementById('svcMenuBadge');
+    var b = document.getElementById('menuBadge_service_unread');
     if (!b) return;
     b.textContent = n > 99 ? '99+' : n;
     b.style.display = n > 0 ? '' : 'none';

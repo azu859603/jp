@@ -75,8 +75,8 @@ class Base extends BaseController
             'title' => '财务管理',
             'icon'  => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="6" width="18" height="14" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><circle cx="16.5" cy="15" r="1.5"/></svg>',
             'items' => [
-                ['title' => '充值审核', 'url' => '/admin1314/recharge/index'],
-                ['title' => '提现审核', 'url' => '/admin1314/withdraw/index'],
+                ['title' => '充值审核', 'url' => '/admin1314/recharge/index', 'badge' => 'recharge_pending'],
+                ['title' => '提现审核', 'url' => '/admin1314/withdraw/index', 'badge' => 'withdraw_pending'],
                 ['title' => '余额流水', 'url' => '/admin1314/balance/index'],
             ],
         ],
@@ -122,15 +122,28 @@ class Base extends BaseController
         }
         View::assign('admin', $admin);
         View::assign('menus', $this->menus);
-        // 在线客服未回复数（菜单角标）；页面内每 30 秒再拉一次 /service/unread 刷新
+        // 菜单角标：在线客服未回复数、充值 / 提现待审核数；页面内每 30 秒轮询 /index/badges 刷新
         if (!$this->request->isAjax()) {
-            try {
-                $n = (int)\think\facade\Db::name('service_message')->where('from_type', 1)->where('is_read', 0)->count();
-            } catch (\Throwable $e) {
-                $n = 0;
-            }
-            View::assign('service_unread', $n);
+            $badges = $this->menuBadgeCounts();
+            View::assign('service_unread', $badges['service_unread']);
+            View::assign('menu_badges', $badges);
         }
+    }
+
+    /**
+     * 菜单角标数量（首屏渲染与轮询接口共用）
+     * @return array ['service_unread'=>int, 'recharge_pending'=>int, 'withdraw_pending'=>int]
+     */
+    protected function menuBadgeCounts(): array
+    {
+        $badges = ['service_unread' => 0, 'recharge_pending' => 0, 'withdraw_pending' => 0];
+        try {
+            $badges['service_unread']   = (int)\think\facade\Db::name('service_message')->where('from_type', 1)->where('is_read', 0)->count();
+            $badges['recharge_pending'] = (int)\think\facade\Db::name('recharge')->where('status', 0)->count();
+            $badges['withdraw_pending'] = (int)\think\facade\Db::name('withdraw')->where('status', 0)->count();
+        } catch (\Throwable $e) {
+        }
+        return $badges;
     }
 
     /**

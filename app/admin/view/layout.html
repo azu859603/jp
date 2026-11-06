@@ -173,7 +173,7 @@ table.table input[type=checkbox]{width:15px;height:15px;cursor:pointer;vertical-
                 </div>
                 <div class="menu-items">
                     {volist name="group.items" id="item"}
-                    <a href="{$item.url}" class="{if condition='strpos($item.url, $menu_active) !== false'}active{/if}">{$item.title}{if !empty($item.badge) && $item.badge == 'service_unread'}<span class="menu-badge" id="svcMenuBadge" {if empty($service_unread)}style="display:none;"{/if}>{$service_unread|default=0}</span>{/if}</a>
+                    <a href="{$item.url}" class="{if condition='strpos($item.url, $menu_active) !== false'}active{/if}">{$item.title}{if !empty($item.badge)}{php}$bn = (int)($menu_badges[$item['badge']] ?? 0);{/php}<span class="menu-badge" id="menuBadge_{$item.badge}" {if $bn <= 0}style="display:none;"{/if}>{$bn}</span>{/if}</a>
                     {/volist}
                 </div>
             </div>
@@ -409,7 +409,7 @@ function ajaxPost(url, data, cb, errMsg, done){
     // 供本文件的轮询与客服页共用：更新角标，未读变多时响铃 + 提示
     window.svcUnread = function(n){
         n = parseInt(n, 10) || 0;
-        var b = document.getElementById('svcMenuBadge');
+        var b = document.getElementById('menuBadge_service_unread');
         if (b) {
             b.textContent = n > 99 ? '99+' : n;
             b.style.display = n > 0 ? '' : 'none';
@@ -420,17 +420,31 @@ function ajaxPost(url, data, cb, errMsg, done){
         sessionStorage.setItem(KEY, n);
     };
 
-    var badge = document.getElementById('svcMenuBadge');
-    if (!badge) return;
-    if (sessionStorage.getItem(KEY) === null) {
+    var badge = document.getElementById('menuBadge_service_unread');
+    if (badge && sessionStorage.getItem(KEY) === null) {
         sessionStorage.setItem(KEY, parseInt(badge.textContent, 10) || 0);
     }
-    setInterval(function(){
-        fetch('/admin1314/service/unread', {headers:{'X-Requested-With':'XMLHttpRequest'}})
+
+    // 统一轮询所有菜单角标（客服未读、充值 / 提现待审核）；审核页操作成功后也会调用 refreshMenuBadges() 立即更新
+    function setBadge(id, n){
+        var b = document.getElementById('menuBadge_' + id);
+        if (!b) return;
+        n = parseInt(n, 10) || 0;
+        b.textContent = n > 99 ? '99+' : n;
+        b.style.display = n > 0 ? '' : 'none';
+    }
+    window.refreshMenuBadges = function(){
+        fetch('/admin1314/index/badges', {headers:{'X-Requested-With':'XMLHttpRequest'}})
             .then(function(r){ return r.json(); })
-            .then(function(res){ if (res.code == 1) { window.svcUnread(res.unread || 0); } })
+            .then(function(res){
+                if (res.code != 1 || !res.badges) return;
+                Object.keys(res.badges).forEach(function(k){
+                    if (k === 'service_unread') { window.svcUnread(res.badges[k]); } else { setBadge(k, res.badges[k]); }
+                });
+            })
             .catch(function(){});
-    }, 30000);
+    };
+    setInterval(window.refreshMenuBadges, 30000);
 })();
 </script>
 <script>

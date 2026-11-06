@@ -105,7 +105,7 @@ function renderPagination(total, page){
 function audit(id, action){
     confirmDialog('确认后会员余额将到账该笔金额，确定到账吗？', function(){
         ajaxPost('/admin1314/recharge/audit', {id:id, action:action}, function(res){
-            alert(res.msg); if(res.code == 1) loadList(currentPage);
+            alert(res.msg); if(res.code == 1){ loadList(currentPage); if (window.refreshMenuBadges) refreshMenuBadges(); }
         });
     });
 }
@@ -124,6 +124,7 @@ function doReject(){
         if(res.code == 1){
             document.getElementById('rejectMask').classList.remove('show');
             loadList(currentPage);
+            if (window.refreshMenuBadges) refreshMenuBadges();
         }
     });
 }
