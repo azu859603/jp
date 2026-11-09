@@ -28,6 +28,7 @@
         <svg class="s-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/></svg>
         <input type="text" class="form-control" id="keyword" placeholder="拍品标题 / 卖家账号">
     </div>
+    <input type="number" class="form-control" id="goodsId" min="1" step="1" placeholder="商品ID" style="width:120px;flex:none;min-width:0;">
     <button class="btn btn-primary" onclick="loadList(1)">查询</button>
     <button class="btn" onclick="resetSearch()">重置</button>
     <button class="btn btn-primary" onclick="openBidAdd()">添加出价</button>
@@ -86,7 +87,8 @@
 <script>
 function loadList(page){
     window.__bidPage = page;
-    fetch('/agent/bid/index?page=' + page + '&limit=15&keyword=' + encodeURIComponent(document.getElementById('keyword').value), {headers:{'X-Requested-With':'XMLHttpRequest'}})
+    var gid = document.getElementById('goodsId').value.trim();
+    fetch('/agent/bid/index?page=' + page + '&limit=15&keyword=' + encodeURIComponent(document.getElementById('keyword').value) + '&goods_id=' + encodeURIComponent(gid), {headers:{'X-Requested-With':'XMLHttpRequest'}})
         .then(function(r){ return r.json(); })
         .then(function(res){
             var html = '';
@@ -132,6 +134,7 @@ function renderPagination(total, page){
 
 function resetSearch(){
     document.getElementById('keyword').value = '';
+    document.getElementById('goodsId').value = '';
     loadList(1);
 }
 
