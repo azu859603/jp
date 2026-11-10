@@ -912,4 +912,5 @@ return [
     '平台已关闭咨询功能' => 'Consultation is currently disabled',
     '平台已暂停发布新拍品' => 'Publishing new items is currently suspended',
     '平台已关闭卖家自行下架功能' => 'The platform has disabled seller self-delisting',
+    '原因' => 'Reason',
 ];

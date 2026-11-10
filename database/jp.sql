@@ -3617,6 +3617,7 @@ CREATE TABLE `user`  (
   `status` tinyint(4) NOT NULL DEFAULT 1 COMMENT '状态 1正常 0禁用',
   `status_remark` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '禁用备注',
   `can_withdraw` tinyint(1) NOT NULL DEFAULT 1 COMMENT '提现开关 1开启 0关闭',
+  `withdraw_remark` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '提现关闭备注',
   `reg_ip` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '注册IP',
   `reg_time` int(10) UNSIGNED NOT NULL DEFAULT 0 COMMENT '注册时间',
   `last_login_time` int(10) UNSIGNED NOT NULL DEFAULT 0 COMMENT '最后登录时间',

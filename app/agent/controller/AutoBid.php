@@ -181,24 +181,19 @@ class AutoBid extends Base
         return Db::name('auto_bid')->alias('a')
             ->leftJoin('goods g', 'a.goods_id = g.id')
             ->leftJoin('user u', 'g.seller_id = u.id')
-            ->field('a.*, g.title, g.cover, g.status as goods_status, g.start_price, g.raise_price, g.end_time, g.bid_count as goods_bid_count, g.seller_id, u.nickname as seller_name, u.account as seller_mobile, u.shop_name')
+            ->field('a.*, g.title, g.cover, g.status as goods_status, g.start_price, g.final_price, g.raise_price, g.end_time, g.bid_count as goods_bid_count, g.seller_id, u.nickname as seller_name, u.account as seller_mobile, u.shop_name')
             ->whereIn('g.seller_id', $ids ?: [-1]);
     }
 
     protected function decorate(array &$list)
     {
-        $ids  = array_column($list, 'goods_id');
-        $tops = [];
-        if ($ids) {
-            $rows = Db::name('bid_record')->whereIn('goods_id', $ids)->where('status', 0)->field('goods_id, MAX(price) AS top')->group('goods_id')->select()->toArray();
-            foreach ($rows as $r) {
-                $tops[(int)$r['goods_id']] = (float)$r['top'];
-            }
-        }
+        // 拍卖中取有效最高出价；已结束取成交价 / 本轮最高出价（见 auto_bid_list_prices）
+        $prices = auto_bid_list_prices($list);
         $now = time();
         foreach ($list as &$t) {
-            $t['current_price'] = max($tops[(int)$t['goods_id']] ?? 0, (float)$t['start_price']);
-            $t['has_bid']       = isset($tops[(int)$t['goods_id']]) ? 1 : 0;
+            $p = $prices[(int)$t['goods_id']] ?? ['price' => (float)$t['start_price'], 'has_bid' => 0];
+            $t['current_price'] = $p['price'];
+            $t['has_bid']       = $p['has_bid'];
             $t['seller_text']   = !empty($t['shop_name']) ? $t['shop_name'] : ($t['seller_name'] ?: ('ID:' . $t['seller_id']));
             $t['remain_hours']  = $t['end_time'] ? round(max(0, (int)$t['end_time'] - $now) / 3600, 1) : 0;
         }

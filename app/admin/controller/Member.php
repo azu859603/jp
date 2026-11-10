@@ -61,7 +61,7 @@ class Member extends Base
             }
 
             $total = $query->count();
-            $list = $query->order('id', 'desc')->page($page, $limit)->field('id,account as mobile,nickname,avatar,invite_code,pid,is_seller,is_agent,is_virtual,seller_check,balance,freeze_balance,points,commission_rate,total_buy,total_sell,status,status_remark,can_withdraw,is_self_shop,shop_name,seller_intro,deposit,shop_score,credit_score,fans_count,reg_ip,reg_time,last_login_time,create_time')->select()->toArray();
+            $list = $query->order('id', 'desc')->page($page, $limit)->field('id,account as mobile,nickname,avatar,invite_code,pid,is_seller,is_agent,is_virtual,seller_check,balance,freeze_balance,points,commission_rate,total_buy,total_sell,status,status_remark,can_withdraw,withdraw_remark,is_self_shop,shop_name,seller_intro,deposit,shop_score,credit_score,fans_count,reg_ip,reg_time,last_login_time,create_time')->select()->toArray();
 
             // 上级会员信息（列表展示用）
             $pids = array_values(array_unique(array_filter(array_column($list, 'pid'))));
@@ -454,6 +454,34 @@ class Member extends Base
     }
 
     /**
+     * 开启 / 关闭会员提现（关闭必须填写备注，备注会在前台提现页展示给会员；开启时清空备注）
+     */
+    public function setWithdraw()
+    {
+        if (!$this->request->isPost()) {
+            return json(['code' => 0, 'msg' => '请求方式错误']);
+        }
+        $id     = (int)$this->request->post('id');
+        $on     = (int)$this->request->post('can_withdraw', 0) ? 1 : 0;
+        $remark = mb_substr(trim((string)$this->request->post('remark', '')), 0, 200);
+
+        $user = Db::name('user')->find($id);
+        if (!$user) {
+            return json(['code' => 0, 'msg' => '会员不存在']);
+        }
+        if ($on === 0 && $remark === '') {
+            return json(['code' => 0, 'msg' => '请填写关闭提现的备注']);
+        }
+        Db::name('user')->where('id', $id)->update([
+            'can_withdraw'    => $on,
+            'withdraw_remark' => $on === 0 ? $remark : '',
+            'update_time'     => time(),
+        ]);
+        admin_log(($on ? '开启' : '关闭') . '会员提现：' . user_account($user) . ($on === 0 ? '，备注：' . $remark : ''));
+        return json(['code' => 1, 'msg' => $on ? '已开启提现' : '已关闭提现']);
+    }
+
+    /**
      * 设置/取消卖家
      */
     public function setSeller()
@@ -771,8 +799,8 @@ class Member extends Base
         $isSeller  = $this->request->has('is_seller', 'post') ? ((int)$this->request->post('is_seller') === 1 ? 1 : 0) : (int)$user['is_seller'];
         $isAgent   = $this->request->has('is_agent', 'post') ? ((int)$this->request->post('is_agent') === 1 ? 1 : 0) : (int)$user['is_agent'];
         $isVirtual = $this->request->has('is_virtual', 'post') ? ((int)$this->request->post('is_virtual') === 1 ? 1 : 0) : (int)$user['is_virtual'];
-        $canWithdraw = $this->request->has('can_withdraw', 'post') ? ((int)$this->request->post('can_withdraw') === 1 ? 1 : 0) : (int)$user['can_withdraw'];
-        $isSelfShop  = $this->request->has('is_self_shop', 'post') ? ((int)$this->request->post('is_self_shop') === 1 ? 1 : 0) : (int)$user['is_self_shop'];
+        // 提现开关已移到会员列表的「关闭提现 / 开启提现」（setWithdraw，关闭需填备注），这里不再处理
+        $isSelfShop = $this->request->has('is_self_shop', 'post') ? ((int)$this->request->post('is_self_shop') === 1 ? 1 : 0) : (int)$user['is_self_shop'];
         if ($password !== '' && strlen($password) < 6) {
             return json(['code' => 0, 'msg' => '密码至少6位']);
         }
@@ -830,10 +858,6 @@ class Member extends Base
         if ($isVirtual !== (int)$user['is_virtual']) {
             $data['is_virtual'] = $isVirtual;
             $logs[] = $isVirtual ? '设为虚拟会员' : '取消虚拟会员';
-        }
-        if ($canWithdraw !== (int)$user['can_withdraw']) {
-            $data['can_withdraw'] = $canWithdraw;
-            $logs[] = $canWithdraw ? '开启提现' : '关闭提现';
         }
         if ($isSelfShop !== (int)$user['is_self_shop']) {
             $data['is_self_shop'] = $isSelfShop;

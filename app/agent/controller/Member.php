@@ -79,7 +79,7 @@ class Member extends Base
         $total = $query->count();
         $list  = $query->order('id', 'desc')
             ->page($page, $limit)
-            ->field('id,nickname,avatar,account as mobile,invite_code,is_seller,seller_check,is_agent,is_virtual,status,status_remark,can_withdraw,balance,freeze_balance,total_buy,total_sell,reg_time,last_login_time,shop_name,seller_intro,deposit,shop_score,credit_score,fans_count')
+            ->field('id,nickname,avatar,account as mobile,invite_code,is_seller,seller_check,is_agent,is_virtual,status,status_remark,can_withdraw,withdraw_remark,balance,freeze_balance,total_buy,total_sell,reg_time,last_login_time,shop_name,seller_intro,deposit,shop_score,credit_score,fans_count')
             ->select()
             ->toArray();
 
@@ -451,6 +451,29 @@ class Member extends Base
         ]);
         agent_log(($status ? '启用' : '禁用') . '会员：' . user_account($member) . ($status === 0 ? '，备注：' . $remark : ''));
         return json(['code' => 1, 'msg' => $status ? '已启用' : '已禁用']);
+    }
+
+    /**
+     * 开启 / 关闭下级会员提现（关闭必须填写备注，备注会在前台提现页展示给会员；开启时清空备注）
+     */
+    public function setWithdraw()
+    {
+        if (!$this->request->isPost()) {
+            return json(['code' => 0, 'msg' => '请求方式错误']);
+        }
+        $member = $this->assertMyMember($this->request->post('id', 0));
+        $on     = (int)$this->request->post('can_withdraw', 0) ? 1 : 0;
+        $remark = mb_substr(trim((string)$this->request->post('remark', '')), 0, 200);
+        if ($on === 0 && $remark === '') {
+            return json(['code' => 0, 'msg' => '请填写关闭提现的备注']);
+        }
+        Db::name('user')->where('id', $member['id'])->update([
+            'can_withdraw'    => $on,
+            'withdraw_remark' => $on === 0 ? $remark : '',
+            'update_time'     => time(),
+        ]);
+        agent_log(($on ? '开启' : '关闭') . '会员提现：' . user_account($member) . ($on === 0 ? '，备注：' . $remark : ''));
+        return json(['code' => 1, 'msg' => $on ? '已开启提现' : '已关闭提现']);
     }
 
     public function adjustBalance()
@@ -869,7 +892,7 @@ class Member extends Base
         $isSeller  = $this->request->has('is_seller', 'post') ? ((int)$this->request->post('is_seller') === 1 ? 1 : 0) : (int)$user['is_seller'];
         $isAgent   = $this->request->has('is_agent', 'post') ? ((int)$this->request->post('is_agent') === 1 ? 1 : 0) : (int)$user['is_agent'];
         $isVirtual = $this->request->has('is_virtual', 'post') ? ((int)$this->request->post('is_virtual') === 1 ? 1 : 0) : (int)$user['is_virtual'];
-        $canWithdraw = $this->request->has('can_withdraw', 'post') ? ((int)$this->request->post('can_withdraw') === 1 ? 1 : 0) : (int)$user['can_withdraw'];
+        // 提现开关已移到会员列表的「关闭提现 / 开启提现」（setWithdraw，关闭需填备注），这里不再处理
         if ($password !== '' && !agent_reset_password_enabled()) {
             return json(['code' => 0, 'msg' => '平台已关闭代理修改会员密码功能']);
         }
@@ -895,10 +918,6 @@ class Member extends Base
         if ($isVirtual !== (int)$user['is_virtual']) {
             $data['is_virtual'] = $isVirtual;
             $logs[] = $isVirtual ? '设为虚拟会员' : '取消虚拟会员';
-        }
-        if ($canWithdraw !== (int)$user['can_withdraw']) {
-            $data['can_withdraw'] = $canWithdraw;
-            $logs[] = $canWithdraw ? '开启提现' : '关闭提现';
         }
         if (!$data) {
             return json(['code' => 1, 'msg' => '没有需要修改的内容']);

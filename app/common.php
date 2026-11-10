@@ -708,6 +708,46 @@ function auto_bid_current_price(array $goods)
 }
 
 /**
+ * 自动出价任务列表用的拍品价格（主后台 / 代理后台共用）。
+ * 拍卖中：有效（竞拍中）出价里的最高价，没有则为起拍价；
+ * 已结束（成交 / 流拍 / 下架）：结算后出价记录不再是「竞拍中」状态，改取成交价，
+ * 没有成交价则取现存全部出价里的最高价，避免回退成起拍价。
+ * @param array $list 任务行，需含 goods_id / goods_status / start_price / final_price
+ * @return array [goods_id => ['price' => float, 'has_bid' => 0|1]]
+ */
+function auto_bid_list_prices(array $list)
+{
+    $ids = array_values(array_unique(array_map('intval', array_column($list, 'goods_id'))));
+    if (!$ids) {
+        return [];
+    }
+    $live = $all = [];
+    $rows = Db::name('bid_record')->whereIn('goods_id', $ids)
+        ->field('goods_id, MAX(price) AS top_all, MAX(CASE WHEN status = 0 THEN price END) AS top_live')
+        ->group('goods_id')->select()->toArray();
+    foreach ($rows as $r) {
+        $gid = (int)$r['goods_id'];
+        $all[$gid] = (float)$r['top_all'];
+        if ($r['top_live'] !== null) {
+            $live[$gid] = (float)$r['top_live'];
+        }
+    }
+    $out = [];
+    foreach ($list as $t) {
+        $gid   = (int)$t['goods_id'];
+        $start = (float)($t['start_price'] ?? 0);
+        if ((int)($t['goods_status'] ?? 0) === 1) {
+            $out[$gid] = ['price' => max($live[$gid] ?? 0, $start), 'has_bid' => isset($live[$gid]) ? 1 : 0];
+            continue;
+        }
+        $final = (float)($t['final_price'] ?? 0);
+        $top   = $final > 0 ? $final : ($all[$gid] ?? 0);
+        $out[$gid] = ['price' => max($top, $start), 'has_bid' => ($final > 0 || isset($all[$gid])) ? 1 : 0];
+    }
+    return $out;
+}
+
+/**
  * 把成交款（成交价 − 佣金）打给卖家
  * 时机：买家确认收货 / 系统自动确认收货 / 后台、代理后台标记完成。
  * 必须在调用方的事务内调用（订单行已加锁）；按 order.income_paid 条件更新，保证只入账一次。
