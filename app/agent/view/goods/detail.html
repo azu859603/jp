@@ -24,6 +24,7 @@
                 <tr><td>起拍价</td><td class="price">￥{$goods.start_price}</td></tr>
                 <tr><td>加价幅度</td><td>￥{$goods.raise_price}</td></tr>
                 <tr><td>保留价</td><td>{if $goods.reserve_price > 0}￥{$goods.reserve_price}{else /}无{/if}</td></tr>
+                <tr><td>成交价</td>{if $goods.final_price > 0}<td class="price" style="color:#ff7a00;font-weight:bold;">￥{$goods.final_price}</td>{else /}<td style="color:#94a3b8;">未成交</td>{/if}</tr>
                 <tr><td>保证金</td><td>￥{$goods.deposit}</td></tr>
                 <tr><td>佣金比例</td><td>{:get_setting('commission_rate', 0)+0}%（基础设置，0 为不收佣金；成交后从成交价中扣除，卖家实收 = 成交价 − 佣金）</td></tr>
                 <tr><td>拍卖时间</td><td>{$goods.start_time_text} ~ {$goods.end_time_text}</td></tr>
